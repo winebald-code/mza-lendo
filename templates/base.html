@@ -45,8 +45,8 @@
           </a>
         {% else %}
           <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Sign in</a>
-          <a href="{{ url_for('signup') }}" class="btn btn-primary btn-sm">
-            Start free {{ icon('arrow-right', 'ico ico-sm') }}
+          <a href="{{ cta_url }}" class="btn btn-primary btn-sm">
+            {{ 'Start free' if ALLOW_PUBLIC_SIGNUP else 'Sign in' }} {{ icon('arrow-right', 'ico ico-sm') }}
           </a>
         {% endif %}
         <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
@@ -112,7 +112,7 @@
         <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
           <li><a href="{{ url_for('security_page') }}" class="text-slate-400 hover:text-signal-400">Security</a></li>
           <li><a href="{{ url_for('login') }}" class="text-slate-400 hover:text-signal-400">Sign in</a></li>
-          <li><a href="{{ url_for('signup') }}" class="text-slate-400 hover:text-signal-400">Create a plant</a></li>
+          <li><a href="{{ cta_url }}" class="text-slate-400 hover:text-signal-400">Create a plant</a></li>
         </ul>
       </div>
     </div>

@@ -38,27 +38,20 @@
 </form>
 
 <div class="mt-7 pt-6 border-t border-divider">
+  {% if ALLOW_PUBLIC_SIGNUP %}
   <p class="text-[13px] text-slate-500 m-0">
     No account yet?
     <a href="{{ url_for('signup') }}" class="font-medium text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">Set up your plant</a>
   </p>
+  {% else %}
+  <p class="text-[13px] text-slate-500 m-0">
+    Accounts are created by your plant owner. Ask them to add you under Users.
+  </p>
+  {% endif %}
   <p class="text-[12px] text-slate-400 mt-3 m-0 leading-relaxed">
     Forgot your password? Your plant owner can reset it from Users. Six wrong attempts locks the
     account for fifteen minutes.
   </p>
 </div>
 
-<div class="mt-7 p-4 rounded-panel border border-divider bg-surface">
-  <p class="label mb-2.5">Trying the demo plant</p>
-  <dl class="grid gap-1.5 m-0">
-    <div class="flex items-center justify-between gap-3">
-      <dt class="text-[12px] text-slate-500 m-0">Owner</dt>
-      <dd class="font-mono text-[11.5px] text-ink m-0">owino@kamukunji.example</dd>
-    </div>
-    <div class="flex items-center justify-between gap-3">
-      <dt class="text-[12px] text-slate-500 m-0">Password</dt>
-      <dd class="font-mono text-[11.5px] text-ink m-0">Kamukunji@2026!</dd>
-    </div>
-  </dl>
-</div>
 {% endblock %}

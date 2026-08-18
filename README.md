@@ -130,7 +130,10 @@ unstyled Mzalendo is not a pretty sight.
 
 ## Signing in
 
-### Super administrator (seeded on every boot)
+A fresh install contains **one account and nothing else** — no sample plant, no demo materials, no
+seeded workers. The first thing you do is create your plant.
+
+### Bootstrap administrator
 
 | | |
 |---|---|
@@ -138,25 +141,20 @@ unstyled Mzalendo is not a pretty sight.
 | **Email** | `info@winebald.tech` |
 | **Password** | `223011005@Winebald` |
 
-This account is created with `must_change_password` set. **It cannot reach any page except the
-change-password screen until a new password is set** — the temporary one works exactly once. All
-three values are overridable via `SEED_ADMIN_USERNAME`, `SEED_ADMIN_EMAIL` and
-`SEED_ADMIN_PASSWORD`.
+Overridable with `SEED_ADMIN_USERNAME`, `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` — set your own
+before deploying anywhere public.
 
-### Demo plant — *Kamukunji Metalworks*
+The account is created with `must_change_password` set: **it cannot reach any page except the
+change-password screen until a new password is set**, so the temporary value works exactly once.
 
-Seeded when `SEED_DEMO_DATA=1`, with 13 materials, 5 products with full BOMs, 5 machines (one
-already down), 6 workers, 6 orders, 5 runs, an overdue purchase order and a fortnight of Pulse
-history — enough that the dashboard looks like a working plant rather than an empty shell.
+### First run
 
-| Role | Email | Password |
-|---|---|---|
-| Owner | `owino@kamukunji.example` | `Kamukunji@2026!` |
-| Manager | `wanjiku@kamukunji.example` | `Kamukunji@2026!` |
-| Supervisor | `mutiso@kamukunji.example` | `Kamukunji@2026!` |
-
-Worker handset PIN is `1234` for all seeded workers. Set `SEED_DEMO_DATA=0` for a real deployment;
-the super administrator is seeded either way.
+1. Sign in and set a real password.
+2. With no plants yet, you land on **All plants**. Create your first one.
+3. Add users under **Users**, workers under **Workers** — a worker needs a phone number or the
+   USSD menu will not recognise them.
+4. Add materials, products and their bills of materials. The Pulse starts reading as soon as there
+   are records to read.
 
 ---
 
@@ -234,7 +232,6 @@ Set these variables in the Railway dashboard:
 ```
 SECRET_KEY=<a long random string>
 FORCE_HTTPS=1
-SEED_DEMO_DATA=0
 ALLOW_PUBLIC_SIGNUP=0
 AT_USERNAME=<your Africa's Talking username>
 AT_API_KEY=<your key>
@@ -263,7 +260,6 @@ docker build -t mzalendo:1.0.0 .
 docker run -d -p 8000:8000 \
   -e SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')" \
   -e FORCE_HTTPS=0 \
-  -e SEED_DEMO_DATA=1 \
   -v mzalendo-data:/data \
   --name mzalendo mzalendo:1.0.0
 ```

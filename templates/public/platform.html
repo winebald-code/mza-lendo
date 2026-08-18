@@ -147,9 +147,9 @@
           </div>
           <pre class="term m-0 whitespace-pre-wrap">REPORT PRODUCTION
 1. RUN-0003 Swing gate 3
-2. RUN-0001 Metal cabine
-3. RUN-0002 Metal storag
-4. RUN-0005 Heavy duty w</pre>
+2. RUN-0001 Steel cabine
+3. RUN-0002 Storage box
+4. RUN-0005 Wheelbarrow</pre>
         </div>
         <p class="font-mono text-[10px] text-slate-500 mt-3 text-center m-0">Telco layer by Africa's Talking</p>
       </div>
@@ -161,12 +161,12 @@
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20 text-center">
     <h2 class="font-display text-[26px] sm:text-[32px] font-bold tracking-[-0.03em] m-0">See it running</h2>
     <p class="lede mt-4 max-w-[44ch] mx-auto">
-      The demo plant is a Kamukunji metal workshop with real orders, runs, machines and a fault
-      already reported from the floor.
+      Set up your plant, register a worker's number, and have them dial in. The Pulse starts
+      reading the moment there are records to read.
     </p>
     <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
       <a href="{{ url_for('login') }}" class="btn btn-primary">{{ icon('lock','ico ico-sm') }} Sign in to the demo</a>
-      <a href="{{ url_for('signup') }}" class="btn btn-secondary">Set up your own plant</a>
+      <a href="{{ cta_url }}" class="btn btn-secondary">Set up your own plant</a>
     </div>
   </div>
 </section>
