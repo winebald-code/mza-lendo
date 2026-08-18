@@ -147,6 +147,27 @@ before deploying anywhere public.
 The account is created with `must_change_password` set: **it cannot reach any page except the
 change-password screen until a new password is set**, so the temporary value works exactly once.
 
+### A demonstration plant
+
+Set `SEED_DEMO_DATA=1` to populate Kamukunji Metalworks on first boot — 13 materials, 5 products
+with bills of materials, 5 machines, 6 workers, 6 orders, 5 runs and a fortnight of Pulse history.
+Setting it back to `0` **removes** the demo plant and everything in it on the next boot, so one
+variable flips a populated demo into a clean instance. Only the plant carrying the demo slug is
+affected — real plants, their records and the administrator are never touched.
+
+The administrator is reconciled from the environment on every boot, not just the first: if the
+account was disabled, locked out by failed sign-ins, demoted, or left pointing at a deleted plant,
+it is restored. The password is deliberately left alone once set, so rotating it in the interface is
+not undone by the next deploy.
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `owino@kamukunji.example` | `Kamukunji@2026!` |
+| Manager | `wanjiku@kamukunji.example` | `Kamukunji@2026!` |
+| Supervisor | `mutiso@kamukunji.example` | `Kamukunji@2026!` |
+
+Worker handset PIN is `1234`.
+
 ### First run
 
 1. Sign in and set a real password.

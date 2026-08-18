@@ -13,8 +13,10 @@
 FROM node:20-alpine AS assets
 
 WORKDIR /build
+# npm ci with a committed lockfile resolves nothing and installs from the
+# exact tree — roughly eight times faster than npm install, and reproducible.
 COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 # Tailwind scans these for class names, so they must be present at build time.
 COPY tailwind.config.js ./
@@ -43,12 +45,11 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # curl is here only for the container healthcheck below.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends curl \
- && rm -rf /var/lib/apt/lists/*
-
+# No apt layer. curl was pulled in only for the healthcheck, which Python can
+# do just as well — and Python is already here. That removes an apt-get update
+# from every cold build and trims the image.
 COPY requirements.txt requirements-postgres.txt ./
-RUN pip install --upgrade pip && pip install -r requirements-postgres.txt
+RUN pip install -r requirements-postgres.txt
 
 COPY app.py gunicorn.conf.py docker-entrypoint.py ./
 COPY templates ./templates
@@ -70,7 +71,8 @@ RUN useradd --create-home --uid 10001 mzalendo \
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/healthz" || exit 1
+  CMD python3 -c "import os,urllib.request,sys; \
+sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','8000')+'/healthz', timeout=4).status==200 else 1)"
 
 # No $PORT in the command: gunicorn.conf.py reads it from the environment, so
 # this works whether or not the platform runs it through a shell.
