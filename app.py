@@ -190,6 +190,7 @@ class Config:
     # --- seed super administrator -------------------------------------------
     SEED_ADMIN_EMAIL = _env_str("SEED_ADMIN_EMAIL", "info@winebald.tech")
     SEED_ADMIN_USERNAME = _env_str("SEED_ADMIN_USERNAME", "winebald")
+    SEED_ADMIN_NAME = _env_str("SEED_ADMIN_NAME", "Platform Administrator")
     SEED_ADMIN_PASSWORD = _env_str("SEED_ADMIN_PASSWORD", "223011005@Winebald")
 
 
@@ -5751,23 +5752,119 @@ def seed_demo_plant():
     log.info("demo plant seeded: %s", fac.name)
 
 
-def seed_super_admin():
-    existing = User.query.filter_by(role="super_admin").first()
-    if existing:
-        return existing
-    fac = Factory.query.filter_by(slug="kamukunji-metalworks").first() or \
-        Factory.query.order_by(Factory.id).first()
-    admin = User(
-        factory_id=fac.id if fac else None,
-        username=Config.SEED_ADMIN_USERNAME.lower(),
-        email=Config.SEED_ADMIN_EMAIL.lower(),
-        full_name="Winebald Super Administrator",
-        role="super_admin", is_active_flag=True,
-        must_change_password=True)          # forced rotation at first sign in
-    admin.set_password(Config.SEED_ADMIN_PASSWORD)
-    db.session.add(admin)
+DEMO_SLUG = "kamukunji-metalworks"
+
+
+def remove_demo_plant():
+    """Delete the demonstration plant and everything in it.
+
+    SEED_DEMO_DATA=0 does not merely decline to create the demo — it takes it
+    away, so flipping the flag is enough to hand a populated instance over as a
+    clean one without touching the database by hand.
+
+    Only the plant carrying DEMO_SLUG is touched. Real plants, and the super
+    administrator, are left alone; if the administrator happened to be viewing
+    the demo, they are simply detached from it.
+    """
+    fac = Factory.query.filter_by(slug=DEMO_SLUG).first()
+    if not fac:
+        return False
+
+    # Anyone still pointing at this plant has to be moved off it first, or the
+    # foreign key blocks the delete. The demo's own owner, manager and
+    # supervisor go with the plant; anyone protected is merely detached.
+    #
+    # Protection is by configured identity as well as by role. Checking the
+    # role alone means an administrator who has been demoted, or whose role was
+    # mangled, is destroyed here and silently recreated with the temporary
+    # password — losing whatever password they had actually set.
+    protected_email = (Config.SEED_ADMIN_EMAIL or "").strip().lower()
+    protected_user = (Config.SEED_ADMIN_USERNAME or "").strip().lower()
+    for user in User.query.filter_by(factory_id=fac.id).all():
+        if (user.role == "super_admin"
+                or (user.email or "").lower() == protected_email
+                or (user.username or "").lower() == protected_user):
+            user.factory_id = None
+        else:
+            db.session.delete(user)
+    db.session.flush()
+
+    # Line items do not carry factory_id — they hang off a product, order, run,
+    # purchase order or inspection. Deleting only the factory-scoped tables
+    # leaves them orphaned, so they go first, addressed through their parent.
+    for child, parent_fk, parent in (
+            (BomItem, BomItem.product_id, Product),
+            (OrderItem, OrderItem.order_id, Order),
+            (RunStage, RunStage.run_id, ProductionRun),
+            (POItem, POItem.po_id, PurchaseOrder),
+            (QcCheck, QcCheck.inspection_id, QcInspection)):
+        parent_ids = [row.id for row in parent.query.filter_by(factory_id=fac.id).all()]
+        if parent_ids:
+            child.query.filter(parent_fk.in_(parent_ids)).delete(synchronize_session=False)
+    db.session.flush()
+
+    # Then the factory-scoped tables, children before parents.
+    for model in reversed(MIGRATION_ORDER):
+        if model is Factory or model is User:
+            continue
+        if hasattr(model, "factory_id"):
+            model.query.filter_by(factory_id=fac.id).delete(synchronize_session=False)
+
+    db.session.delete(fac)
     db.session.commit()
-    log.info("super administrator seeded: %s", admin.username)
+    log.info("demonstration plant removed (SEED_DEMO_DATA is off)")
+    return True
+
+
+def seed_super_admin():
+    """Guarantee a super administrator matching the configured variables.
+
+    Runs on every boot, not just the first. An installation must never be
+    lockable-out of itself: if the account was disabled, locked by failed
+    sign-ins, or demoted, this puts it back. The password is left alone once
+    set, so rotating it in the interface is not undone on the next deploy.
+    """
+    username = (Config.SEED_ADMIN_USERNAME or "admin").strip().lower()
+    email = (Config.SEED_ADMIN_EMAIL or "admin@example.com").strip().lower()
+
+    admin = (User.query.filter_by(email=email).first()
+             or User.query.filter_by(username=username).first()
+             or User.query.filter_by(role="super_admin").first())
+
+    if admin is None:
+        fac = Factory.query.filter_by(slug=DEMO_SLUG).first() or \
+            Factory.query.order_by(Factory.id).first()
+        admin = User(
+            factory_id=fac.id if fac else None,
+            username=username, email=email,
+            full_name=Config.SEED_ADMIN_NAME,
+            role="super_admin", is_active_flag=True,
+            must_change_password=True)       # forced rotation at first sign in
+        admin.set_password(Config.SEED_ADMIN_PASSWORD)
+        db.session.add(admin)
+        db.session.commit()
+        log.info("super administrator created: %s <%s>", admin.username, admin.email)
+        return admin
+
+    changed = []
+    if admin.username != username:
+        admin.username, _ = username, changed.append("username")
+    if admin.email != email:
+        admin.email, _ = email, changed.append("email")
+    if admin.role != "super_admin":
+        admin.role, _ = "super_admin", changed.append("role")
+    if not admin.is_active_flag:
+        admin.is_active_flag, _ = True, changed.append("reactivated")
+    if getattr(admin, "locked_until", None):
+        admin.locked_until, _ = None, changed.append("unlocked")
+    if getattr(admin, "failed_logins", 0):
+        admin.failed_logins = 0
+    if admin.factory_id and not Factory.query.get(admin.factory_id):
+        admin.factory_id, _ = None, changed.append("detached from a deleted plant")
+
+    if changed:
+        db.session.commit()
+        log.info("super administrator reconciled (%s): %s", ", ".join(changed), admin.username)
     return admin
 
 
@@ -5777,6 +5874,10 @@ def bootstrap(force_demo=None):
     demo = Config.SEED_DEMO_DATA if force_demo is None else force_demo
     if demo:
         seed_demo_plant()
+    else:
+        remove_demo_plant()
+    # Always last, so it can pick up a plant that was just created and detach
+    # itself from one that was just removed.
     seed_super_admin()
 
     # A quiet nudge rather than a hard failure: FORCE_HTTPS is off by default so
