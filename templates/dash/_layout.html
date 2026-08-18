@@ -184,7 +184,7 @@
   <footer class="border-t border-divider px-4 sm:px-6 py-4">
     <div class="max-w-shell mx-auto flex flex-wrap items-center justify-between gap-3">
       <p class="font-mono text-[10.5px] text-slate-400 m-0">
-        Mzalendo v{{ APP_VERSION }} · {{ factory.name if factory else 'No plant' }} · {{ now|dt('%d %b %Y, %H:%M') }} {{ TZ_LABEL }}
+        {{ factory.name if factory else 'No plant' }} · {{ now|dt('%d %b %Y, %H:%M') }} {{ TZ_LABEL }}
       </p>
       <p class="font-mono text-[10.5px] text-slate-400 m-0">Telco layer by Africa's Talking</p>
     </div>

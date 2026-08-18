@@ -147,6 +147,20 @@ before deploying anywhere public.
 The account is created with `must_change_password` set: **it cannot reach any page except the
 change-password screen until a new password is set**, so the temporary value works exactly once.
 
+### A demonstration plant
+
+Set `SEED_DEMO_DATA=1` to populate Kamukunji Metalworks on first boot — 13 materials, 5 products
+with bills of materials, 5 machines, 6 workers, 6 orders, 5 runs and a fortnight of Pulse history.
+Useful for a demo; off by default so a real deployment never grows a fictional workshop by accident.
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `owino@kamukunji.example` | `Kamukunji@2026!` |
+| Manager | `wanjiku@kamukunji.example` | `Kamukunji@2026!` |
+| Supervisor | `mutiso@kamukunji.example` | `Kamukunji@2026!` |
+
+Worker handset PIN is `1234`.
+
 ### First run
 
 1. Sign in and set a real password.
