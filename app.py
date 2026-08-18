@@ -93,10 +93,28 @@ def _env_str(key: str, default: str = "") -> str:
 
 
 def _env_bool(key: str, default: bool = False) -> bool:
-    raw = os.environ.get(key)
-    if raw is None:
+    raw = _env_str(key)
+    if not raw:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_float(key: str, default: float) -> float:
+    """Numeric environment value that tolerates quoting and rubbish.
+
+    A quoted "3" reaching float() raises ValueError during import, which kills
+    every worker before it can log anything useful — the container just dies.
+    A bad value falls back to the default and says so rather than taking the
+    whole application down.
+    """
+    raw = _env_str(key)
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        log.warning("%s=%r is not a number; using %s", key, raw, default)
+        return default
 
 
 def _database_uri() -> str:
@@ -147,6 +165,10 @@ class Config:
     # sets FORCE_HTTPS=1 explicitly, and bootstrap() warns when it is off.
     FORCE_HTTPS = _env_bool("FORCE_HTTPS", False)
     ALLOW_PUBLIC_SIGNUP = _env_bool("ALLOW_PUBLIC_SIGNUP", True)
+    # Opt-in demonstration plant. Defaults to off so a real deployment never
+    # grows a fictional workshop by accident; set SEED_DEMO_DATA=1 to populate
+    # one on first boot for a demo or a walkthrough.
+    SEED_DEMO_DATA = _env_bool("SEED_DEMO_DATA", False)
     RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
 
     # --- Africa's Talking ----------------------------------------------------
@@ -168,6 +190,7 @@ class Config:
     # --- seed super administrator -------------------------------------------
     SEED_ADMIN_EMAIL = _env_str("SEED_ADMIN_EMAIL", "info@winebald.tech")
     SEED_ADMIN_USERNAME = _env_str("SEED_ADMIN_USERNAME", "winebald")
+    SEED_ADMIN_NAME = _env_str("SEED_ADMIN_NAME", "Platform Administrator")
     SEED_ADMIN_PASSWORD = _env_str("SEED_ADMIN_PASSWORD", "223011005@Winebald")
 
 
@@ -228,6 +251,12 @@ def _webhook_guard():
     When no token is configured the callbacks stay open — fine on a laptop,
     not on a public URL, which is why startup warns about it.
     """
+    # The in-dashboard handset simulator reaches the same view through an
+    # authenticated, CSRF-protected route. It carries a session rather than the
+    # shared token, and loosening the public callback to accept a session would
+    # hand any signed-in user's browser a forgeable path into it.
+    if getattr(g, "ussd_from_dashboard", False):
+        return None
     expected = app.config["AT_WEBHOOK_TOKEN"]
     if not expected:
         return None
@@ -392,7 +421,7 @@ def _now() -> datetime:
 # Kenya observes EAT (UTC+3) year round and has never used daylight saving, so
 # a fixed offset is exact here and avoids depending on the tzdata package being
 # present — which it often is not on Windows or in a slim container.
-TZ_OFFSET_HOURS = float(os.environ.get("TZ_OFFSET_HOURS", "3"))
+TZ_OFFSET_HOURS = _env_float("TZ_OFFSET_HOURS", 3.0)
 TZ_LABEL = _env_str("TZ_LABEL", "EAT")
 LOCAL_OFFSET = timedelta(hours=TZ_OFFSET_HOURS)
 
@@ -1268,6 +1297,32 @@ def get_scoped_or_404(model, obj_id):
     if not obj or obj.factory_id != current_factory_id():
         abort(404)
     return obj
+
+
+@app.before_request
+def _require_plant():
+    """Every /dashboard screen belongs to a plant. Insist on one existing.
+
+    A super administrator starts attached to nothing, and a plant can be
+    deleted out from under anyone. Six screens dereferenced the current plant
+    directly and raised AttributeError; the rest rendered convincingly empty
+    pages, which is arguably worse because it looks like real data. One guard
+    at the front is better than thirty scattered null checks.
+    """
+    if not current_user.is_authenticated:
+        return None
+    if not request.path.startswith("/dashboard"):
+        return None
+    if request.endpoint in ("switch_factory", "logout"):
+        return None
+    if current_factory() is not None:
+        return None
+    if current_user.is_super:
+        flash("Create a plant first — every dashboard screen belongs to one.", "info")
+        return redirect(url_for("admin_factories"))
+    flash("Your account is not attached to a plant. Ask your administrator to "
+          "assign you to one.", "warn")
+    return redirect(url_for("profile"))
 
 
 @app.before_request
@@ -4973,6 +5028,20 @@ def ussd_callback():
     return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
 
 
+@app.route("/dashboard/ussd/simulate", methods=["POST"])
+@login_required
+def ussd_simulate():
+    """Run a USSD hop from the dashboard simulator.
+
+    Deliberately the same engine as the public callback — a simulator that ran
+    different code would prove nothing. It differs only in how it
+    authenticates: a signed-in session and a CSRF token, rather than the shared
+    webhook secret, which has no business being handed to a browser.
+    """
+    g.ussd_from_dashboard = True
+    return ussd_callback()
+
+
 @app.route("/webhooks/ussd/event", methods=["GET", "POST"])
 @app.route("/ussd/events", methods=["POST"])
 @csrf.exempt
@@ -5329,29 +5398,486 @@ def err_unhandled(e):                                          # pragma: no cove
 #  SECTION 30 — SEEDING
 # =============================================================================
 
-def seed_super_admin():
-    existing = User.query.filter_by(role="super_admin").first()
-    if existing:
-        return existing
-    fac = Factory.query.filter_by(slug="kamukunji-metalworks").first() or \
-        Factory.query.order_by(Factory.id).first()
-    admin = User(
-        factory_id=fac.id if fac else None,
-        username=Config.SEED_ADMIN_USERNAME.lower(),
-        email=Config.SEED_ADMIN_EMAIL.lower(),
-        full_name="Winebald Super Administrator",
-        role="super_admin", is_active_flag=True,
-        must_change_password=True)          # forced rotation at first sign in
-    admin.set_password(Config.SEED_ADMIN_PASSWORD)
-    db.session.add(admin)
+def seed_demo_plant():
+    """
+    A believable Kamukunji metal workshop, so the dashboard tells a real story
+    the first time it is opened.
+    """
+    if Factory.query.filter_by(slug="kamukunji-metalworks").first():
+        return
+
+    fac = Factory(
+        name="Kamukunji Metalworks", slug="kamukunji-metalworks",
+        sector="Metal fabrication", county="Nairobi",
+        address="Kamukunji Jua Kali Shed, Off Landhies Road",
+        phone="+254711000100", email="workshop@kamukunji.example",
+        currency="KES", plan="business", ussd_code=Config.AT_USSD_CODE,
+        sms_enabled=False)
+    db.session.add(fac)
+    db.session.flush()
+
+    owner = User(factory_id=fac.id, username="owino", email="owino@kamukunji.example",
+                 full_name="Richard Owino", phone="+254711000100", role="owner")
+    owner.set_password("Kamukunji@2026!")
+    manager = User(factory_id=fac.id, username="wanjiku",
+                   email="wanjiku@kamukunji.example", full_name="Grace Wanjiku",
+                   phone="+254711000101", role="manager")
+    manager.set_password("Kamukunji@2026!")
+    supervisor = User(factory_id=fac.id, username="mutiso",
+                      email="mutiso@kamukunji.example", full_name="Daniel Mutiso",
+                      phone="+254711000102", role="supervisor")
+    supervisor.set_password("Kamukunji@2026!")
+    db.session.add_all([owner, manager, supervisor])
+
+    suppliers = [
+        Supplier(factory_id=fac.id, name="Devki Steel Depot", contact_name="Peter Kimani",
+                 phone="+254720111222", email="sales@devkidepot.example",
+                 address="Industrial Area, Nairobi",
+                 materials_supplied="Mild steel sheet, angle iron, square tube",
+                 lead_time_days=4, payment_terms="30 days",
+                 orders_placed=18, orders_on_time=16, orders_complete=17, defect_reports=1),
+        Supplier(factory_id=fac.id, name="Gikomba Hardware", contact_name="Alice Njeri",
+                 phone="+254733222333", email="alice@gikombahw.example",
+                 address="Gikomba Market", materials_supplied="Hinges, locks, handles, rivets",
+                 lead_time_days=2, payment_terms="On delivery",
+                 orders_placed=25, orders_on_time=21, orders_complete=24, defect_reports=2),
+        Supplier(factory_id=fac.id, name="Basco Paints Agent", contact_name="Samuel Otieno",
+                 phone="+254701444555", email="orders@bascoagent.example",
+                 address="Ngara", materials_supplied="Enamel paint, thinner, primer",
+                 lead_time_days=7, payment_terms="50 percent deposit",
+                 orders_placed=9, orders_on_time=4, orders_complete=7, defect_reports=2),
+    ]
+    db.session.add_all(suppliers)
+    db.session.flush()
+
+    mats = [
+        ("MS-2MM", "Mild steel sheet 2mm", "Metal", "sheet", 6, 12, 40, 2150, "Rack A1", 0),
+        ("MS-1MM", "Mild steel sheet 1mm", "Metal", "sheet", 31, 10, 30, 1580, "Rack A2", 0),
+        ("AL-40", "Aluminium sheet 1.2mm", "Metal", "sheet", 0, 8, 24, 3400, "Rack A3", 0),
+        ("SQ-25", "Square tube 25x25x1.5", "Metal", "m", 240, 80, 200, 340, "Rack B1", 0),
+        ("ANG-40", "Angle iron 40x40", "Metal", "m", 96, 60, 180, 410, "Rack B2", 0),
+        ("HNG-100", "Butt hinges 100mm", "Hardware", "pcs", 118, 150, 400, 110, "Bin C1", 1),
+        ("LCK-STD", "Cabinet locks", "Hardware", "pcs", 64, 40, 150, 260, "Bin C2", 1),
+        ("HDL-CH", "Chrome handles", "Hardware", "pcs", 210, 60, 200, 180, "Bin C3", 1),
+        ("PNT-BLK", "Enamel paint black", "Finishing", "litre", 22, 10, 40, 820, "Store D", 2),
+        ("PNT-GRY", "Enamel paint grey", "Finishing", "litre", 7, 10, 40, 820, "Store D", 2),
+        ("THN-01", "Paint thinner", "Finishing", "litre", 15, 8, 30, 540, "Store D", 2),
+        ("WLD-25", "Welding rods 2.5mm", "Consumable", "kg", 9, 10, 30, 480, "Store E", 0),
+        ("GRD-DSC", "Grinding discs 7in", "Consumable", "pcs", 46, 20, 60, 320, "Store E", 0),
+    ]
+    material_map = {}
+    for code, name, cat, unit, qty, minimum, reorder, cost, loc, sup_idx in mats:
+        m = Material(factory_id=fac.id, code=code, name=name, category=cat, unit=unit,
+                     quantity=qty, min_stock=minimum, reorder_qty=reorder,
+                     unit_cost=cost, location=loc, supplier_id=suppliers[sup_idx].id)
+        db.session.add(m)
+        db.session.flush()
+        material_map[code] = m
+        db.session.add(StockMovement(factory_id=fac.id, material_id=m.id, kind="in",
+                                     quantity=qty, balance_after=qty,
+                                     reference="Opening balance", source="system",
+                                     created_at=_now() - timedelta(days=21)))
+
+    machines = [
+        Machine(factory_id=fac.id, code="PRS-A", name="Sheet press A", kind="Press",
+                location="Bay 1", status="running",
+                commissioned_on=date(2019, 3, 14),
+                last_service_at=_today() - timedelta(days=104),
+                service_interval_days=90, runtime_hours=8420),
+        Machine(factory_id=fac.id, code="LTH-B", name="Lathe B", kind="Turning",
+                location="Bay 2", status="idle",
+                commissioned_on=date(2021, 7, 2),
+                last_service_at=_today() - timedelta(days=31),
+                service_interval_days=60, runtime_hours=3110),
+        Machine(factory_id=fac.id, code="WLD-C", name="Arc welder C", kind="Welding",
+                location="Bay 2", status="down",
+                commissioned_on=date(2020, 11, 20),
+                last_service_at=_today() - timedelta(days=58),
+                service_interval_days=60, runtime_hours=5240),
+        Machine(factory_id=fac.id, code="GRD-D", name="Bench grinder D", kind="Grinding",
+                location="Bay 3", status="running",
+                commissioned_on=date(2022, 1, 9),
+                last_service_at=_today() - timedelta(days=12),
+                service_interval_days=90, runtime_hours=1980),
+        Machine(factory_id=fac.id, code="SPR-E", name="Spray booth E", kind="Finishing",
+                location="Bay 4", status="idle",
+                commissioned_on=date(2023, 5, 30),
+                last_service_at=_today() - timedelta(days=84),
+                service_interval_days=90, runtime_hours=1240),
+    ]
+    db.session.add_all(machines)
+    db.session.flush()
+
+    workers = [
+        Worker(factory_id=fac.id, employee_no="KM-01", name="Joseph Kamau",
+               phone="+254712000001", trade="Welder", station="Bay 2", shift="day",
+               daily_rate=1400),
+        Worker(factory_id=fac.id, employee_no="KM-02", name="Mary Achieng",
+               phone="+254712000002", trade="Fabricator", station="Bay 1", shift="day",
+               daily_rate=1300),
+        Worker(factory_id=fac.id, employee_no="KM-03", name="Peter Kariuki",
+               phone="+254712000003", trade="Painter", station="Bay 4", shift="day",
+               daily_rate=1200),
+        Worker(factory_id=fac.id, employee_no="KM-04", name="Faith Nyambura",
+               phone="+254712000004", trade="Assembler", station="Bay 3", shift="day",
+               daily_rate=1150),
+        Worker(factory_id=fac.id, employee_no="KM-05", name="Brian Omondi",
+               phone="+254712000005", trade="Machinist", station="Bay 2", shift="night",
+               daily_rate=1500),
+        Worker(factory_id=fac.id, employee_no="KM-06", name="Esther Wambui",
+               phone="+254712000006", trade="Quality checker", station="Bay 5",
+               shift="day", daily_rate=1350),
+    ]
+    for w in workers:
+        w.set_pin("1234")
+    db.session.add_all(workers)
+    db.session.flush()
+
+    products = [
+        ("CAB-MTL", "Metal cabinet 4 door", "Furniture", 24500, 6,
+         [("MS-1MM", 3), ("SQ-25", 12), ("HNG-100", 8), ("LCK-STD", 4),
+          ("HDL-CH", 4), ("PNT-GRY", 1.2), ("WLD-25", 0.6)]),
+        ("BOX-STD", "Metal storage box", "Household", 3800, 2,
+         [("MS-1MM", 1), ("HNG-100", 2), ("LCK-STD", 1), ("PNT-BLK", 0.4),
+          ("WLD-25", 0.2)]),
+        ("JKO-16", "Charcoal jiko 16 inch", "Household", 2100, 2,
+         [("MS-2MM", 0.6), ("ANG-40", 1.2), ("WLD-25", 0.25)]),
+        ("WBR-HD", "Heavy duty wheelbarrow", "Site equipment", 8900, 4,
+         [("MS-2MM", 1.2), ("SQ-25", 4), ("ANG-40", 2), ("PNT-BLK", 0.8),
+          ("WLD-25", 0.5)]),
+        ("GTE-SW", "Swing gate 3m", "Fabrication", 46000, 7,
+         [("SQ-25", 34), ("ANG-40", 18), ("MS-2MM", 2), ("PNT-BLK", 2.5),
+          ("WLD-25", 1.4), ("GRD-DSC", 3)]),
+    ]
+    product_map = {}
+    for sku, name, cat, price, days, bom in products:
+        p = Product(factory_id=fac.id, sku=sku, name=name, category=cat,
+                    unit_price=price, build_days=days,
+                    stages="\n".join(DEFAULT_STAGES),
+                    description=f"Made to order at {fac.name}.")
+        db.session.add(p)
+        db.session.flush()
+        product_map[sku] = p
+        for mcode, qty in bom:
+            db.session.add(BomItem(product_id=p.id, material_id=material_map[mcode].id,
+                                   qty_per_unit=qty))
+
+    customers = [
+        Customer(factory_id=fac.id, name="Gladys Njoki", company="Njoki Hardware, Thika",
+                 phone="+254722334455", email="gladys@njokihw.example",
+                 address="Thika Town"),
+        Customer(factory_id=fac.id, name="St Anne's Academy", company="St Anne's Academy",
+                 phone="+254733445566", email="procurement@stannes.example",
+                 address="Kasarani"),
+        Customer(factory_id=fac.id, name="Kevin Mwangi", company="Mwangi Contractors",
+                 phone="+254700556677", email="kevin@mwangicon.example",
+                 address="Ruiru"),
+        Customer(factory_id=fac.id, name="Umoja Retail", company="Umoja Retail Ltd",
+                 phone="+254711667788", email="buying@umojaretail.example",
+                 address="Embakasi"),
+    ]
+    db.session.add_all(customers)
+    db.session.flush()
+
+    order_specs = [
+        ("ORD-0001", customers[1], "in_production", "high", 3, [("CAB-MTL", 12)]),
+        ("ORD-0002", customers[0], "scheduled", "normal", 9, [("BOX-STD", 60), ("JKO-16", 40)]),
+        ("ORD-0003", customers[2], "confirmed", "rush", -2, [("GTE-SW", 2)]),
+        ("ORD-0004", customers[3], "new", "normal", 16, [("WBR-HD", 15)]),
+        ("ORD-0005", customers[0], "completed", "normal", -12, [("JKO-16", 80)]),
+        ("ORD-0006", customers[1], "quality_check", "normal", 1, [("BOX-STD", 25)]),
+    ]
+    orders = []
+    for number, cust, status, priority, due_offset, lines in order_specs:
+        o = Order(factory_id=fac.id, number=number, customer_id=cust.id, status=status,
+                  priority=priority, due_date=_today() + timedelta(days=due_offset),
+                  created_at=_now() - timedelta(days=max(1, 20 - due_offset)))
+        db.session.add(o)
+        db.session.flush()
+        for sku, qty in lines:
+            p = product_map[sku]
+            db.session.add(OrderItem(order_id=o.id, product_id=p.id, quantity=qty,
+                                     unit_price=p.unit_price))
+        orders.append(o)
+    db.session.flush()
+
+    run_specs = [
+        (orders[0], "CAB-MTL", 12, 7, "running", -2, 4, workers[0], machines[0]),
+        (orders[1], "BOX-STD", 60, 0, "planned", 1, 3, workers[1], machines[1]),
+        (orders[2], "GTE-SW", 2, 0, "blocked", -6, -1, workers[0], machines[2]),
+        (orders[5], "BOX-STD", 25, 25, "done", -8, -3, workers[3], machines[1]),
+        (orders[3], "WBR-HD", 15, 0, "planned", 4, 8, workers[4], machines[3]),
+    ]
+    for order, sku, qty, produced, status, start_off, end_off, worker, machine in run_specs:
+        p = product_map[sku]
+        run = ProductionRun(
+            factory_id=fac.id, reference=next_ref(ProductionRun, fac.id, "RUN"),
+            order_id=order.id, product_id=p.id, machine_id=machine.id,
+            worker_id=worker.id, quantity=qty, produced=produced, status=status,
+            start_date=_today() + timedelta(days=start_off),
+            end_date=_today() + timedelta(days=end_off))
+        db.session.add(run)
+        db.session.flush()
+        day = run.start_date
+        for i, stage in enumerate(DEFAULT_STAGES, start=1):
+            done = status == "done" or (status == "running" and i <= 3)
+            db.session.add(RunStage(run_id=run.id, sequence=i, name=stage,
+                                    planned_date=day, status="done" if done else "pending",
+                                    completed_at=_now() - timedelta(days=1) if done else None,
+                                    worker_id=worker.id))
+            day += timedelta(days=1)
+
+    db.session.add_all([
+        MaintenanceTicket(factory_id=fac.id, reference="MNT-0001", machine_id=machines[2].id,
+                          worker_id=workers[0].id, fault_type="Not starting",
+                          severity="critical", status="open", source="ussd",
+                          description="Reported from the floor over USSD. No arc, "
+                                      "breaker trips on start.",
+                          created_at=_now() - timedelta(hours=5)),
+        MaintenanceTicket(factory_id=fac.id, reference="MNT-0002", machine_id=machines[0].id,
+                          worker_id=workers[1].id, fault_type="Strange noise",
+                          severity="medium", status="assigned", source="ussd",
+                          description="Knocking sound under load on the press ram.",
+                          created_at=_now() - timedelta(days=2)),
+        MaintenanceTicket(factory_id=fac.id, reference="MNT-0003", machine_id=machines[3].id,
+                          worker_id=workers[2].id, fault_type="Overheating",
+                          severity="low", status="resolved", source="web",
+                          description="Motor housing hot after long runs.",
+                          resolution="Cleaned vents and replaced the fan belt.",
+                          downtime_minutes=90, resolved_at=_now() - timedelta(days=4),
+                          created_at=_now() - timedelta(days=5)),
+    ])
+
+    insp = QcInspection(factory_id=fac.id, reference="QC-0001", order_id=orders[5].id,
+                        product_id=product_map["BOX-STD"].id, sample_size=10,
+                        defects_found=1, status="fail", standard="KEBS KS 2570",
+                        notes="One unit had uneven paint on the lid.")
+    db.session.add(insp)
+    db.session.flush()
+    for label in DEFAULT_QC_CHECKS:
+        db.session.add(QcCheck(inspection_id=insp.id, label=label,
+                               passed=label != "Paint coverage even",
+                               note="" if label != "Paint coverage even" else "Rework lid"))
+
+    db.session.add_all([
+        SafetyIncident(factory_id=fac.id, reference="SAF-0001", worker_id=workers[2].id,
+                       kind="Near miss", severity="medium", location="Bay 4",
+                       description="Sheet slipped off the trestle while being carried.",
+                       action_taken="Trestles re-spaced and a second carrier assigned.",
+                       status="resolved", source="ussd",
+                       resolved_at=_now() - timedelta(days=6),
+                       created_at=_now() - timedelta(days=7)),
+        SafetyIncident(factory_id=fac.id, reference="SAF-0002", worker_id=workers[0].id,
+                       kind="Fire or burn", severity="low", location="Bay 2",
+                       description="Spark caught an overall sleeve. No injury.",
+                       status="open", source="ussd",
+                       created_at=_now() - timedelta(days=1)),
+    ])
+
+    for i, w in enumerate(workers):
+        for d in range(6):
+            day = _today() - timedelta(days=d)
+            if d == 0 and i >= 4:
+                continue
+            base = datetime.combine(day, datetime.min.time())
+            db.session.add(Attendance(
+                factory_id=fac.id, worker_id=w.id, day=day,
+                # Authored as local shift times, stored as UTC.
+                check_in=_from_local(base + timedelta(hours=7, minutes=(i * 7) % 40)),
+                check_out=_from_local(base + timedelta(hours=17, minutes=(i * 5) % 30)) if d else None,
+                source="ussd"))
+
+    po = PurchaseOrder(factory_id=fac.id, number="PO-0001", supplier_id=suppliers[0].id,
+                       status="sent", expected_date=_today() - timedelta(days=2),
+                       notes="Urgent restock for the gate order.")
+    db.session.add(po)
+    db.session.flush()
+    db.session.add_all([
+        POItem(po_id=po.id, material_id=material_map["MS-2MM"].id, quantity=30,
+               unit_cost=2150),
+        POItem(po_id=po.id, material_id=material_map["AL-40"].id, quantity=24,
+               unit_cost=3400),
+    ])
+
     db.session.commit()
-    log.info("super administrator seeded: %s", admin.username)
+
+    for phone, text, outcome in [
+        ("+254712000001", "4*3*1*3", "mach_saved"),
+        ("+254712000002", "3*1*1*4", "stock_saved"),
+        ("+254712000003", "5*2*2", "safety_saved"),
+        ("+254712000004", "6*1", "clock_in"),
+        ("+254712000005", "1", "tasks"),
+    ]:
+        w = Worker.query.filter_by(phone=phone).first()
+        db.session.add(UssdSession(
+            factory_id=fac.id, session_id="seed-" + secrets.token_hex(5),
+            phone_number=phone, service_code=fac.ussd_code, network_code="63902",
+            worker_id=w.id if w else None, last_input=text,
+            hops=len(text.split("*")) + 1, status="completed", outcome=outcome,
+            started_at=_now() - timedelta(hours=secrets.randbelow(40) + 1),
+            ended_at=_now() - timedelta(hours=1)))
+
+    for to, msg, cat in [
+        ("+254711000100", "Mzalendo: Aluminium sheet 1.2mm is out of stock. "
+                          "Current: 0 sheet. Minimum: 8 sheet.", "stock_alert"),
+        ("+254711000100", "Mzalendo: Arc welder C (WLD-C) reported not starting by "
+                          "Joseph Kamau. Severity critical. Ticket MNT-0001.", "maintenance"),
+        ("+254722334455", "Mzalendo: Order ORD-0005 is complete. Thank you for your "
+                          "business.", "order"),
+        ("+254733445566", "Mzalendo: Order ORD-0001 has entered production.", "order"),
+        ("+254712000001", "Mzalendo: You are assigned to run RUN-0001 (Metal cabinet "
+                          "4 door), 12 units, starting today.", "task"),
+    ]:
+        db.session.add(SmsLog(factory_id=fac.id, direction="out", to_number=to,
+                              from_number="MZALENDO", message=msg, category=cat,
+                              status="simulated", status_code=101,
+                              created_at=_now() - timedelta(hours=secrets.randbelow(30) + 1)))
+    db.session.commit()
+
+    pulse = compute_pulse(fac.id)
+    for f in pulse["findings"][:6]:
+        raise_alert(fac.id, f["area"], f["severity"], f["title"], f["body"],
+                    f["action"], dedupe_hours=0)
+    for i in range(12):
+        drift = (i % 5) - 2
+        db.session.add(PulseSnapshot(
+            factory_id=fac.id, taken_at=_now() - timedelta(hours=(12 - i) * 6),
+            production=max(0, min(100, pulse["scores"]["production"] + drift * 3)),
+            inventory=max(0, min(100, pulse["scores"]["inventory"] + drift * 4)),
+            orders=max(0, min(100, pulse["scores"]["orders"] + drift * 2)),
+            maintenance=max(0, min(100, pulse["scores"]["maintenance"] + drift * 5)),
+            suppliers=max(0, min(100, pulse["scores"]["suppliers"] + drift)),
+            overall=max(0, min(100, pulse["overall"] + drift * 3))))
+    db.session.commit()
+    log.info("demo plant seeded: %s", fac.name)
+
+
+DEMO_SLUG = "kamukunji-metalworks"
+
+
+def remove_demo_plant():
+    """Delete the demonstration plant and everything in it.
+
+    SEED_DEMO_DATA=0 does not merely decline to create the demo — it takes it
+    away, so flipping the flag is enough to hand a populated instance over as a
+    clean one without touching the database by hand.
+
+    Only the plant carrying DEMO_SLUG is touched. Real plants, and the super
+    administrator, are left alone; if the administrator happened to be viewing
+    the demo, they are simply detached from it.
+    """
+    fac = Factory.query.filter_by(slug=DEMO_SLUG).first()
+    if not fac:
+        return False
+
+    # Anyone still pointing at this plant has to be moved off it first, or the
+    # foreign key blocks the delete. The demo's own owner, manager and
+    # supervisor go with the plant; anyone protected is merely detached.
+    #
+    # Protection is by configured identity as well as by role. Checking the
+    # role alone means an administrator who has been demoted, or whose role was
+    # mangled, is destroyed here and silently recreated with the temporary
+    # password — losing whatever password they had actually set.
+    protected_email = (Config.SEED_ADMIN_EMAIL or "").strip().lower()
+    protected_user = (Config.SEED_ADMIN_USERNAME or "").strip().lower()
+    for user in User.query.filter_by(factory_id=fac.id).all():
+        if (user.role == "super_admin"
+                or (user.email or "").lower() == protected_email
+                or (user.username or "").lower() == protected_user):
+            user.factory_id = None
+        else:
+            db.session.delete(user)
+    db.session.flush()
+
+    # Line items do not carry factory_id — they hang off a product, order, run,
+    # purchase order or inspection. Deleting only the factory-scoped tables
+    # leaves them orphaned, so they go first, addressed through their parent.
+    for child, parent_fk, parent in (
+            (BomItem, BomItem.product_id, Product),
+            (OrderItem, OrderItem.order_id, Order),
+            (RunStage, RunStage.run_id, ProductionRun),
+            (POItem, POItem.po_id, PurchaseOrder),
+            (QcCheck, QcCheck.inspection_id, QcInspection)):
+        parent_ids = [row.id for row in parent.query.filter_by(factory_id=fac.id).all()]
+        if parent_ids:
+            child.query.filter(parent_fk.in_(parent_ids)).delete(synchronize_session=False)
+    db.session.flush()
+
+    # Then the factory-scoped tables, children before parents.
+    for model in reversed(MIGRATION_ORDER):
+        if model is Factory or model is User:
+            continue
+        if hasattr(model, "factory_id"):
+            model.query.filter_by(factory_id=fac.id).delete(synchronize_session=False)
+
+    db.session.delete(fac)
+    db.session.commit()
+    log.info("demonstration plant removed (SEED_DEMO_DATA is off)")
+    return True
+
+
+def seed_super_admin():
+    """Guarantee a super administrator matching the configured variables.
+
+    Runs on every boot, not just the first. An installation must never be
+    lockable-out of itself: if the account was disabled, locked by failed
+    sign-ins, or demoted, this puts it back. The password is left alone once
+    set, so rotating it in the interface is not undone on the next deploy.
+    """
+    username = (Config.SEED_ADMIN_USERNAME or "admin").strip().lower()
+    email = (Config.SEED_ADMIN_EMAIL or "admin@example.com").strip().lower()
+
+    admin = (User.query.filter_by(email=email).first()
+             or User.query.filter_by(username=username).first()
+             or User.query.filter_by(role="super_admin").first())
+
+    if admin is None:
+        fac = Factory.query.filter_by(slug=DEMO_SLUG).first() or \
+            Factory.query.order_by(Factory.id).first()
+        admin = User(
+            factory_id=fac.id if fac else None,
+            username=username, email=email,
+            full_name=Config.SEED_ADMIN_NAME,
+            role="super_admin", is_active_flag=True,
+            must_change_password=True)       # forced rotation at first sign in
+        admin.set_password(Config.SEED_ADMIN_PASSWORD)
+        db.session.add(admin)
+        db.session.commit()
+        log.info("super administrator created: %s <%s>", admin.username, admin.email)
+        return admin
+
+    changed = []
+    if admin.username != username:
+        admin.username, _ = username, changed.append("username")
+    if admin.email != email:
+        admin.email, _ = email, changed.append("email")
+    if admin.role != "super_admin":
+        admin.role, _ = "super_admin", changed.append("role")
+    if not admin.is_active_flag:
+        admin.is_active_flag, _ = True, changed.append("reactivated")
+    if getattr(admin, "locked_until", None):
+        admin.locked_until, _ = None, changed.append("unlocked")
+    if getattr(admin, "failed_logins", 0):
+        admin.failed_logins = 0
+    if admin.factory_id and not Factory.query.get(admin.factory_id):
+        admin.factory_id, _ = None, changed.append("detached from a deleted plant")
+
+    if changed:
+        db.session.commit()
+        log.info("super administrator reconciled (%s): %s", ", ".join(changed), admin.username)
     return admin
 
 
-def bootstrap():
-    """Create the schema and the one bootstrap account. No sample data."""
+def bootstrap(force_demo=None):
+    """Create the schema, the bootstrap account, and optionally a demo plant."""
     db.create_all()
+    demo = Config.SEED_DEMO_DATA if force_demo is None else force_demo
+    if demo:
+        seed_demo_plant()
+    else:
+        remove_demo_plant()
+    # Always last, so it can pick up a plant that was just created and detach
+    # itself from one that was just removed.
     seed_super_admin()
 
     # A quiet nudge rather than a hard failure: FORCE_HTTPS is off by default so
