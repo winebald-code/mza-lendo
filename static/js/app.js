@@ -444,18 +444,11 @@
         text: textValue,
       });
       paint('Connecting…', 'con');
-      fetch(root.getAttribute('data-sim-endpoint') || '/ussd/callback', {
+      fetch('/ussd/callback', {
         method: 'POST', body: body, credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': root.getAttribute('data-sim-csrf') || '',
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
-        .then((r) => {
-          if (r.status === 403) throw new Error('rejected');
-          if (r.status === 429) throw new Error('too fast');
-          return r.text();
-        })
+        .then((r) => r.text())
         .then((raw) => {
           const ended = raw.startsWith('END');
           const shown = raw.replace(/^(CON|END)\s*/, '');
@@ -464,18 +457,7 @@
           input.value = '';
           input.focus();
         })
-        .catch((err) => {
-          // Say which failure it was. "Network error" for everything sends
-          // people hunting a connection problem that is not there.
-          var why = err && err.message === 'rejected'
-            ? 'Session rejected. Reload the page and dial again.'
-            : err && err.message === 'too fast'
-            ? 'Too many sessions too quickly. Wait a moment.'
-            : 'Could not reach the dashboard. Check your connection.';
-          paint(why, 'end');
-          sessionId = null; history = [];
-          setLive(false);
-        })
+        .catch(() => paint('Network error. The callback did not answer.', 'end'))
         .finally(() => { busy = false; });
     }
 

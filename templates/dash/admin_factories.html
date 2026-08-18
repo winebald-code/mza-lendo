@@ -56,13 +56,7 @@
   </div>
   {{ pager(page, 'admin_factories', 'q=' ~ term) }}
   {% else %}
-    {% if term %}
-      {{ empty_state('building', 'No plants match', 'Nothing here matches “' ~ term ~ '”. Clear the search to see every plant.') }}
-    {% else %}
-      {{ empty_state('building', 'No plants yet',
-          'A plant is one workshop or factory, and every record in Mzalendo belongs to one. Create the first to get started.',
-          url_for('admin_factory_form'), 'Create the first plant') }}
-    {% endif %}
+    {{ empty_state('building', 'No plants match', 'Try a different search term.') }}
   {% endif %}
 </section>
 {% endblock %}

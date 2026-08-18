@@ -56,7 +56,6 @@
 
   <nav class="flex-1 overflow-y-auto rail-scroll px-2.5 pb-4">
     {% set ep = request.endpoint %}
-    {% if factory %}
     <p class="rail-group">Command</p>
     <a href="{{ url_for('dash_overview') }}" class="rail-link {% if ep=='dash_overview' %}is-active{% endif %}">{{ icon('gauge') }} Overview</a>
     <a href="{{ url_for('dash_pulse') }}" class="rail-link {% if ep=='dash_pulse' %}is-active{% endif %}">{{ icon('pulse') }} Manufacturing Pulse</a>
@@ -93,7 +92,6 @@
     <a href="{{ url_for('dash_ussd_sessions') }}" class="rail-link {% if ep=='dash_ussd_sessions' %}is-active{% endif %}">{{ icon('signal') }} USSD sessions</a>
     <a href="{{ url_for('dash_ussd_simulator') }}" class="rail-link {% if ep=='dash_ussd_simulator' %}is-active{% endif %}">{{ icon('phone') }} Handset simulator</a>
     <a href="{{ url_for('dash_reports') }}" class="rail-link {% if ep=='dash_reports' %}is-active{% endif %}">{{ icon('chart') }} Reports</a>
-    {% endif %}
 
     {% if current_user.role in ('super_admin','owner') %}
     <p class="rail-group">Administration</p>
