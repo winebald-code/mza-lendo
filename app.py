@@ -31,6 +31,7 @@ import os
 import re
 import secrets
 import string
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -52,6 +53,7 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from sqlalchemy import func, or_, and_, desc, case
+from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -5768,11 +5770,16 @@ def cli_create_admin():
         print("Super administrator created.")
 
 
+def _safe_uri(uri: str) -> str:
+    """Database URI with the password masked, for printing."""
+    return re.sub(r"://([^:]+):[^@]+@", r"://\1:***@", uri or "")
+
+
 @app.cli.command("db-check")
 def cli_db_check():
     """Backend, reachability and row counts for the configured database."""
     uri = app.config["SQLALCHEMY_DATABASE_URI"]
-    shown = re.sub(r"://([^:]+):[^@]+@", r"://\1:***@", uri)
+    shown = _safe_uri(uri)
     print(f"  uri      {shown}")
     print(f"  backend  {uri.split(':', 1)[0]}")
     with app.app_context():
@@ -5807,7 +5814,7 @@ def cli_db_copy(reset):
         return
     src_uri = "sqlite:///" + os.path.join(DATA_DIR, "mzalendo.db")
     print(f"  from   {src_uri}")
-    print(f"  to     {re.sub(r'://([^:]+):[^@]+@', r'://\1:***@', dest_uri)}")
+    print(f"  to     {_safe_uri(dest_uri)}")
 
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
@@ -5957,7 +5964,25 @@ def _bootstrap_once():
                 fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-_bootstrap_once()
+# Commands whose whole purpose is to inspect or move a database must not try
+# to connect to it first. Without this, `flask db-check` against an unreachable
+# server dies during import with a SQLAlchemy traceback instead of reporting
+# the very thing it exists to report.
+_DB_ONLY_COMMANDS = {"db-check", "db-copy"}
+
+if not (_DB_ONLY_COMMANDS & set(sys.argv)):
+    try:
+        _bootstrap_once()
+    except OperationalError as exc:
+        # A readable four-line failure beats two hundred frames, especially in
+        # a container log where this is all the operator will see.
+        log.error("cannot open the database")
+        log.error("  uri        %s", _safe_uri(app.config["SQLALCHEMY_DATABASE_URI"]))
+        log.error("  data dir   %s (exists: %s)", DATA_DIR, os.path.isdir(DATA_DIR))
+        log.error("  override   DATABASE_URL is %s",
+                  "set" if os.environ.get("DATABASE_URL") else "not set")
+        log.error("  detail     %s", str(exc.orig or exc)[:200])
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
