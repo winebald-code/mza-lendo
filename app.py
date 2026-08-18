@@ -1811,7 +1811,13 @@ def inject_globals():
         "ALLOW_PUBLIC_SIGNUP": app.config["ALLOW_PUBLIC_SIGNUP"],
         # Public calls to action point at sign-in when self-service signup is
         # switched off, so a visitor never lands on a door that will not open.
+        # One source of truth for the public call to action. When self-service
+        # signup is switched off there is no second destination to offer, so
+        # the header shows a single button rather than "Sign in" twice.
         "cta_url": url_for("signup") if app.config["ALLOW_PUBLIC_SIGNUP"] else url_for("login"),
+        "cta_label": "Start free" if app.config["ALLOW_PUBLIC_SIGNUP"] else "Sign in",
+        "cta_label_long": ("Set up your plant" if app.config["ALLOW_PUBLIC_SIGNUP"]
+                           else "Sign in to your plant"),
         "asset": asset_url,
         "today": _today(),
         "ussd_code": (fac.ussd_code if fac and fac.ussd_code else app.config["AT_USSD_CODE"]),

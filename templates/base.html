@@ -44,9 +44,11 @@
             {{ icon('gauge', 'ico ico-sm') }} Dashboard
           </a>
         {% else %}
+          {% if ALLOW_PUBLIC_SIGNUP %}
           <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Sign in</a>
+          {% endif %}
           <a href="{{ cta_url }}" class="btn btn-primary btn-sm">
-            {{ 'Start free' if ALLOW_PUBLIC_SIGNUP else 'Sign in' }} {{ icon('arrow-right', 'ico ico-sm') }}
+            {{ cta_label }} {{ icon('arrow-right', 'ico ico-sm') }}
           </a>
         {% endif %}
         <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
@@ -63,7 +65,10 @@
       <li><a href="{{ url_for('pricing') }}" class="block py-2.5 text-slate-600 font-medium">Pricing</a></li>
       <li><a href="{{ url_for('security_page') }}" class="block py-2.5 text-slate-600 font-medium">Security</a></li>
       {% if not current_user.is_authenticated %}
-      <li class="pt-2"><a href="{{ url_for('login') }}" class="btn btn-secondary btn-block btn-sm">Sign in</a></li>
+      <li class="pt-2"><a href="{{ cta_url }}" class="btn btn-primary btn-block btn-sm">{{ cta_label }}</a></li>
+      {% if ALLOW_PUBLIC_SIGNUP %}
+      <li><a href="{{ url_for('login') }}" class="btn btn-secondary btn-block btn-sm">Sign in</a></li>
+      {% endif %}
       {% endif %}
     </ul>
   </div>
@@ -112,7 +117,9 @@
         <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
           <li><a href="{{ url_for('security_page') }}" class="text-slate-400 hover:text-signal-400">Security</a></li>
           <li><a href="{{ url_for('login') }}" class="text-slate-400 hover:text-signal-400">Sign in</a></li>
-          <li><a href="{{ cta_url }}" class="text-slate-400 hover:text-signal-400">Create a plant</a></li>
+          {% if ALLOW_PUBLIC_SIGNUP %}
+          <li><a href="{{ cta_url }}" class="text-slate-400 hover:text-signal-400">{{ cta_label_long }}</a></li>
+          {% endif %}
         </ul>
       </div>
     </div>

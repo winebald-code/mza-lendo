@@ -28,10 +28,10 @@
 
         <div class="flex flex-wrap items-center gap-3 mt-9">
           <a href="{{ cta_url }}" class="btn btn-primary">
-            {{ icon('arrow-right','ico ico-sm') }} Set up your plant
+            {{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}
           </a>
-          <a href="{{ url_for('login') }}" class="btn btn-secondary">
-            {{ icon('lock','ico ico-sm') }} Sign in to the demo
+          <a href="{{ url_for('platform') }}" class="btn btn-secondary">
+            {{ icon('gauge','ico ico-sm') }} See how it works
           </a>
         </div>
 
@@ -294,7 +294,7 @@ Habari Peter
         up. Add your workers' numbers and the floor can start reporting the same afternoon.
       </p>
       <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
-        <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} Set up your plant</a>
+        <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}</a>
         <a href="{{ url_for('pricing') }}" class="btn btn-secondary">See pricing</a>
       </div>
     </div>

@@ -35,7 +35,7 @@
         <p class="text-[13px] text-slate-500 mt-3 mb-6 leading-relaxed">
           For a single workshop finding its feet. Everything works; the limits are on scale, not on features.
         </p>
-        <a href="{{ cta_url }}" class="btn btn-secondary btn-block">Start here</a>
+        <a href="{{ cta_url }}" class="btn btn-secondary btn-block">Choose Starter</a>
         <ul class="list-none m-0 p-0 grid gap-2.5 mt-6 pt-6 border-t border-divider">
           {% for what in ['One plant','Up to 10 workers','Up to 3 dashboard users',
                           'Full USSD and SMS','Manufacturing Pulse','All modules included',
@@ -58,7 +58,7 @@
         <p class="text-[13px] text-slate-500 mt-3 mb-6 leading-relaxed">
           For a plant running several lines with its own supervisors, procurement and quality checks.
         </p>
-        <a href="{{ cta_url }}" class="btn btn-primary btn-block">Set up your plant</a>
+        <a href="{{ cta_url }}" class="btn btn-primary btn-block">Choose Business</a>
         <ul class="list-none m-0 p-0 grid gap-2.5 mt-6 pt-6 border-t border-divider">
           {% for what in ['Everything in Starter','Unlimited workers','Up to 15 dashboard users',
                           'Your own USSD shortcode','Your own Africa\'s Talking credentials',
@@ -114,7 +114,7 @@
       {% for q, a in [
         ('Do workers need a smartphone?','No, and that is the whole point. The floor menu runs over USSD, which works on any handset that can make a call. No app, no data bundle.'),
         ('What does a USSD session cost?','You pay Africa\'s Talking directly. A session is a fraction of a shilling, and typically the plant covers it rather than the worker.'),
-        ('Can I try it before paying?','Sign up and use it. The demo plant is fully populated so you can see what a working plant looks like before entering your own data.'),
+        ('Can I try it before paying?','Set up a plant and use it. Add a couple of materials and one worker number, and the Pulse starts reading real records within the hour.'),
         ('Is my data mixed with other plants?','No. Every query is scoped to your plant at the database layer, and Enterprise can run an entirely separate instance.'),
         ('What if the internet goes down?','The USSD side keeps working, because it rides the mobile network rather than broadband. The dashboard needs a connection; the floor does not.'),
         ('Can I get my data out?','Every table exports to CSV from the Reports screen, at any time, without asking us.')] %}
@@ -131,8 +131,8 @@
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 text-center">
     <h2 class="font-display text-[26px] sm:text-[32px] font-bold tracking-[-0.03em] m-0">Ten minutes to a working plant</h2>
     <div class="flex flex-wrap items-center justify-center gap-3 mt-7">
-      <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} Set up your plant</a>
-      <a href="{{ url_for('login') }}" class="btn btn-secondary">Sign in to the demo</a>
+      <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}</a>
+      <a href="{{ url_for('platform') }}" class="btn btn-secondary">See how it works</a>
     </div>
   </div>
 </section>
