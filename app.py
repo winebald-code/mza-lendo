@@ -93,10 +93,28 @@ def _env_str(key: str, default: str = "") -> str:
 
 
 def _env_bool(key: str, default: bool = False) -> bool:
-    raw = os.environ.get(key)
-    if raw is None:
+    raw = _env_str(key)
+    if not raw:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_float(key: str, default: float) -> float:
+    """Numeric environment value that tolerates quoting and rubbish.
+
+    A quoted "3" reaching float() raises ValueError during import, which kills
+    every worker before it can log anything useful — the container just dies.
+    A bad value falls back to the default and says so rather than taking the
+    whole application down.
+    """
+    raw = _env_str(key)
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        log.warning("%s=%r is not a number; using %s", key, raw, default)
+        return default
 
 
 def _database_uri() -> str:
@@ -228,6 +246,12 @@ def _webhook_guard():
     When no token is configured the callbacks stay open — fine on a laptop,
     not on a public URL, which is why startup warns about it.
     """
+    # The in-dashboard handset simulator reaches the same view through an
+    # authenticated, CSRF-protected route. It carries a session rather than the
+    # shared token, and loosening the public callback to accept a session would
+    # hand any signed-in user's browser a forgeable path into it.
+    if getattr(g, "ussd_from_dashboard", False):
+        return None
     expected = app.config["AT_WEBHOOK_TOKEN"]
     if not expected:
         return None
@@ -392,7 +416,7 @@ def _now() -> datetime:
 # Kenya observes EAT (UTC+3) year round and has never used daylight saving, so
 # a fixed offset is exact here and avoids depending on the tzdata package being
 # present — which it often is not on Windows or in a slim container.
-TZ_OFFSET_HOURS = float(os.environ.get("TZ_OFFSET_HOURS", "3"))
+TZ_OFFSET_HOURS = _env_float("TZ_OFFSET_HOURS", 3.0)
 TZ_LABEL = _env_str("TZ_LABEL", "EAT")
 LOCAL_OFFSET = timedelta(hours=TZ_OFFSET_HOURS)
 
@@ -1268,6 +1292,32 @@ def get_scoped_or_404(model, obj_id):
     if not obj or obj.factory_id != current_factory_id():
         abort(404)
     return obj
+
+
+@app.before_request
+def _require_plant():
+    """Every /dashboard screen belongs to a plant. Insist on one existing.
+
+    A super administrator starts attached to nothing, and a plant can be
+    deleted out from under anyone. Six screens dereferenced the current plant
+    directly and raised AttributeError; the rest rendered convincingly empty
+    pages, which is arguably worse because it looks like real data. One guard
+    at the front is better than thirty scattered null checks.
+    """
+    if not current_user.is_authenticated:
+        return None
+    if not request.path.startswith("/dashboard"):
+        return None
+    if request.endpoint in ("switch_factory", "logout"):
+        return None
+    if current_factory() is not None:
+        return None
+    if current_user.is_super:
+        flash("Create a plant first — every dashboard screen belongs to one.", "info")
+        return redirect(url_for("admin_factories"))
+    flash("Your account is not attached to a plant. Ask your administrator to "
+          "assign you to one.", "warn")
+    return redirect(url_for("profile"))
 
 
 @app.before_request
@@ -4971,6 +5021,20 @@ def ussd_callback():
                              sess, "stock_check")
 
     return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
+
+
+@app.route("/dashboard/ussd/simulate", methods=["POST"])
+@login_required
+def ussd_simulate():
+    """Run a USSD hop from the dashboard simulator.
+
+    Deliberately the same engine as the public callback — a simulator that ran
+    different code would prove nothing. It differs only in how it
+    authenticates: a signed-in session and a CSRF token, rather than the shared
+    webhook secret, which has no business being handed to a browser.
+    """
+    g.ussd_from_dashboard = True
+    return ussd_callback()
 
 
 @app.route("/webhooks/ussd/event", methods=["GET", "POST"])

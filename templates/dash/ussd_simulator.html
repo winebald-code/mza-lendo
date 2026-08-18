@@ -8,7 +8,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start" data-ussd-sim>
+<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start" data-ussd-sim
+     data-sim-endpoint="{{ url_for('ussd_simulate') }}" data-sim-csrf="{{ csrf_token() }}">
 
   {# ══════════ The handset ══════════ #}
   <div class="mx-auto xl:mx-0">
