@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Pricing — {{ APP_NAME }}{% endblock %}
+{% block description %}Simple per-plant pricing for Mzalendo. Starter, Business and Enterprise, priced for Kenyan small manufacturers rather than for enterprise procurement.{% endblock %}
+
+{% block content %}
+{% from "partials/icons.html" import icon %}
+
+<section class="border-b border-divider relative overflow-hidden">
+  <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
+  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-16">
+    <div class="max-w-[58ch]">
+      <p class="kicker mb-5">Pricing</p>
+      <h1 class="font-display text-[36px] sm:text-[46px] font-bold leading-[1.06] tracking-[-0.035em] m-0">
+        Priced for a workshop, not for a procurement department.
+      </h1>
+      <p class="lede mt-6">
+        One price per plant, every module included. We do not charge per worker, because charging
+        per worker would make you think twice about registering the ones who most need to report.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-divider">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-14 lg:py-16">
+    <div class="grid lg:grid-cols-3 gap-5 items-start">
+
+      {# Starter #}
+      <div class="card card-pad">
+        <p class="kicker mb-3">Starter</p>
+        <div class="flex items-baseline gap-1.5">
+          <span class="font-display text-[42px] font-bold tracking-[-0.035em]">$5</span>
+          <span class="text-[13px] text-slate-400">/ month</span>
+        </div>
+        <p class="text-[13px] text-slate-500 mt-3 mb-6 leading-relaxed">
+          For a single workshop finding its feet. Everything works; the limits are on scale, not on features.
+        </p>
+        <a href="{{ url_for('signup') }}" class="btn btn-secondary btn-block">Start here</a>
+        <ul class="list-none m-0 p-0 grid gap-2.5 mt-6 pt-6 border-t border-divider">
+          {% for what in ['One plant','Up to 10 workers','Up to 3 dashboard users',
+                          'Full USSD and SMS','Manufacturing Pulse','All modules included',
+                          'CSV export','Email support'] %}
+          <li class="flex items-start gap-2.5 text-[13px] text-slate-600">
+            <span class="text-ok shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {# Business #}
+      <div class="card card-pad border-ink shadow-s2 relative lg:-mt-4">
+        <span class="absolute -top-3 left-6 tag tag-ink">Most workshops</span>
+        <p class="kicker mb-3">Business</p>
+        <div class="flex items-baseline gap-1.5">
+          <span class="font-display text-[42px] font-bold tracking-[-0.035em]">$15</span>
+          <span class="text-[13px] text-slate-400">/ month</span>
+        </div>
+        <p class="text-[13px] text-slate-500 mt-3 mb-6 leading-relaxed">
+          For a plant running several lines with its own supervisors, procurement and quality checks.
+        </p>
+        <a href="{{ url_for('signup') }}" class="btn btn-primary btn-block">Set up your plant</a>
+        <ul class="list-none m-0 p-0 grid gap-2.5 mt-6 pt-6 border-t border-divider">
+          {% for what in ['Everything in Starter','Unlimited workers','Up to 15 dashboard users',
+                          'Your own USSD shortcode','Your own Africa\'s Talking credentials',
+                          'Supplier reliability scoring','Full audit trail','Priority support'] %}
+          <li class="flex items-start gap-2.5 text-[13px] text-slate-600">
+            <span class="text-ok shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {# Enterprise #}
+      <div class="card card-pad">
+        <p class="kicker mb-3">Enterprise</p>
+        <div class="flex items-baseline gap-1.5">
+          <span class="font-display text-[42px] font-bold tracking-[-0.035em]">Let's talk</span>
+        </div>
+        <p class="text-[13px] text-slate-500 mt-3 mb-6 leading-relaxed">
+          For groups running several plants, or anyone who needs the instance inside their own
+          infrastructure.
+        </p>
+        <a href="mailto:hello@mzalendo.africa" class="btn btn-secondary btn-block">Get in touch</a>
+        <ul class="list-none m-0 p-0 grid gap-2.5 mt-6 pt-6 border-t border-divider">
+          {% for what in ['Everything in Business','Unlimited plants and users',
+                          'Isolated instance, your own database','Self-hosted or private cloud',
+                          'Custom USSD menu branches','Data migration from your spreadsheets',
+                          'Named support contact','Uptime commitment'] %}
+          <li class="flex items-start gap-2.5 text-[13px] text-slate-600">
+            <span class="text-ok shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <p class="text-[12.5px] text-slate-400 text-center mt-10 max-w-[70ch] mx-auto leading-relaxed">
+      Prices exclude the telco cost of SMS and USSD sessions, which you pay Africa's Talking
+      directly at their published rates. We do not mark that up.
+    </p>
+  </div>
+</section>
+
+<section class="border-b border-divider bg-surface">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16">
+    <div class="max-w-[54ch] mb-10">
+      <p class="kicker mb-4">Questions</p>
+      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+        The things people ask first.
+      </h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5">
+      {% for q, a in [
+        ('Do workers need a smartphone?','No, and that is the whole point. The floor menu runs over USSD, which works on any handset that can make a call. No app, no data bundle.'),
+        ('What does a USSD session cost?','You pay Africa\'s Talking directly. A session is a fraction of a shilling, and typically the plant covers it rather than the worker.'),
+        ('Can I try it before paying?','Sign up and use it. The demo plant is fully populated so you can see what a working plant looks like before entering your own data.'),
+        ('Is my data mixed with other plants?','No. Every query is scoped to your plant at the database layer, and Enterprise can run an entirely separate instance.'),
+        ('What if the internet goes down?','The USSD side keeps working, because it rides the mobile network rather than broadband. The dashboard needs a connection; the floor does not.'),
+        ('Can I get my data out?','Every table exports to CSV from the Reports screen, at any time, without asking us.')] %}
+      <div class="card card-pad" data-reveal-on-scroll>
+        <h3 class="text-[15px] font-semibold m-0 mb-2">{{ q }}</h3>
+        <p class="text-[13px] text-slate-500 leading-relaxed m-0">{{ a }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 text-center">
+    <h2 class="font-display text-[26px] sm:text-[32px] font-bold tracking-[-0.03em] m-0">Ten minutes to a working plant</h2>
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-7">
+      <a href="{{ url_for('signup') }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} Set up your plant</a>
+      <a href="{{ url_for('login') }}" class="btn btn-secondary">Sign in to the demo</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

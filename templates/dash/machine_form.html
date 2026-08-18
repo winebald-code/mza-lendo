@@ -1,0 +1,58 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New machine' %}
+{% set kicker = 'Machines' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Identity</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Machine name', item.name if item else '', 'text', errors, 'What the floor calls it', True, 'Welding bay C') }}
+        {{ field('code', 'Code', item.code if item else '', 'text', errors, 'Leave blank to generate one', False, 'WLD-C') }}
+        {{ field('kind', 'Type', item.kind if item else '', 'text', errors, None, False, 'MIG welder') }}
+        {{ field('location', 'Location', item.location if item else '', 'text', errors, None, False, 'Bay 3') }}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Service</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('commissioned_on', 'Commissioned', (item.commissioned_on.isoformat() if item and item.commissioned_on else ''), 'date', errors, 'When it came into the plant') }}
+        {{ field('last_service_at', 'Last serviced', (item.last_service_at.isoformat() if item and item.last_service_at else ''), 'date', errors, 'The next due date is worked out from here') }}
+        {{ field('service_interval_days', 'Service every (days)', item.service_interval_days if item else '90', 'number', errors,
+                 'An alert fires when the machine comes due', False, '90', 'min="1" max="3650"') }}
+        {{ field('runtime_hours', 'Runtime hours', item.runtime_hours if item else '0', 'number', errors, None, False, '0', 'step="0.1" min="0"') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-notes">Notes</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Known quirks, spare part numbers, who services it…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      {{ select('status', 'Current status', pairs(MACHINE_STATUSES), item.status if item else 'idle', errors,
+                'Setting a machine down raises an alert and texts the managers') }}
+      {% if item and item.next_service %}
+      <dl class="mt-4 pt-4 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Next service</dt>
+          <dd class="font-mono text-[11.5px] m-0 {% if item.service_state == 'overdue' %}text-bad font-semibold{% elif item.service_state == 'due' %}text-warn font-semibold{% endif %}">{{ item.next_service|d('%d %b %Y') }}</dd>
+        </div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Add machine' }}</button>
+      <a href="{{ url_for('dash_machines') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('machine_delete', machine_id=item.id), 'Delete machine', item.name, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

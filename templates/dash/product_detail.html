@@ -1,0 +1,140 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.name %}
+{% set kicker = 'Product ' ~ item.sku %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_products') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Products</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('product_form', product_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+    <a href="{{ url_for('run_form') }}?product_id={{ item.id }}" class="btn btn-primary btn-sm">{{ icon('cog','ico ico-sm') }} Start a run</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+    <section class="card">
+      <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5"><p class="label m-0">Sell price</p><p class="stat-v mt-1 m-0">{{ item.unit_price|money }}</p></div>
+        <div class="p-5"><p class="label m-0">Material cost</p><p class="stat-v mt-1 m-0">{{ item.material_cost|money }}</p></div>
+        <div class="p-5">
+          <p class="label m-0">Margin</p>
+          <p class="stat-v mt-1 m-0 {% if item.margin_pct is not none and item.margin_pct < 15 %}text-bad{% elif item.margin_pct is not none and item.margin_pct < 30 %}text-warn{% elif item.margin_pct is not none %}text-ok{% endif %}">
+            {{ (item.margin_pct ~ '%') if item.margin_pct is not none else '—' }}
+          </p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Buildable now</p>
+          <p class="stat-v mt-1 m-0 {% if buildable is not none and buildable == 0 %}text-bad{% endif %}">{{ buildable if buildable is not none else '—' }}</p>
+          <p class="font-mono text-[10.5px] text-slate-400 mt-1 m-0">from stock on hand</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Bill of materials</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Per unit, with what the shelf can currently cover</p>
+        </div>
+      </div>
+      {% if item.bom %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Material</th><th class="r">Per unit</th><th class="r">On hand</th><th class="r">Covers</th><th class="r">Cost per unit</th></tr></thead>
+          <tbody>
+            {% for b in item.bom %}
+            {% set covers = ((b.material.quantity or 0) // b.qty_per_unit)|int if b.material and b.qty_per_unit else None %}
+            <tr>
+              <td><a href="{{ url_for('material_detail', material_id=b.material_id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ b.material.name if b.material else '—' }}</a></td>
+              <td class="r num text-[12.5px]">{{ b.qty_per_unit|qty }} {{ b.material.unit if b.material else '' }}</td>
+              <td class="r num text-[12.5px] text-slate-500">{{ b.material.quantity|qty if b.material else '—' }}</td>
+              <td class="r num text-[12.5px] {% if covers is not none and covers == 0 %}text-bad font-semibold{% elif covers is not none and buildable is not none and covers == buildable %}text-warn font-semibold{% endif %}">
+                {{ covers if covers is not none else '—' }}
+              </td>
+              <td class="r num text-[12.5px]">{{ ((b.qty_per_unit or 0) * (b.material.unit_cost or 0))|money if b.material else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-ink">
+              <td colspan="4" class="r label !text-ink py-3">Material cost per unit</td>
+              <td class="r num text-[14px] font-semibold py-3">{{ item.material_cost|money }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% if buildable is not none %}
+      <div class="px-5 py-3.5 border-t border-divider bg-fog/40">
+        <p class="text-[12.5px] text-slate-500 m-0">
+          The binding constraint is whichever material shows the lowest figure in the “covers”
+          column — that is what caps this product at <strong class="text-ink">{{ buildable }}</strong> unit{{ '' if buildable == 1 else 's' }}.
+        </p>
+      </div>
+      {% endif %}
+      {% else %}
+        {{ empty_state('layers', 'No bill of materials', 'Without a BOM the plant cannot check shortages or consume stock when a run reports production.',
+            url_for('product_form', product_id=item.id) if current_user.can_write else None, 'Add materials') }}
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Recent runs</h2></div>
+      {% if runs %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Run</th><th class="r">Qty</th><th>Progress</th><th>Dates</th><th>Worker</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for r in runs %}
+            <tr>
+              <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
+              <td class="r num text-[12.5px]">{{ r.produced|qty }}/{{ r.quantity|qty }}</td>
+              <td class="w-[120px]">{{ progress(r.progress, 'bad' if r.is_at_risk else ('ok' if r.progress == 100 else 'signal')) }}</td>
+              <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ r.start_date|d('%d %b') }} → {{ r.end_date|d('%d %b') }}</td>
+              <td class="text-[12.5px] text-slate-500">{{ r.worker.name if r.worker else '—' }}</td>
+              <td>{{ status_tag(r.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('cog', 'Never produced', 'No production run has been raised for this product yet.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">SKU</dt><dd class="font-mono text-[12px] m-0">{{ item.sku }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Category</dt><dd class="text-[12.5px] m-0">{{ item.category or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Build time</dt><dd class="num text-[12.5px] m-0">{{ item.build_days }} days</dd></div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Status</dt>
+          <dd class="m-0">{% if item.is_active %}<span class="tag tag-ok">active</span>{% else %}<span class="tag tag-neutral">inactive</span>{% endif %}</dd>
+        </div>
+      </dl>
+      {% if item.description %}
+      <div class="mt-5 pt-5 border-t border-divider">
+        <p class="label mb-2">Description</p>
+        <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.description }}</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Stages</h2>
+      <ol class="list-none m-0 p-0 grid gap-2">
+        {% for s in item.stage_list %}
+        <li class="flex items-center gap-2.5">
+          <span class="w-[22px] h-[22px] rounded-full bg-fog border border-divider font-mono text-[10px] text-slate-500 grid place-items-center shrink-0">{{ loop.index }}</span>
+          <span class="text-[12.5px] text-ink">{{ s }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </aside>
+</div>
+{% endblock %}

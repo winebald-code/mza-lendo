@@ -1,0 +1,62 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'All plants' %}
+{% set kicker = 'Platform administration' %}
+{% set page_sub = 'Every plant on this installation. Each one is fully isolated — records never cross between them.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('admin_system') }}" class="btn btn-secondary btn-sm">{{ icon('server','ico ico-sm') }} System</a>
+  <a href="{{ url_for('admin_factory_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New plant</a>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('admin_factories') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search plant name or slug…') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+    {% if term %}<a href="{{ url_for('admin_factories') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} plant{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Plant</th><th>Sector</th><th>County</th><th>Plan</th><th>USSD</th><th class="r">Users</th><th class="r">Workers</th><th class="r">Orders</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for f in page.items %}
+        <tr>
+          <td>
+            <span class="text-[13px] font-medium text-ink block">{{ f.name }}</span>
+            <span class="font-mono text-[10px] text-slate-400">{{ f.slug }}</span>
+          </td>
+          <td class="text-[12.5px] text-slate-500 max-w-[150px] truncate">{{ f.sector or '—' }}</td>
+          <td class="text-[12.5px] text-slate-500">{{ f.county or '—' }}</td>
+          <td><span class="tag tag-signal">{{ f.plan }}</span></td>
+          <td class="font-mono text-[11px] text-slate-500">{{ f.ussd_code or '—' }}</td>
+          <td class="r num text-[12.5px]">{{ stats[f.id].users }}</td>
+          <td class="r num text-[12.5px]">{{ stats[f.id].workers }}</td>
+          <td class="r num text-[12.5px]">{{ stats[f.id].orders }}</td>
+          <td>{% if f.is_active %}<span class="tag tag-ok">active</span>{% else %}<span class="tag tag-neutral">suspended</span>{% endif %}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('switch_factory', factory_id=f.id) }}" class="btn btn-ghost btn-icon" title="Open this plant" aria-label="Open this plant">{{ icon('external','ico ico-sm') }}</a>
+              <a href="{{ url_for('admin_factory_form', factory_id=f.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              <form method="post" action="{{ url_for('admin_factory_toggle', factory_id=f.id) }}"
+                    data-confirm="{{ 'Suspend' if f.is_active else 'Reactivate' }} {{ f.name }}?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-ghost btn-icon" title="{{ 'Suspend' if f.is_active else 'Reactivate' }}" aria-label="{{ 'Suspend' if f.is_active else 'Reactivate' }}">
+                  {{ icon('eye-off' if f.is_active else 'eye','ico ico-sm') }}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'admin_factories', 'q=' ~ term) }}
+  {% else %}
+    {{ empty_state('building', 'No plants match', 'Try a different search term.') }}
+  {% endif %}
+</section>
+{% endblock %}

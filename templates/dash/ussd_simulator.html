@@ -1,0 +1,153 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Handset simulator' %}
+{% set kicker = 'Reach' %}
+{% set page_sub = 'A real session against the real callback. Whatever you do here is written to the plant exactly as if it came from the floor.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_ussd_sessions') }}" class="btn btn-secondary btn-sm">{{ icon('signal','ico ico-sm') }} Session log</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start" data-ussd-sim>
+
+  {# ══════════ The handset ══════════ #}
+  <div class="mx-auto xl:mx-0">
+    <div class="w-[330px] rounded-[26px] bg-slate-900 p-4 shadow-s3 border border-slate-700">
+
+      {# earpiece #}
+      <div class="flex items-center justify-center gap-2 pb-3">
+        <span class="w-[38px] h-[4px] rounded-full bg-slate-700"></span>
+      </div>
+
+      {# screen #}
+      <div class="rounded-[12px] bg-[#0a1a0f] border-2 border-slate-950 p-3.5 min-h-[218px] flex flex-col">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-signal-500/20">
+          <span class="font-mono text-[9px] text-signal-500/70 tracking-widest">SAFARICOM</span>
+          <span class="font-mono text-[9px] text-signal-500/70" data-sim-code>{{ ussd_code }}</span>
+        </div>
+        <pre class="term flex-1 whitespace-pre-wrap break-words m-0" data-sim-screen>Ready.
+Enter a worker number and press Dial.</pre>
+      </div>
+
+      {# input row #}
+      <div class="mt-3 flex gap-2">
+        <input type="text" class="input h-[38px] min-h-0 py-0 bg-slate-800 border-slate-600 text-white font-mono text-[13px] rounded-[10px]"
+               data-sim-input placeholder="Reply…" aria-label="Menu reply" autocomplete="off">
+        <button type="button" class="btn btn-primary !h-[38px] shrink-0" data-sim-send>Send</button>
+      </div>
+
+      {# keypad #}
+      <div class="grid grid-cols-3 gap-1.5 mt-3">
+        {% for k in ['1','2','3','4','5','6','7','8','9','*','0','#'] %}
+        <button type="button" data-sim-key="{{ k }}"
+                class="h-[36px] rounded-[9px] bg-slate-800 border border-slate-700 text-white font-mono text-[14px]
+                       hover:bg-slate-700 active:bg-signal-500 active:text-ink transition-colors">{{ k }}</button>
+        {% endfor %}
+      </div>
+
+      {# call controls #}
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button type="button" class="btn btn-primary !h-[38px]" data-sim-dial>{{ icon('phone','ico ico-sm') }} Dial</button>
+        <button type="button" class="btn btn-danger !h-[38px] !text-bad !border-bad/40" data-sim-end>End</button>
+      </div>
+    </div>
+
+    <p class="text-center font-mono text-[10px] text-slate-400 mt-3 m-0" data-sim-hint>
+      Enter a registered worker number and press Dial.
+    </p>
+  </div>
+
+  {# ══════════ Controls and explanation ══════════ #}
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Who is calling</h2>
+      <div class="field">
+        <label for="sim-phone">Phone number</label>
+        <input id="sim-phone" class="input font-mono" data-sim-phone
+               value="{{ workers[0].phone if workers else '+254700000001' }}"
+               placeholder="+254712345678">
+        <p class="hint m-0">The menu recognises the worker by this number. An unregistered number gets a limited menu.</p>
+      </div>
+
+      {% if workers %}
+      <p class="label mt-4 mb-2.5">Registered workers — click to load</p>
+      <div class="flex flex-wrap gap-1.5">
+        {% for w in workers %}
+        <button type="button" data-copy="{{ w.phone }}"
+                class="px-2.5 h-[30px] rounded-control border border-divider bg-surface text-[12px] text-slate-600
+                       hover:border-ink hover:text-ink transition-colors"
+                data-sim-worker="{{ w.phone }}">{{ w.name }}</button>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-warn mt-4">
+        <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
+        <p class="m-0">No workers are registered yet, so the menu will not recognise any number.
+          <a href="{{ url_for('worker_form') }}" class="link-u">Add one first</a>.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">The menu</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">What a worker sees after dialling {{ ussd_code }}</p>
+        </div>
+      </div>
+      <ol class="list-none m-0 p-0">
+        {% for num, title, what in [
+          ('1','My tasks','Runs assigned to them, with progress and due date'),
+          ('2','Report production','Pick a run, enter units completed — updates the run and the schedule'),
+          ('3','Report stock','Issued, received, counted or wasted — writes straight to the ledger'),
+          ('4','Machine fault','Machine, fault type, severity. Critical stops the machine and texts managers'),
+          ('5','Safety incident','Type and severity — recorded against the worker'),
+          ('6','Clock in or out','Attendance without a card reader'),
+          ('7','Stock check','What is below its minimum right now')] %}
+        <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-start gap-3.5">
+          <span class="w-[26px] h-[26px] rounded-[8px] bg-signal-50 text-signal-700 font-mono text-[12px] font-bold grid place-items-center shrink-0">{{ num }}</span>
+          <div class="min-w-0">
+            <p class="text-[13px] font-semibold text-ink m-0">{{ title }}</p>
+            <p class="text-[12px] text-slate-500 mt-0.5 m-0 leading-snug">{{ what }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Why USSD and not an app</h2>
+      <div class="grid sm:grid-cols-3 gap-5">
+        <div>
+          <p class="num text-[22px] font-semibold text-signal-600 m-0">0 MB</p>
+          <p class="text-[12px] text-slate-500 mt-1 m-0 leading-snug">No data needed. The session runs on the signalling channel.</p>
+        </div>
+        <div>
+          <p class="num text-[22px] font-semibold text-signal-600 m-0">Any</p>
+          <p class="text-[12px] text-slate-500 mt-1 m-0 leading-snug">Works on the cheapest handset on the floor. No install, no updates.</p>
+        </div>
+        <div>
+          <p class="num text-[22px] font-semibold text-signal-600 m-0">&lt;30s</p>
+          <p class="text-[12px] text-slate-500 mt-1 m-0 leading-snug">Short enough that people actually do it, which is the whole point.</p>
+        </div>
+      </div>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed mt-5 pt-5 border-t border-divider m-0">
+        This simulator posts to <span class="font-mono text-[11.5px] text-ink">/ussd/callback</span> — the same
+        endpoint Africa's Talking calls in production. There is no separate demo path, so anything you record
+        here shows up in the ledger, the schedule and the Pulse exactly as a real session would.
+      </p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-sim-worker]');
+    if (!btn) return;
+    var field = document.querySelector('[data-sim-phone]');
+    if (field && !field.disabled) field.value = btn.getAttribute('data-sim-worker');
+  });
+</script>
+{% endblock %}

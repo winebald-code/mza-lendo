@@ -1,0 +1,42 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Audit trail' %}
+{% set kicker = 'Administration' %}
+{% set page_sub = 'Who did what, and when. Written for every change that matters and never editable from the interface.' %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_audit') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search actor, entity, detail…') }}
+    <select name="action" class="select h-[38px] min-h-0 py-0 text-[13px] w-auto min-w-[160px]" aria-label="Action">
+      <option value="">All actions</option>
+      {% for a in actions %}<option value="{{ a }}" {% if a == action %}selected{% endif %}>{{ a|replace('_',' ') }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if term or action %}<a href="{{ url_for('dash_audit') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} entr{{ 'y' if page.total == 1 else 'ies' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>Detail</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for a in page.items %}
+        <tr>
+          <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ a.created_at|dt('%d %b %Y · %H:%M:%S') }}</td>
+          <td class="text-[12.5px] font-medium">{{ a.actor or 'system' }}</td>
+          <td><span class="font-mono text-[11px] text-signal-700 bg-signal-50 px-1.5 py-0.5 rounded">{{ a.action }}</span></td>
+          <td class="text-[12.5px] text-slate-500">{{ a.entity or '—' }}{% if a.entity_id %} <span class="font-mono text-[10.5px] text-slate-400">#{{ a.entity_id }}</span>{% endif %}</td>
+          <td class="text-[12.5px] text-slate-500 max-w-[280px] truncate">{{ a.detail or '—' }}</td>
+          <td class="font-mono text-[10.5px] text-slate-400">{{ a.ip or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_audit', 'q=' ~ term ~ '&action=' ~ action) }}
+  {% else %}
+    {{ empty_state('list', 'No entries match', 'Try clearing the filters.') }}
+  {% endif %}
+</section>
+{% endblock %}

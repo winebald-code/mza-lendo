@@ -1,0 +1,67 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Quality' %}
+{% set kicker = 'Make' %}
+{% set page_sub = 'Inspections against a checklist. A failed inspection raises an alert and texts the managers, because a bad batch caught late is the expensive kind.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='quality') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+    <a href="{{ url_for('qc_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New inspection</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+  {{ kpi('Pass rate', rate ~ '%', 'Across all completed inspections', 'badge-check', 'ok' if rate >= 90 else ('warn' if rate >= 75 else 'bad')) }}
+  {{ kpi('Passed', passed, 'Batches signed off', 'check', 'ink') }}
+  {{ kpi('Failed', failed, 'Batches rejected', 'x', 'bad' if failed else 'ink') }}
+  {{ kpi('Total', page.total, 'Inspections on record', 'clipboard') }}
+</section>
+
+<section class="card">
+  <form method="get" action="{{ url_for('dash_quality') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ filter_select('status', [('pending','Pending'),('pass','Passed'),('fail','Failed')], status, 'Any result') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if status %}<a href="{{ url_for('dash_quality') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Reference</th><th>Product</th><th>Against</th><th>When</th><th class="r">Sample</th><th class="r">Defects</th><th>Standard</th><th>Result</th><th></th></tr></thead>
+      <tbody>
+        {% for q in page.items %}
+        <tr>
+          <td><a href="{{ url_for('qc_detail', inspection_id=q.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ q.reference }}</a></td>
+          <td class="text-[12.5px] max-w-[160px] truncate">{{ q.product.name if q.product else '—' }}</td>
+          <td>
+            {% if q.order %}<a href="{{ url_for('order_detail', order_id=q.order_id) }}" class="font-mono text-[11px] text-slate-500 hover:text-signal-600">{{ q.order.number }}</a>
+            {% elif q.run %}<a href="{{ url_for('run_detail', run_id=q.run_id) }}" class="font-mono text-[11px] text-slate-500 hover:text-signal-600">{{ q.run.reference }}</a>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ q.created_at|dt('%d %b · %H:%M') }}</td>
+          <td class="r num text-[12.5px]">{{ q.sample_size }}</td>
+          <td class="r num text-[12.5px] {% if q.defects_found %}text-bad font-semibold{% endif %}">{{ q.defects_found }}</td>
+          <td class="text-[12.5px] text-slate-500">{{ q.standard }}</td>
+          <td>{{ status_tag(q.status) }}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('qc_detail', inspection_id=q.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+                <a href="{{ url_for('qc_form', inspection_id=q.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_quality', 'status=' ~ status) }}
+  {% else %}
+    {{ empty_state('badge-check', 'No inspections match' if status else 'No inspections yet',
+        'Try another result filter.' if status else 'Run a checklist against a batch before it ships. Failures raise an alert automatically.',
+        url_for('qc_form') if current_user.role in ('super_admin','owner','manager','supervisor') and not status else None, 'New inspection') }}
+  {% endif %}
+</section>
+{% endblock %}

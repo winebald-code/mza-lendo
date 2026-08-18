@@ -1,0 +1,89 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Orders' %}
+{% set kicker = 'Sell' %}
+{% set page_sub = 'The order book. Moving an order to a new status texts the customer, and planning one explodes it into dated production runs.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='orders') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('order_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New order</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="scroll-x flex gap-2 mb-5 pb-1">
+  <a href="{{ url_for('dash_orders') }}"
+     class="shrink-0 px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border text-[12.5px] font-medium transition-colors
+            {% if not status %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
+    All <span class="font-mono text-[10.5px] opacity-70">{{ counts.values()|sum }}</span>
+  </a>
+  {% for s in ORDER_STATUSES %}
+  <a href="{{ url_for('dash_orders') }}?status={{ s }}"
+     class="shrink-0 px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border text-[12.5px] font-medium transition-colors
+            {% if status == s %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
+    {{ ORDER_STATUS_LABELS.get(s, s|replace('_',' ')) }}
+    <span class="font-mono text-[10.5px] opacity-70">{{ counts.get(s, 0) }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<section class="card">
+  <form method="get" action="{{ url_for('dash_orders') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search order number or customer…') }}
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+    {% if term %}<a href="{{ url_for('dash_orders') }}{% if status %}?status={{ status }}{% endif %}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} order{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th class="r">Value</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for o in page.items %}
+        <tr>
+          <td>
+            <a href="{{ url_for('order_detail', order_id=o.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ o.number }}</a>
+            <span class="block font-mono text-[10px] text-slate-400 mt-0.5">{{ o.created_at|dt('%d %b') }} · {{ o.source }}</span>
+          </td>
+          <td class="max-w-[190px]">
+            {% if o.customer %}
+              <a href="{{ url_for('customer_detail', customer_id=o.customer.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 block truncate">{{ o.customer.name }}</a>
+              {% if o.customer.company %}<span class="block text-[11px] text-slate-400 truncate">{{ o.customer.company }}</span>{% endif %}
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="text-[12.5px] text-slate-500">{{ o.items|length }} line{{ '' if o.items|length == 1 else 's' }}</td>
+          <td class="r num text-[12.5px] font-medium">{{ o.total|money }}</td>
+          <td class="num text-[12px] whitespace-nowrap">
+            {% if o.is_late %}<span class="text-bad font-semibold">{{ (o.days_left * -1) }}d late</span>
+            {% elif o.days_left is not none %}
+              <span class="{% if o.days_left <= 2 %}text-warn font-semibold{% else %}text-slate-500{% endif %}">{{ o.due_date|d('%d %b') }}</span>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td>
+            {% set ptone = {'rush':'bad','high':'warn','normal':'neutral','low':'neutral'} %}
+            <span class="tag tag-{{ ptone.get(o.priority,'neutral') }}">{{ o.priority }}</span>
+          </td>
+          <td>{{ status_tag(o.status) }}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('order_detail', order_id=o.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.can_write %}
+                <a href="{{ url_for('order_form', order_id=o.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_orders', 'q=' ~ term ~ '&status=' ~ status) }}
+  {% else %}
+    {{ empty_state('clipboard', 'No orders match' if (term or status) else 'The order book is empty',
+        'Try clearing the filters.' if (term or status) else 'Record a customer order and the plant can plan production, check material shortages and text the customer as it moves.',
+        url_for('order_form') if current_user.can_write and not (term or status) else None, 'New order') }}
+  {% endif %}
+</section>
+{% endblock %}

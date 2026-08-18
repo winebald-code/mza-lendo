@@ -1,0 +1,120 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New product' %}
+{% set kicker = 'Products' %}
+{% set page_sub = 'The bill of materials is what makes shortage checks and automatic stock consumption work. It is worth filling in properly.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1140px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Product</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Product name', item.name if item else '', 'text', errors, None, True, 'Steel window frame 1.2m') }}
+        {{ field('sku', 'SKU', item.sku if item else '', 'text', errors, 'Leave blank to generate one', False, 'PRD-0001') }}
+        {{ field('category', 'Category', item.category if item else '', 'text', errors, None, False, 'Windows') }}
+        {{ field('build_days', 'Build days', item.build_days if item else '3', 'number', errors,
+                 'How long one batch normally takes — drives the schedule', False, '3', 'min="1" max="365"') }}
+        {{ field('unit_price', 'Sell price', item.unit_price if item else '0', 'number', errors,
+                 'What the customer pays per unit', False, '0.00', 'step="0.01" min="0"') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" class="textarea" rows="2" placeholder="Finish, dimensions, standard specification…">{{ item.description if item else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Bill of materials</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">What one unit consumes</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-row-add="#bom-lines">{{ icon('plus','ico ico-sm') }} Add material</button>
+      </div>
+      <div class="p-5">
+        <div id="bom-lines" class="grid gap-3">
+          <div data-row data-row-template hidden class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_140px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Material</label>
+              <select name="bom_material[]" class="select" disabled>
+                <option value="">Choose…</option>
+                {% for m in materials %}<option value="{{ m.id }}">{{ m.name }} ({{ m.unit }})</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Qty per unit</label>
+              <input type="number" name="bom_qty[]" class="input" step="0.001" min="0" data-default="1" disabled>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+
+          {% set bom = item.bom if item and item.bom else [None] %}
+          {% for b in bom %}
+          <div data-row class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_140px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Material</label>
+              <select name="bom_material[]" class="select">
+                <option value="">Choose…</option>
+                {% for m in materials %}
+                  <option value="{{ m.id }}" {% if b and b.material_id == m.id %}selected{% endif %}>{{ m.name }} ({{ m.unit }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Qty per unit</label>
+              <input type="number" name="bom_qty[]" class="input" step="0.001" min="0" value="{{ b.qty_per_unit if b else '' }}">
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% if not materials %}
+          <p class="hint mt-3 mb-0">No materials exist yet. <a href="{{ url_for('material_form') }}" class="link-u">Add one first</a>.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-2">Production stages</h2>
+      <p class="text-[12px] text-slate-500 mb-4 leading-snug">
+        One stage per line. Every run of this product gets these stages, in this order, and workers tick them off from their handset.
+      </p>
+      <div class="field">
+        <label for="f-stages" class="sr-only">Stages</label>
+        <textarea id="f-stages" name="stages" class="textarea font-mono text-[12.5px]" rows="7"
+                  placeholder="{{ default_stages|join('\n') }}">{{ item.stages if item else default_stages|join('\n') }}</textarea>
+        <p class="hint m-0">Leave blank to use the plant default: {{ default_stages|join(' → ') }}</p>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <label class="check">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+        <span>Active — available when creating orders and runs</span>
+      </label>
+      {% if item %}
+      <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Material cost</dt><dd class="num text-[13px] m-0">{{ item.material_cost|money }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Margin</dt>
+          <dd class="num text-[13px] font-semibold m-0">{{ (item.margin_pct ~ '%') if item.margin_pct is not none else '—' }}</dd>
+        </div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create product' }}</button>
+      <a href="{{ url_for('dash_products') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('product_delete', product_id=item.id), 'Delete product', item.name, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

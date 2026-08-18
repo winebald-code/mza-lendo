@@ -1,0 +1,195 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.reference %}
+{% set kicker = item.product.name if item.product else 'Production run' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_runs') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Production</a>
+  {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+    <a href="{{ url_for('run_form', run_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if item.is_at_risk %}
+<div class="alert alert-bad mb-6">
+  <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
+  <p class="m-0">
+    This run is behind. It was due to finish {{ item.end_date|d('%d %B') }} and is at {{ item.progress }}%.
+    Either move a worker onto it or push the date so the schedule stays honest.
+  </p>
+</div>
+{% endif %}
+
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+
+    <section class="card">
+      <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5">
+          <p class="label m-0">Completed</p>
+          <p class="stat-v mt-1 m-0">{{ item.produced|qty }}<span class="text-slate-300 text-[0.6em]">/{{ item.quantity|qty }}</span></p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Progress</p>
+          <p class="stat-v mt-1 m-0 {% if item.is_at_risk %}text-bad{% elif item.progress == 100 %}text-ok{% endif %}">{{ item.progress }}%</p>
+          <div class="mt-2">{{ progress(item.progress, 'bad' if item.is_at_risk else ('ok' if item.progress == 100 else 'signal'), 5) }}</div>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Stages done</p>
+          <p class="stat-v mt-1 m-0">{{ item.stages|selectattr('status','equalto','done')|list|length }}<span class="text-slate-300 text-[0.6em]">/{{ item.stages|length }}</span></p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Status</p>
+          <div class="mt-2">{{ status_tag(item.status) }}</div>
+          <p class="font-mono text-[10.5px] text-slate-400 mt-2 m-0">due {{ item.end_date|d('%d %b') }}</p>
+        </div>
+      </div>
+    </section>
+
+    {# Stage checklist #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Stages</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Tick one here, or let the worker tick it from their handset</p>
+        </div>
+      </div>
+      {% if item.stages %}
+      <ol class="list-none m-0 p-0">
+        {% for s in item.stages %}
+        <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-center gap-4">
+          <span class="w-[28px] h-[28px] rounded-full grid place-items-center shrink-0
+            {% if s.status == 'done' %}bg-ok text-white{% elif s.status == 'active' %}bg-signal-500 text-ink{% else %}bg-fog border border-divider text-slate-400{% endif %}">
+            {% if s.status == 'done' %}{{ icon('check','ico ico-sm') }}{% else %}<span class="font-mono text-[10.5px] font-semibold">{{ s.sequence }}</span>{% endif %}
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[13px] font-medium m-0 {% if s.status == 'done' %}text-slate-400 line-through{% else %}text-ink{% endif %}">{{ s.name }}</p>
+            <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0">
+              {% if s.completed_at %}done {{ s.completed_at|dt('%d %b · %H:%M') }}{% if s.worker %} by {{ s.worker.name }}{% endif %}
+              {% elif s.planned_date %}planned {{ s.planned_date|d('%d %b') }}
+              {% else %}not started{% endif %}
+            </p>
+          </div>
+          {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+          <form method="post" action="{{ url_for('run_stage_toggle', run_id=item.id, stage_id=s.id) }}" class="shrink-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn {% if s.status == 'done' %}btn-ghost{% else %}btn-secondary{% endif %} btn-sm">
+              {% if s.status == 'done' %}{{ icon('refresh','ico ico-sm') }} Reopen{% else %}{{ icon('check','ico ico-sm') }} Mark done{% endif %}
+            </button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+        {{ empty_state('list', 'No stages', 'This run was created without a stage list.') }}
+      {% endif %}
+    </section>
+
+    {# Material consumption #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Material consumption</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">What the full run needs against what is on the shelf</p>
+        </div>
+        {% set gaps = consumption|selectattr('gap','greaterthan',0)|list %}
+        {% if gaps %}<span class="tag tag-bad">{{ gaps|length }} short</span>{% elif consumption %}<span class="tag tag-ok">covered</span>{% endif %}
+      </div>
+      {% if consumption %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Material</th><th class="r">Needed</th><th class="r">On hand</th><th class="r">Shortfall</th></tr></thead>
+          <tbody>
+            {% for row in consumption %}
+            <tr>
+              <td><a href="{{ url_for('material_detail', material_id=row.material.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ row.material.name }}</a></td>
+              <td class="r num text-[12.5px]">{{ row.required|qty }} {{ row.material.unit }}</td>
+              <td class="r num text-[12.5px] text-slate-500">{{ row.available|qty }}</td>
+              <td class="r num text-[12.5px] {% if row.gap > 0 %}text-bad font-semibold{% else %}text-slate-400{% endif %}">{{ row.gap|qty if row.gap > 0 else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('layers', 'No bill of materials', 'This product has no BOM, so consumption cannot be worked out.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Report progress</h2>
+      <form method="post" action="{{ url_for('run_progress', run_id=item.id) }}" class="grid gap-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="f-produced">Units completed</label>
+          <input id="f-produced" name="produced" type="number" class="input" step="0.01" min="0"
+                 max="{{ item.quantity }}" value="{{ item.produced }}">
+          <p class="hint m-0">Out of {{ item.quantity|qty }} planned</p>
+        </div>
+        <div class="field">
+          <label for="f-status">Status</label>
+          <select id="f-status" name="status" class="select">
+            {% for s in RUN_STATUSES %}<option value="{{ s }}" {% if s == item.status %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>{% endfor %}
+          </select>
+        </div>
+        <label class="check mt-1">
+          <input type="checkbox" name="consume">
+          <span>Also take the materials out of stock</span>
+        </label>
+        <p class="hint mt-1 mb-0">Only tick this if the stock has not already been issued — it writes to the ledger.</p>
+        <button type="submit" class="btn btn-primary btn-block mt-3">{{ icon('refresh','ico ico-sm') }} Save progress</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Reference</dt><dd class="font-mono text-[12px] m-0">{{ item.reference }}</dd></div>
+        <div class="flex items-start justify-between gap-3">
+          <dt class="label m-0">Product</dt>
+          <dd class="text-[12.5px] m-0 text-right">
+            {% if item.product %}<a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="link-u">{{ item.product.name }}</a>{% else %}—{% endif %}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Order</dt>
+          <dd class="m-0 text-right">
+            {% if item.order %}<a href="{{ url_for('order_detail', order_id=item.order_id) }}" class="font-mono text-[11.5px] link-u">{{ item.order.number }}</a>{% else %}<span class="text-slate-400 text-[12.5px]">—</span>{% endif %}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Machine</dt>
+          <dd class="text-[12.5px] m-0 text-right">
+            {% if item.machine %}<a href="{{ url_for('machine_detail', machine_id=item.machine_id) }}" class="link-u">{{ item.machine.name }}</a>{% else %}—{% endif %}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Worker</dt>
+          <dd class="text-[12.5px] m-0 text-right">
+            {% if item.worker %}<a href="{{ url_for('worker_detail', worker_id=item.worker_id) }}" class="link-u">{{ item.worker.name }}</a>{% else %}Unassigned{% endif %}
+          </dd>
+        </div>
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">Started</dt><dd class="font-mono text-[11.5px] text-slate-500 m-0">{{ item.start_date|d('%d %b %Y') }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Target finish</dt>
+          <dd class="font-mono text-[11.5px] m-0 {% if item.is_at_risk %}text-bad font-semibold{% else %}text-slate-500{% endif %}">{{ item.end_date|d('%d %b %Y') }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

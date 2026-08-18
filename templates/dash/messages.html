@@ -1,0 +1,102 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Messages' %}
+{% set kicker = 'Reach' %}
+{% set page_sub = 'Every SMS in and out of the plant. Without an Africa\'s Talking key configured, messages are logged as simulated rather than sent.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='messages') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+  {{ kpi('Total messages', stats.total, 'In and out', 'message') }}
+  {{ kpi('Sent', stats.out, 'From the plant', 'send') }}
+  {{ kpi('Received', stats.inbound, 'Replies and commands', 'mail') }}
+  {{ kpi('Failed', stats.failed, 'Rejected by the gateway', 'alert', 'bad' if stats.failed else 'ink') }}
+</section>
+
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <section class="card">
+    <form method="get" action="{{ url_for('dash_messages') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+      {{ filter_select('direction', [('out','Outgoing'),('in','Incoming')], direction, 'Both directions') }}
+      <select name="category" class="select h-[38px] min-h-0 py-0 text-[13px] w-auto min-w-[140px]" aria-label="Category">
+        <option value="">All categories</option>
+        {% for c in cats %}<option value="{{ c }}" {% if c == cat %}selected{% endif %}>{{ c|replace('_',' ')|title }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+      {% if cat or direction %}<a href="{{ url_for('dash_messages') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+      <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }}</span>
+    </form>
+
+    {% if page.items %}
+    <ul class="list-none m-0 p-0">
+      {% for m in page.items %}
+      <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-start gap-3.5">
+        <span class="w-[30px] h-[30px] rounded-[10px] grid place-items-center shrink-0 mt-0.5
+          {% if m.direction == 'in' %}bg-signal-50 text-signal-600{% else %}bg-fog border border-divider text-slate-500{% endif %}">
+          {{ icon('mail' if m.direction == 'in' else 'send','ico ico-sm') }}
+        </span>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <span class="font-mono text-[11.5px] font-semibold text-ink">{{ m.to_number if m.direction == 'out' else m.from_number }}</span>
+            <span class="tag tag-neutral">{{ m.category }}</span>
+            {{ status_tag(m.status) }}
+          </div>
+          <p class="text-[12.5px] text-slate-600 m-0 leading-snug break-words">{{ m.message }}</p>
+          <p class="font-mono text-[10px] text-slate-400 mt-1.5 m-0">
+            {{ m.created_at|dt('%d %b %Y · %H:%M') }}
+            {%- if m.cost %} · {{ m.cost }}{% endif %}
+            {%- if m.error %} · <span class="text-bad">{{ m.error }}</span>{% endif %}
+          </p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {{ pager(page, 'dash_messages', 'category=' ~ cat ~ '&direction=' ~ direction) }}
+    {% else %}
+      {{ empty_state('message', 'No messages match' if (cat or direction) else 'No messages yet',
+          'Try clearing the filters.' if (cat or direction) else 'The plant texts customers on order changes, managers on breakdowns and workers on broadcast. Nothing has gone out yet.') }}
+    {% endif %}
+  </section>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Send a message</h2>
+      <form method="post" action="{{ url_for('message_send') }}" class="grid gap-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="f-recipients">Recipients</label>
+          <input id="f-recipients" name="recipients" class="input font-mono text-[12.5px]" required
+                 placeholder="0712345678, 0722000111">
+          <p class="hint m-0">Comma separated. Kenyan numbers are normalised to +254.</p>
+        </div>
+        <div class="field">
+          <label for="f-message">Message</label>
+          <textarea id="f-message" name="message" class="textarea" rows="4" required
+                    placeholder="What you need to tell them"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2">{{ icon('send','ico ico-sm') }} Send</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Two-way commands</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed mb-4">
+        Workers can also text the shortcode directly instead of dialling. These work without a menu:
+      </p>
+      <dl class="grid gap-2.5 m-0">
+        {% for cmd, what in [('HELP','List the commands'),('TASKS','Their assigned runs'),
+                             ('STOCK','Materials below minimum'),('IN','Clock in'),
+                             ('OUT','Clock out'),('DOWN','Report a machine down')] %}
+        <div class="flex items-baseline justify-between gap-3">
+          <dt class="font-mono text-[11.5px] font-semibold text-signal-600 m-0">{{ cmd }}</dt>
+          <dd class="text-[11.5px] text-slate-500 m-0 text-right">{{ what }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

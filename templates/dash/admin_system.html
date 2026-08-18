@@ -1,0 +1,61 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'System' %}
+{% set kicker = 'Platform administration' %}
+{% set page_sub = 'What this installation is running and what is in the database.' %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_340px] items-start">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Record counts</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Across every plant on this installation</p>
+      </div>
+      {% if size is not none %}<span class="font-mono text-[11px] text-slate-400">{{ size }} KB on disk</span>{% endif %}
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 divide-x divide-y divide-divider">
+      {% for label, n in counts %}
+      <div class="p-4">
+        <p class="label m-0">{{ label }}</p>
+        <p class="num text-[19px] font-semibold mt-1 m-0">{{ n }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Configuration</h2>
+      <dl class="grid gap-3 m-0">
+        {% for k, v in env.items() %}
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">{{ k }}</dt>
+          <dd class="font-mono text-[11.5px] m-0
+            {% if v in ('live','open','yes') %}text-ok{% elif v in ('simulation','closed','no') %}text-warn{% else %}text-slate-600{% endif %}">{{ v }}</dd>
+        </div>
+        {% endfor %}
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">Version</dt><dd class="font-mono text-[11.5px] text-slate-600 m-0">{{ APP_VERSION }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Security posture</h2>
+      <ul class="list-none m-0 p-0 grid gap-2.5">
+        {% for what in ['Content Security Policy with a per-request nonce',
+                        'HSTS with preload, two year max-age',
+                        'CSRF tokens on every state-changing form',
+                        'Account lockout after six failed sign-ins',
+                        'Per-plant scoping on every query',
+                        'Full audit trail, not editable from the interface'] %}
+        <li class="flex items-start gap-2.5 text-[12.5px] text-slate-600">
+          <span class="text-ok shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+        </li>
+        {% endfor %}
+      </ul>
+      <a href="{{ url_for('security_page') }}" class="btn btn-secondary btn-sm btn-block mt-4">{{ icon('shield','ico ico-sm') }} Full security notes</a>
+    </section>
+  </aside>
+</div>
+{% endblock %}

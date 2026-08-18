@@ -1,0 +1,58 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.reference) if item else 'Record an incident' %}
+{% set kicker = 'Safety' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">What happened</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('kind', 'Type', pairs(incident_types, False), item.kind if item else 'Near miss', errors,
+                  'Same list the USSD menu offers') }}
+        {{ select('severity', 'Severity', pairs(SEVERITIES), item.severity if item else 'low', errors) }}
+        {{ select('worker_id', 'Worker involved', obj_options(workers), item.worker_id if item else '', errors, None, 'Not specified') }}
+        {{ field('location', 'Where', item.location if item else '', 'text', errors, None, False, 'Welding bay 3') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-description">Description <span class="text-signal-600">*</span></label>
+        <textarea id="f-description" name="description" class="textarea" rows="4" required
+                  placeholder="What happened, what was being done at the time, what the conditions were…">{{ item.description if item else '' }}</textarea>
+        {% if errors.description %}<p class="err m-0">{{ errors.description }}</p>{% endif %}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Follow up</h2>
+      <div class="field">
+        <label for="f-action_taken">Action taken</label>
+        <textarea id="f-action_taken" name="action_taken" class="textarea" rows="4"
+                  placeholder="What was done immediately, and what will stop it happening again…">{{ item.action_taken if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      {{ select('status', 'Case status', [('open','Open'),('investigating','Investigating'),('resolved','Resolved'),('closed','Closed')],
+                item.status if item else 'open', errors) }}
+      {% if item %}
+      <dl class="mt-4 pt-4 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Reference</dt><dd class="font-mono text-[12px] m-0">{{ item.reference }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Reported</dt><dd class="font-mono text-[11.5px] text-slate-500 m-0">{{ item.created_at|dt('%d %b %Y') }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Source</dt><dd class="m-0"><span class="tag tag-neutral">{{ item.source }}</span></dd></div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Record incident' }}</button>
+      <a href="{{ url_for('dash_safety') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('safety_delete', incident_id=item.id), 'Delete record', item.reference, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

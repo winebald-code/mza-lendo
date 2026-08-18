@@ -1,0 +1,75 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New supplier' %}
+{% set kicker = 'Suppliers' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Supplier</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Business name', item.name if item else '', 'text', errors, None, True, 'Eastleigh Steel Merchants') }}
+        {{ field('contact_name', 'Contact person', item.contact_name if item else '', 'text', errors, None, False, 'Ahmed Noor') }}
+        {{ field('phone', 'Phone', item.phone if item else '', 'tel', errors, 'Purchase orders can be texted here', False, '0722 000 111') }}
+        {{ field('email', 'Email', item.email if item else '', 'email', errors) }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-address">Address</label>
+        <textarea id="f-address" name="address" class="textarea" rows="2">{{ item.address if item else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Trading terms</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('lead_time_days', 'Lead time (days)', item.lead_time_days if item else '7', 'number', errors,
+                 'Used to work out when to reorder', False, '7', 'min="0" max="365"') }}
+        {{ field('payment_terms', 'Payment terms', item.payment_terms if item else 'On delivery', 'text', errors, None, False, '30 days') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-materials_supplied">What they supply</label>
+        <input id="f-materials_supplied" name="materials_supplied" class="input"
+               value="{{ item.materials_supplied if item else '' }}" placeholder="Mild steel sheet, angle iron, welding rods">
+        <p class="hint m-0">Free text — helps when picking a supplier for a purchase order</p>
+      </div>
+      <div class="field mt-1">
+        <label for="f-notes">Notes</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Delivery quirks, credit arrangements, who to ask for…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <label class="check">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+        <span>Active — available when raising purchase orders</span>
+      </label>
+      {% if item %}
+      <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Reliability</dt>
+          <dd class="num text-[13px] font-semibold m-0 {% if item.reliability_band == 'ok' %}text-ok{% elif item.reliability_band == 'warn' %}text-warn{% else %}text-bad{% endif %}">{{ item.reliability }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Orders placed</dt><dd class="num text-[13px] m-0">{{ item.orders_placed }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">On time</dt><dd class="num text-[13px] m-0">{{ item.orders_on_time }}</dd>
+        </div>
+      </dl>
+      <p class="hint mt-3 mb-0">These figures are earned from received purchase orders and cannot be edited by hand.</p>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Add supplier' }}</button>
+      <a href="{{ url_for('dash_suppliers') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('supplier_delete', supplier_id=item.id), 'Delete supplier', item.name, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

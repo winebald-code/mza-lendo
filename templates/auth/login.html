@@ -1,0 +1,64 @@
+{% extends "auth/_layout.html" %}
+{% set auth_title = 'Sign in' %}
+
+{% block content %}
+<h1 class="font-display text-[28px] font-bold tracking-[-0.03em] m-0">Sign in</h1>
+<p class="text-[13.5px] text-slate-500 mt-2 mb-8">Welcome back. Pick up where the plant left off.</p>
+
+<form method="post" class="grid gap-1" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if request.args.get('next') %}<input type="hidden" name="next" value="{{ request.args.get('next') }}">{% endif %}
+
+  <div class="field">
+    <label for="f-identity">Email or username</label>
+    <input id="f-identity" name="identity" type="text" class="input" value="{{ identity|default('') }}"
+           autocomplete="username" required autofocus placeholder="you@workshop.co.ke">
+  </div>
+
+  <div class="field">
+    <label for="f-password">Password</label>
+    <div class="relative">
+      <input id="f-password" name="password" type="password" class="input pr-11"
+             autocomplete="current-password" required placeholder="••••••••••••">
+      <button type="button" data-reveal="f-password" aria-label="Show password"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 btn btn-ghost btn-icon !w-[34px] !h-[34px] text-slate-400">
+        {{ icon('eye','ico ico-sm') }}{{ icon('eye-off','ico ico-sm hidden') }}
+      </button>
+    </div>
+  </div>
+
+  <label class="check mt-2">
+    <input type="checkbox" name="remember" value="1">
+    <span>Keep me signed in on this device for 14 days</span>
+  </label>
+
+  <button type="submit" class="btn btn-primary btn-block mt-4">
+    {{ icon('lock','ico ico-sm') }} Sign in
+  </button>
+</form>
+
+<div class="mt-7 pt-6 border-t border-divider">
+  <p class="text-[13px] text-slate-500 m-0">
+    No account yet?
+    <a href="{{ url_for('signup') }}" class="font-medium text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">Set up your plant</a>
+  </p>
+  <p class="text-[12px] text-slate-400 mt-3 m-0 leading-relaxed">
+    Forgot your password? Your plant owner can reset it from Users. Six wrong attempts locks the
+    account for fifteen minutes.
+  </p>
+</div>
+
+<div class="mt-7 p-4 rounded-panel border border-divider bg-surface">
+  <p class="label mb-2.5">Trying the demo plant</p>
+  <dl class="grid gap-1.5 m-0">
+    <div class="flex items-center justify-between gap-3">
+      <dt class="text-[12px] text-slate-500 m-0">Owner</dt>
+      <dd class="font-mono text-[11.5px] text-ink m-0">owino@kamukunji.example</dd>
+    </div>
+    <div class="flex items-center justify-between gap-3">
+      <dt class="text-[12px] text-slate-500 m-0">Password</dt>
+      <dd class="font-mono text-[11.5px] text-ink m-0">Kamukunji@2026!</dd>
+    </div>
+  </dl>
+</div>
+{% endblock %}

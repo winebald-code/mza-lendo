@@ -1,0 +1,20 @@
+{% from "partials/icons.html" import icon %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="fixed top-[80px] right-4 left-4 sm:left-auto sm:right-6 z-50 grid gap-2 max-w-[440px] sm:ml-auto" role="status" aria-live="polite">
+    {% for category, message in messages %}
+      {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
+      {% set tone = map.get(category, 'info') %}
+      <div class="flash card shadow-s2 border-l-[3px] flex items-start gap-3 p-4 animate-riseIn
+        {% if tone=='ok' %}border-l-ok{% elif tone=='bad' %}border-l-bad{% elif tone=='warn' %}border-l-warn{% else %}border-l-signal-500{% endif %}">
+        <span class="mt-[1px] shrink-0
+          {% if tone=='ok' %}text-ok{% elif tone=='bad' %}text-bad{% elif tone=='warn' %}text-warn{% else %}text-signal-600{% endif %}">
+          {% if tone=='ok' %}{{ icon('check') }}{% elif tone=='bad' %}{{ icon('alert') }}{% elif tone=='warn' %}{{ icon('alert') }}{% else %}{{ icon('info') }}{% endif %}
+        </span>
+        <p class="text-[13px] text-ink m-0 flex-1 leading-snug break-words">{{ message }}</p>
+        <button type="button" class="btn btn-ghost btn-xs -mr-1 -mt-1 shrink-0" data-flash-close aria-label="Dismiss">{{ icon('x','ico ico-sm') }}</button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}

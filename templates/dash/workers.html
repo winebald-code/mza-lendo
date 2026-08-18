@@ -1,0 +1,100 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Workers' %}
+{% set kicker = 'Plant' %}
+{% set page_sub = 'Everyone on the floor. The phone number is what identifies them on the USSD menu, so it has to be right.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='workers') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('worker_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New worker</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
+  <section class="card">
+    <form method="get" action="{{ url_for('dash_workers') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+      {{ search_box(term, 'Search name, phone, trade…') }}
+      <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+      {% if term %}<a href="{{ url_for('dash_workers') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+      <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} worker{{ '' if page.total == 1 else 's' }}</span>
+    </form>
+
+    {% if page.items %}
+    <div class="overflow-x-auto">
+      <table class="tbl">
+        <thead><tr><th>Worker</th><th>Trade</th><th>Station</th><th>Shift</th><th>Phone</th><th>Today</th><th></th></tr></thead>
+        <tbody>
+          {% for w in page.items %}
+          <tr>
+            <td>
+              <div class="flex items-center gap-2.5">
+                <span class="w-[30px] h-[30px] rounded-full bg-fog border border-divider text-slate-500 font-mono text-[10.5px] font-semibold grid place-items-center shrink-0">{{ w.name|initials }}</span>
+                <div class="min-w-0">
+                  <a href="{{ url_for('worker_detail', worker_id=w.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600 block truncate">{{ w.name }}</a>
+                  {% if w.employee_no %}<span class="font-mono text-[10px] text-slate-400">{{ w.employee_no }}</span>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="text-[12.5px] text-slate-500">{{ w.trade or '—' }}</td>
+            <td class="text-[12.5px] text-slate-500">{{ w.station or '—' }}</td>
+            <td><span class="tag tag-neutral">{{ w.shift }}</span></td>
+            <td class="font-mono text-[11.5px] text-slate-500">{{ w.phone }}</td>
+            <td>
+              {% if w.id in present %}<span class="tag tag-ok">clocked in</span>
+              {% elif w.is_active %}<span class="tag tag-neutral">absent</span>
+              {% else %}<span class="tag tag-neutral">inactive</span>{% endif %}
+            </td>
+            <td>
+              <div class="flex items-center gap-1 justify-end">
+                <a href="{{ url_for('worker_detail', worker_id=w.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+                {% if current_user.can_write %}
+                  <a href="{{ url_for('worker_form', worker_id=w.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pager(page, 'dash_workers', 'q=' ~ term) }}
+    {% else %}
+      {{ empty_state('helmet', 'No workers match' if term else 'No workers yet',
+          'Try a different search term.' if term else 'Register your team with their phone numbers so they can report from the floor.',
+          url_for('worker_form') if current_user.can_write and not term else None, 'Add worker') }}
+    {% endif %}
+  </section>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Broadcast an SMS</h2>
+      <form method="post" action="{{ url_for('workers_broadcast') }}" class="grid gap-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ select('shift', 'Send to', [('','Everyone on the floor'),('day','Day shift only'),('night','Night shift only')], '', {}, None) }}
+        <div class="field">
+          <label for="f-message">Message</label>
+          <textarea id="f-message" name="message" class="textarea" rows="4" required
+                    placeholder="No power today, report at 10am. — sent as one SMS to each worker"></textarea>
+          <p class="hint m-0">Keep it under 160 characters to stay on one message.</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2">{{ icon('send','ico ico-sm') }} Send broadcast</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">The floor line</h2>
+      <p class="font-mono text-[17px] font-semibold text-signal-600 m-0 tracking-tight">{{ ussd_code }}</p>
+      <p class="text-[12.5px] text-slate-500 mt-2.5 mb-0 leading-relaxed">
+        Workers dial this from any handset — no smartphone, no data. They are recognised by the
+        number registered against them here.
+      </p>
+      <a href="{{ url_for('dash_ussd_simulator') }}" class="btn btn-secondary btn-sm btn-block mt-4">
+        {{ icon('phone','ico ico-sm') }} Try the handset simulator
+      </a>
+    </section>
+  </aside>
+</div>
+{% endblock %}

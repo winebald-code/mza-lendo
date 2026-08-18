@@ -1,0 +1,152 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.name %}
+{% set kicker = item.trade or 'Worker' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_workers') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Workers</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('worker_form', worker_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+    <section class="card">
+      <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5"><p class="label m-0">Days present</p><p class="stat-v mt-1 m-0">{{ days_present }}</p><p class="font-mono text-[10.5px] text-slate-400 mt-1 m-0">last 30 records</p></div>
+        <div class="p-5"><p class="label m-0">Runs worked</p><p class="stat-v mt-1 m-0">{{ runs|length }}</p></div>
+        <div class="p-5"><p class="label m-0">Faults reported</p><p class="stat-v mt-1 m-0">{{ tickets|length }}</p></div>
+        <div class="p-5"><p class="label m-0">Handset sessions</p><p class="stat-v mt-1 m-0">{{ sessions|length }}</p></div>
+      </div>
+    </section>
+
+    {% if runs %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Assigned runs</h2></div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Run</th><th>Product</th><th>Progress</th><th>Dates</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for r in runs %}
+            <tr>
+              <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
+              <td class="text-[12.5px] max-w-[170px] truncate">{{ r.product.name if r.product else '—' }}</td>
+              <td class="w-[120px]">{{ progress(r.progress, 'bad' if r.is_at_risk else ('ok' if r.progress == 100 else 'signal')) }}</td>
+              <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ r.start_date|d('%d %b') }} → {{ r.end_date|d('%d %b') }}</td>
+              <td>{{ status_tag(r.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Attendance</h2></div>
+      {% if attendance %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Day</th><th>In</th><th>Out</th><th class="r">Hours</th><th>Source</th></tr></thead>
+          <tbody>
+            {% for a in attendance %}
+            <tr>
+              <td class="font-mono text-[11.5px] text-slate-600">{{ a.day|d('%a %d %b %Y') }}</td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ a.check_in|dt('%H:%M') if a.check_in else '—' }}</td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ a.check_out|dt('%H:%M') if a.check_out else '—' }}</td>
+              <td class="r num text-[12.5px]">{{ a.hours if a.hours else '—' }}</td>
+              <td><span class="tag tag-neutral">{{ a.source }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('clock', 'No attendance records', 'This worker has not clocked in through the handset or the dashboard yet.') }}
+      {% endif %}
+    </section>
+
+    {% if tickets or incidents %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Reported from the floor</h2></div>
+      <ul class="list-none m-0 p-0">
+        {% for t in tickets %}
+        <li class="px-5 py-3.5 border-b border-divider/70 flex items-start gap-3">
+          <span class="w-[28px] h-[28px] rounded-[9px] bg-warn/10 text-warn grid place-items-center shrink-0">{{ icon('wrench','ico ico-sm') }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[12.5px] font-medium text-ink m-0">{{ t.machine.name if t.machine else 'Machine' }} — {{ t.fault_type }}</p>
+            <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0">{{ t.reference }} · {{ t.created_at|dt('%d %b %Y · %H:%M') }}</p>
+          </div>
+          {{ sev_tag(t.severity) }}
+        </li>
+        {% endfor %}
+        {% for s in incidents %}
+        <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-start gap-3">
+          <span class="w-[28px] h-[28px] rounded-[9px] bg-bad/10 text-bad grid place-items-center shrink-0">{{ icon('shield','ico ico-sm') }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[12.5px] font-medium text-ink m-0">{{ s.kind }}</p>
+            <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0">{{ s.reference }} · {{ s.created_at|dt('%d %b %Y · %H:%M') }}</p>
+          </div>
+          {{ sev_tag(s.severity) }}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Employee no</dt><dd class="font-mono text-[12px] m-0">{{ item.employee_no or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Phone</dt><dd class="font-mono text-[12px] m-0">{{ item.phone }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Trade</dt><dd class="text-[12.5px] m-0">{{ item.trade or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Station</dt><dd class="text-[12.5px] m-0">{{ item.station or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Shift</dt><dd class="m-0"><span class="tag tag-neutral">{{ item.shift }}</span></dd></div>
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">Status</dt>
+          <dd class="m-0">{% if item.is_active %}<span class="tag tag-ok">active</span>{% else %}<span class="tag tag-neutral">inactive</span>{% endif %}</dd>
+        </div>
+      </dl>
+    </section>
+
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Send an SMS</h2>
+      <form method="post" action="{{ url_for('worker_message', worker_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field !mb-0">
+          <label for="f-message" class="sr-only">Message</label>
+          <textarea id="f-message" name="message" class="textarea" rows="3" required placeholder="Report to bay 2 when you finish this run."></textarea>
+          <p class="hint m-0">Goes to {{ item.phone }}</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">{{ icon('send','ico ico-sm') }} Send</button>
+      </form>
+    </section>
+    {% endif %}
+
+    {% if sessions %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Recent sessions</h2></div>
+      <ul class="list-none m-0 p-0">
+        {% for s in sessions %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0">
+          <p class="text-[12.5px] text-ink m-0 truncate">{{ s.outcome or 'session' }}</p>
+          <p class="font-mono text-[10px] text-slate-400 mt-0.5 m-0">{{ s.started_at|dt('%d %b · %H:%M') }} · {{ s.status }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

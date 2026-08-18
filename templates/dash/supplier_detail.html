@@ -1,0 +1,126 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.name %}
+{% set kicker = 'Supplier' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_suppliers') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Suppliers</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('supplier_form', supplier_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+    <a href="{{ url_for('po_form') }}?supplier_id={{ item.id }}" class="btn btn-primary btn-sm">{{ icon('cart','ico ico-sm') }} Raise a PO</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+
+    <section class="card">
+      <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5">
+          <p class="label m-0">Reliability</p>
+          <p class="stat-v mt-1 m-0 {% if item.reliability_band == 'ok' %}text-ok{% elif item.reliability_band == 'warn' %}text-warn{% else %}text-bad{% endif %}">{{ item.reliability }}</p>
+          <div class="mt-2">{{ progress(item.reliability, 'ok' if item.reliability_band == 'ok' else ('warn' if item.reliability_band == 'warn' else 'bad'), 5) }}</div>
+        </div>
+        <div class="p-5"><p class="label m-0">Orders placed</p><p class="stat-v mt-1 m-0">{{ item.orders_placed }}</p></div>
+        <div class="p-5">
+          <p class="label m-0">Arrived on time</p>
+          <p class="stat-v mt-1 m-0">{{ item.orders_on_time }}</p>
+          <p class="font-mono text-[10.5px] text-slate-400 mt-1 m-0">{{ item.orders_complete }} complete</p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Defect reports</p>
+          <p class="stat-v mt-1 m-0 {% if item.defect_reports %}text-bad{% endif %}">{{ item.defect_reports }}</p>
+          <p class="font-mono text-[10.5px] text-slate-400 mt-1 m-0">{{ item.lead_time_days }}d lead time</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Purchase orders</h2></div>
+      {% if pos %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>PO</th><th>Raised</th><th>Expected</th><th class="r">Lines</th><th class="r">Value</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for po in pos %}
+            <tr>
+              <td><a href="{{ url_for('po_detail', po_id=po.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ po.number }}</a></td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ po.created_at|dt('%d %b %Y') }}</td>
+              <td class="font-mono text-[11.5px] {% if po.expected_date and po.expected_date < today and po.status not in ('received','cancelled') %}text-bad font-semibold{% else %}text-slate-500{% endif %}">{{ po.expected_date|d('%d %b %Y') }}</td>
+              <td class="r num text-[12.5px]">{{ po.items|length }}</td>
+              <td class="r num text-[12.5px] font-medium">{{ po.total|money }}</td>
+              <td>{{ status_tag(po.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('cart', 'No purchase orders', 'Nothing has been ordered from this supplier through the plant yet.') }}
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Materials sourced here</h2></div>
+      {% if materials %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Material</th><th class="r">On hand</th><th class="r">Minimum</th><th>Level</th><th class="r">Unit cost</th></tr></thead>
+          <tbody>
+            {% for m in materials %}
+            <tr>
+              <td><a href="{{ url_for('material_detail', material_id=m.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ m.name }}</a></td>
+              <td class="r num text-[12.5px]">{{ m.quantity|qty }} {{ m.unit }}</td>
+              <td class="r num text-[12.5px] text-slate-500">{{ m.min_stock|qty }}</td>
+              <td>{{ status_tag(m.stock_state) }}</td>
+              <td class="r num text-[12.5px]">{{ m.unit_cost|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('box', 'No materials assigned', 'Set this supplier as the preferred source on a material to see it listed here.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Contact</h2>
+      <dl class="grid gap-3 m-0">
+        <div><dt class="label m-0 mb-1">Contact person</dt><dd class="text-[12.5px] m-0">{{ item.contact_name or '—' }}</dd></div>
+        <div><dt class="label m-0 mb-1">Phone</dt><dd class="font-mono text-[12.5px] m-0">{{ item.phone or '—' }}</dd></div>
+        <div><dt class="label m-0 mb-1">Email</dt><dd class="text-[12.5px] m-0 break-all">{{ item.email or '—' }}</dd></div>
+        <div><dt class="label m-0 mb-1">Address</dt><dd class="text-[12.5px] m-0 whitespace-pre-line">{{ item.address or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">Payment terms</dt><dd class="text-[12.5px] m-0">{{ item.payment_terms or '—' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    {% if current_user.can_write and item.phone %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Send an SMS</h2>
+      <form method="post" action="{{ url_for('supplier_message', supplier_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field !mb-0">
+          <label for="f-message" class="sr-only">Message</label>
+          <textarea id="f-message" name="message" class="textarea" rows="3" required
+                    placeholder="Chase a delivery, confirm a price, ask for a quote…"></textarea>
+          <p class="hint m-0">Goes to {{ item.phone }}</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">{{ icon('send','ico ico-sm') }} Send</button>
+      </form>
+    </section>
+    {% endif %}
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

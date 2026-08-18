@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ code }} — {{ title }} | {{ APP_NAME }}</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="bg-fog">
+{% from "partials/icons.html" import icon, sprite %}
+{{ sprite() }}
+<main class="min-h-screen grid place-items-center px-5 py-14">
+  <div class="w-full max-w-[520px] text-center">
+    <a href="{{ url_for('home') }}" class="inline-flex items-center gap-2.5 mb-10">
+      {% include "partials/logo.html" %}
+      <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Mzalendo</span>
+    </a>
+
+    <p class="font-mono text-[68px] sm:text-[86px] font-semibold leading-none tracking-[-0.04em] text-divider m-0">{{ code }}</p>
+    <h1 class="font-display text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] mt-4 m-0">{{ title }}</h1>
+    <p class="text-[14px] text-slate-500 mt-3 mb-9 leading-relaxed max-w-[42ch] mx-auto">{{ body }}</p>
+
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <a href="{{ url_for('dash_overview') if current_user.is_authenticated else url_for('home') }}" class="btn btn-primary">
+        {{ icon('arrow-left','ico ico-sm') }} {{ 'Back to the dashboard' if current_user.is_authenticated else 'Back to the homepage' }}
+      </a>
+      {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Sign in</a>
+      {% endif %}
+    </div>
+  </div>
+</main>
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

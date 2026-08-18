@@ -1,0 +1,58 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New customer' %}
+{% set kicker = 'Customers' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Contact</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Contact name', item.name if item else '', 'text', errors, None, True, 'Grace Achieng') }}
+        {{ field('company', 'Company', item.company if item else '', 'text', errors, 'Leave blank for an individual buyer', False, 'Achieng Hardware') }}
+        {{ field('phone', 'Phone', item.phone if item else '', 'tel', errors, 'Where order updates are sent', False, '0712 345 678') }}
+        {{ field('email', 'Email', item.email if item else '', 'email', errors, None, False, 'grace@example.co.ke') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-address">Address</label>
+        <textarea id="f-address" name="address" class="textarea" rows="2" placeholder="Delivery or collection address">{{ item.address if item else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Notes</h2>
+      <div class="field">
+        <label for="f-notes">Anything worth remembering</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="4" placeholder="Payment history, preferred finishes, site access…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Preferences</h2>
+      <div class="grid gap-3">
+        <label class="check">
+          <input type="checkbox" name="sms_updates" {% if not item or item.sms_updates %}checked{% endif %}>
+          <span>Send SMS when the order status changes</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+          <span>Active — available when creating orders</span>
+        </label>
+      </div>
+      {% if item %}
+      <p class="font-mono text-[10.5px] text-slate-400 mt-5 pt-5 border-t border-divider m-0">Added {{ item.created_at|dt('%d %b %Y') }}</p>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Add customer' }}</button>
+      <a href="{{ url_for('dash_customers') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('customer_delete', customer_id=item.id), 'Delete customer', item.name, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

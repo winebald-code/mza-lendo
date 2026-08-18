@@ -1,0 +1,137 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Attendance' %}
+{% set kicker = 'Plant' %}
+{% set page_sub = 'Who is on the floor. Most of these records arrive from workers clocking in on their own handset.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='attendance') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
+  <div class="grid gap-6">
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">{{ day|d('%A %d %B %Y') }}</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">{{ rows|length }} of {{ total_workers }} clocked in</p>
+        </div>
+        <form method="get" action="{{ url_for('dash_attendance') }}" class="flex items-center gap-2">
+          <input type="date" name="day" value="{{ day.isoformat() }}" class="input h-[36px] min-h-0 py-0 text-[12.5px] w-auto" aria-label="Choose a day">
+          <button type="submit" class="btn btn-secondary btn-sm">Go</button>
+        </form>
+      </div>
+
+      {% if rows %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Worker</th><th>Trade</th><th>Clocked in</th><th>Clocked out</th><th class="r">Hours</th><th>Source</th><th></th></tr></thead>
+          <tbody>
+            {% for a in rows %}
+            <tr>
+              <td>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-[28px] h-[28px] rounded-full bg-fog border border-divider text-slate-500 font-mono text-[10px] font-semibold grid place-items-center shrink-0">{{ a.worker.name|initials if a.worker else '?' }}</span>
+                  <a href="{{ url_for('worker_detail', worker_id=a.worker_id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ a.worker.name if a.worker else '—' }}</a>
+                </div>
+              </td>
+              <td class="text-[12.5px] text-slate-500">{{ a.worker.trade if a.worker else '—' }}</td>
+              <td class="font-mono text-[12px] text-ok">{{ a.check_in|dt('%H:%M') if a.check_in else '—' }}</td>
+              <td class="font-mono text-[12px] {% if a.check_out %}text-slate-500{% else %}text-warn{% endif %}">{{ a.check_out|dt('%H:%M') if a.check_out else 'still in' }}</td>
+              <td class="r num text-[12.5px] font-medium">{{ a.hours if a.hours else '—' }}</td>
+              <td><span class="tag tag-neutral">{{ a.source }}</span></td>
+              <td>
+                <div class="flex items-center gap-1 justify-end">
+                  {% if current_user.role in ('super_admin','owner','manager','supervisor') and not a.check_out %}
+                  <form method="post" action="{{ url_for('attendance_mark') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="worker_id" value="{{ a.worker_id }}">
+                    <input type="hidden" name="day" value="{{ day.isoformat() }}">
+                    <input type="hidden" name="action" value="out">
+                    <button class="btn btn-ghost btn-sm">Clock out</button>
+                  </form>
+                  {% endif %}
+                  {% if current_user.can_write %}
+                  <form method="post" action="{{ url_for('attendance_delete', record_id=a.id) }}" data-confirm="Delete this attendance record?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-ghost btn-icon text-slate-400 hover:text-bad" title="Delete" aria-label="Delete">{{ icon('trash','ico ico-sm') }}</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('clock', 'Nobody clocked in', 'No attendance was recorded on this day — either the plant was closed, or the floor has not started using the clock-in menu yet.') }}
+      {% endif %}
+    </section>
+
+    {% if absent %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Not clocked in</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Active workers with no record for this day</p>
+        </div>
+        <span class="tag tag-warn">{{ absent|length }}</span>
+      </div>
+      <ul class="list-none m-0 p-0 grid sm:grid-cols-2">
+        {% for w in absent %}
+        <li class="px-5 py-3 border-b sm:odd:border-r border-divider/70 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-[28px] h-[28px] rounded-full bg-fog border border-divider text-slate-400 font-mono text-[10px] font-semibold grid place-items-center shrink-0">{{ w.name|initials }}</span>
+            <div class="min-w-0">
+              <a href="{{ url_for('worker_detail', worker_id=w.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 block truncate">{{ w.name }}</a>
+              <span class="font-mono text-[10px] text-slate-400">{{ w.trade or w.shift }}</span>
+            </div>
+          </div>
+          {% if current_user.role in ('super_admin','owner','manager','supervisor') %}
+          <form method="post" action="{{ url_for('attendance_mark') }}" class="shrink-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="worker_id" value="{{ w.id }}">
+            <input type="hidden" name="day" value="{{ day.isoformat() }}">
+            <input type="hidden" name="action" value="in">
+            <button class="btn btn-secondary btn-sm">Clock in</button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">This week</h2>
+      <div class="grid gap-2.5">
+        {% set peak = week|map(attribute='count')|max %}
+        {% for d in week %}
+        <a href="{{ url_for('dash_attendance') }}?day={{ d.day.isoformat() }}"
+           class="grid grid-cols-[46px_1fr_28px] gap-2.5 items-center group">
+          <span class="font-mono text-[10.5px] {% if d.day == day %}text-signal-700 font-semibold{% else %}text-slate-400{% endif %}">{{ d.day|d('%a %d') }}</span>
+          <span class="h-[8px] rounded-full bg-divider overflow-hidden">
+            <span class="block h-full rounded-full {% if d.day == day %}bg-signal-500{% else %}bg-ink group-hover:bg-signal-500{% endif %} transition-colors"
+                  data-css-w="{{ ((d.count / peak) * 100)|round|int if peak else 0 }}%"></span>
+          </span>
+          <span class="num text-[11.5px] text-slate-500 text-right">{{ d.count }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <p class="hint mt-4 mb-0">Out of {{ total_workers }} active workers.</p>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Clocking in from the floor</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed m-0">
+        Workers dial <span class="font-mono text-signal-600 font-semibold">{{ ussd_code }}</span> and
+        choose option 6. The session takes about fifteen seconds and costs them nothing in data.
+      </p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

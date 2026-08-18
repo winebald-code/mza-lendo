@@ -1,0 +1,182 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Settings' %}
+{% set kicker = 'Administration' %}
+{% set page_sub = 'How this plant identifies itself, how it reaches the floor, and the thresholds the Pulse engine watches.' %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
+  <div class="grid gap-6">
+
+    {# ── Plant profile ── #}
+    <form method="post" class="card card-pad" id="profile">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="section" value="profile">
+      <h2 class="card-title mb-5">Plant profile</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        <div class="field">
+          <label for="f-name">Plant name</label>
+          <input id="f-name" name="name" class="input" value="{{ factory.name }}" required>
+        </div>
+        <div class="field">
+          <label for="f-sector">Sector</label>
+          <input id="f-sector" name="sector" class="input" value="{{ factory.sector }}" placeholder="Metal fabrication">
+        </div>
+        <div class="field">
+          <label for="f-county">County</label>
+          <input id="f-county" name="county" class="input" value="{{ factory.county }}" placeholder="Nairobi">
+        </div>
+        <div class="field">
+          <label for="f-currency">Currency</label>
+          <input id="f-currency" name="currency" class="input font-mono" value="{{ factory.currency }}" maxlength="8" placeholder="KES">
+          <p class="hint m-0">Shown against every money figure</p>
+        </div>
+        <div class="field">
+          <label for="f-phone">Plant phone</label>
+          <input id="f-phone" name="phone" type="tel" class="input" value="{{ factory.phone }}">
+        </div>
+        <div class="field">
+          <label for="f-email">Plant email</label>
+          <input id="f-email" name="email" type="email" class="input" value="{{ factory.email }}">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-address">Address</label>
+        <textarea id="f-address" name="address" class="textarea" rows="2">{{ factory.address }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">{{ icon('check','ico ico-sm') }} Save profile</button>
+    </form>
+
+    {# ── Telco ── #}
+    <form method="post" class="card card-pad" id="telco">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="section" value="telco">
+      <h2 class="card-title mb-2">Africa's Talking</h2>
+      <p class="text-[12.5px] text-slate-500 mb-5 leading-relaxed">
+        Without an API key the plant runs in simulation: every message is written to the log marked
+        <span class="tag tag-neutral">simulated</span> and nothing leaves the building. That is fine for a demo —
+        add real credentials when you are ready to reach actual handsets.
+      </p>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        <div class="field">
+          <label for="f-ussd_code">USSD code</label>
+          <input id="f-ussd_code" name="ussd_code" class="input font-mono" value="{{ factory.ussd_code }}" placeholder="*384*7788#">
+          <p class="hint m-0">What workers dial. Issued to you by Africa's Talking.</p>
+        </div>
+        <div class="field">
+          <label for="f-at_username">API username</label>
+          <input id="f-at_username" name="at_username" class="input font-mono" value="{{ factory.at_username }}" placeholder="sandbox">
+        </div>
+        <div class="field">
+          <label for="f-at_api_key">API key</label>
+          <input id="f-at_api_key" name="at_api_key" type="password" class="input font-mono"
+                 value="{{ '••••••••••••••••' if factory.at_api_key else '' }}" placeholder="atsk_…">
+          <p class="hint m-0">Leave the dots untouched to keep the current key</p>
+        </div>
+        <div class="field">
+          <label for="f-at_sender_id">Sender ID</label>
+          <input id="f-at_sender_id" name="at_sender_id" class="input font-mono" value="{{ factory.at_sender_id }}" placeholder="MZALENDO">
+          <p class="hint m-0">Alphanumeric sender, if you have one registered</p>
+        </div>
+      </div>
+      <label class="check mt-2">
+        <input type="checkbox" name="sms_enabled" {% if factory.sms_enabled %}checked{% endif %}>
+        <span>Send SMS from this plant</span>
+      </label>
+
+      <div class="flex flex-wrap gap-2 mt-5">
+        <button type="submit" class="btn btn-primary">{{ icon('check','ico ico-sm') }} Save telco settings</button>
+      </div>
+    </form>
+
+    {# ── Operations thresholds ── #}
+    <form method="post" class="card card-pad" id="operations">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="section" value="operations">
+      <h2 class="card-title mb-2">Operating thresholds</h2>
+      <p class="text-[12.5px] text-slate-500 mb-5 leading-relaxed">
+        These change when the Pulse engine starts complaining. Set them to match how this plant
+        actually runs rather than an ideal.
+      </p>
+      <div class="grid sm:grid-cols-3 gap-x-5 gap-y-1">
+        <div class="field">
+          <label for="f-service_warn_days">Service warning (days)</label>
+          <input id="f-service_warn_days" name="service_warn_days" type="number" class="input"
+                 value="{{ factory.service_warn_days }}" min="0" max="90">
+          <p class="hint m-0">How far ahead a service counts as due</p>
+        </div>
+        <div class="field">
+          <label for="f-working_days_per_week">Working days a week</label>
+          <input id="f-working_days_per_week" name="working_days_per_week" type="number" class="input"
+                 value="{{ factory.working_days_per_week }}" min="1" max="7">
+          <p class="hint m-0">Used when planning run dates</p>
+        </div>
+        <div class="field">
+          <label for="f-low_stock_grace">Low stock grace</label>
+          <input id="f-low_stock_grace" name="low_stock_grace" type="number" class="input"
+                 value="{{ factory.low_stock_grace }}" min="0" max="100">
+          <p class="hint m-0">Units of slack before an alert fires</p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">{{ icon('check','ico ico-sm') }} Save thresholds</button>
+    </form>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Test the gateway</h2>
+      <form method="post" action="{{ url_for('settings_test_sms') }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field !mb-0">
+          <label for="f-test_phone">Send a test SMS to</label>
+          <input id="f-test_phone" name="phone" type="tel" class="input font-mono"
+                 value="{{ current_user.phone or factory.phone }}" placeholder="0712345678" required>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-block">{{ icon('send','ico ico-sm') }} Send test</button>
+      </form>
+      <p class="hint mt-3 mb-0">Limited to six an hour. Check Messages afterwards to see how the gateway responded.</p>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Callback URLs</h2>
+      <p class="text-[12.5px] text-slate-500 mb-4 leading-relaxed">
+        Paste these into your Africa's Talking dashboard so the network can reach this plant.
+      </p>
+      <dl class="grid gap-3 m-0">
+        {% for label, path in [('USSD','/ussd/callback'), ('USSD events','/ussd/events'),
+                               ('Delivery reports','/sms/delivery'), ('Incoming SMS','/sms/incoming'),
+                               ('Opt out','/sms/optout'), ('Subscription','/sms/subscription')] %}
+        <div>
+          <dt class="label m-0 mb-1">{{ label }}</dt>
+          <dd class="m-0 flex items-center gap-1.5">
+            <code class="font-mono text-[10.5px] text-ink bg-fog border border-divider rounded px-2 py-1 flex-1 truncate">{{ request.url_root|trim('/') }}{{ path }}</code>
+            <button type="button" class="btn btn-ghost btn-xs shrink-0" data-copy="{{ request.url_root|trim('/') }}{{ path }}">Copy</button>
+          </dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">This plant holds</h2>
+      <dl class="grid gap-2.5 m-0">
+        {% for label, n in [('Materials', counts.materials), ('Products', counts.products),
+                            ('Workers', counts.workers), ('Machines', counts.machines),
+                            ('Orders', counts.orders), ('Dashboard users', counts.users)] %}
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-[12.5px] text-slate-500 m-0">{{ label }}</dt>
+          <dd class="num text-[13px] font-semibold m-0">{{ n }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+      <dl class="grid gap-3 m-0 mt-4 pt-4 border-t border-divider">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Plan</dt><dd class="m-0"><span class="tag tag-signal">{{ factory.plan }}</span></dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Created</dt><dd class="font-mono text-[11px] text-slate-400 m-0">{{ factory.created_at|dt('%d %b %Y') }}</dd>
+        </div>
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

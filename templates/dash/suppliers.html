@@ -1,0 +1,69 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Suppliers' %}
+{% set kicker = 'Materials' %}
+{% set page_sub = 'Reliability is scored from what actually happened: how many orders arrived on time, how many arrived complete, and how many came back with defects.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='suppliers') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('supplier_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New supplier</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_suppliers') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search name, contact, phone…') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+    {% if term %}<a href="{{ url_for('dash_suppliers') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} supplier{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Supplier</th><th>Contact</th><th>Supplies</th><th class="r">Lead time</th><th>Reliability</th><th class="r">Orders</th><th></th></tr></thead>
+      <tbody>
+        {% for s in page.items %}
+        <tr>
+          <td>
+            <a href="{{ url_for('supplier_detail', supplier_id=s.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ s.name }}</a>
+            {% if not s.is_active %}<span class="tag tag-neutral ml-1.5">inactive</span>{% endif %}
+            {% if s.payment_terms %}<span class="block font-mono text-[10px] text-slate-400 mt-0.5">{{ s.payment_terms }}</span>{% endif %}
+          </td>
+          <td>
+            <span class="block text-[12.5px] text-slate-500">{{ s.contact_name or '—' }}</span>
+            {% if s.phone %}<span class="block font-mono text-[10.5px] text-slate-400">{{ s.phone }}</span>{% endif %}
+          </td>
+          <td class="text-[12.5px] text-slate-500 max-w-[190px] truncate">{{ s.materials_supplied or '—' }}</td>
+          <td class="r num text-[12.5px]">{{ s.lead_time_days }}d</td>
+          <td class="w-[150px]">
+            <div class="flex items-center gap-2">
+              {{ progress(s.reliability, 'ok' if s.reliability_band == 'ok' else ('warn' if s.reliability_band == 'warn' else 'bad'), 5) }}
+              <span class="num text-[12px] font-semibold w-[34px] text-right
+                {% if s.reliability_band == 'ok' %}text-ok{% elif s.reliability_band == 'warn' %}text-warn{% else %}text-bad{% endif %}">{{ s.reliability }}</span>
+            </div>
+            <span class="font-mono text-[10px] text-slate-400">{{ s.orders_on_time }}/{{ s.orders_placed }} on time</span>
+          </td>
+          <td class="r num text-[12.5px] text-slate-500">{{ s.orders_placed }}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('supplier_detail', supplier_id=s.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.can_write %}
+                <a href="{{ url_for('supplier_form', supplier_id=s.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_suppliers', 'q=' ~ term) }}
+  {% else %}
+    {{ empty_state('truck', 'No suppliers match' if term else 'No suppliers yet',
+        'Try a different search term.' if term else 'Add the yards and merchants you buy from. Reliability builds up on its own as purchase orders are received.',
+        url_for('supplier_form') if current_user.can_write and not term else None, 'Add supplier') }}
+  {% endif %}
+</section>
+{% endblock %}

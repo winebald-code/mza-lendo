@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ APP_NAME }} — {{ APP_TAGLINE }}{% endblock %}</title>
+<meta name="description" content="{% block description %}Mzalendo is a manufacturing operating system for African SMEs and Jua Kali producers. Inventory, production, orders, maintenance and workforce — reachable from a web dashboard or a basic phone over USSD and SMS.{% endblock %}">
+<meta name="theme-color" content="#07090B">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="{{ APP_NAME }} — {{ APP_TAGLINE }}">
+<meta property="og:description" content="A manufacturing operating system built for workshops that run on basic phones.">
+<meta property="og:type" content="website">
+<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+{% from "partials/icons.html" import icon, sprite %}
+{{ sprite() }}
+
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:btn focus:btn-dark">Skip to content</a>
+
+<header class="sticky top-0 z-40 bg-fog/85 backdrop-blur-md border-b border-divider">
+  <div class="max-w-shell mx-auto px-5 sm:px-8">
+    <nav class="flex items-center justify-between h-[68px] gap-6" aria-label="Main">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 shrink-0 no-tap">
+        {% include "partials/logo.html" %}
+        <span class="font-display font-bold text-[17px] tracking-[-0.02em] text-ink">Mzalendo</span>
+      </a>
+
+      <ul class="hidden lg:flex items-center gap-7 list-none m-0 p-0 text-[13.5px]">
+        <li><a href="{{ url_for('platform') }}" class="text-slate-600 hover:text-signal-600 font-medium">Platform</a></li>
+        <li><a href="{{ url_for('jua_kali') }}" class="text-slate-600 hover:text-signal-600 font-medium">Jua Kali</a></li>
+        <li><a href="{{ url_for('pricing') }}" class="text-slate-600 hover:text-signal-600 font-medium">Pricing</a></li>
+        <li><a href="{{ url_for('security_page') }}" class="text-slate-600 hover:text-signal-600 font-medium">Security</a></li>
+      </ul>
+
+      <div class="flex items-center gap-2.5">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('dash_overview') }}" class="btn btn-primary btn-sm">
+            {{ icon('gauge', 'ico ico-sm') }} Dashboard
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Sign in</a>
+          <a href="{{ url_for('signup') }}" class="btn btn-primary btn-sm">
+            Start free {{ icon('arrow-right', 'ico ico-sm') }}
+          </a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
+          {{ icon('menu') }}
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <div id="mobile-nav" hidden class="lg:hidden border-t border-divider bg-surface">
+    <ul class="max-w-shell mx-auto px-5 py-3 list-none m-0 grid gap-1 text-[14px]">
+      <li><a href="{{ url_for('platform') }}" class="block py-2.5 text-slate-600 font-medium">Platform</a></li>
+      <li><a href="{{ url_for('jua_kali') }}" class="block py-2.5 text-slate-600 font-medium">Jua Kali</a></li>
+      <li><a href="{{ url_for('pricing') }}" class="block py-2.5 text-slate-600 font-medium">Pricing</a></li>
+      <li><a href="{{ url_for('security_page') }}" class="block py-2.5 text-slate-600 font-medium">Security</a></li>
+      {% if not current_user.is_authenticated %}
+      <li class="pt-2"><a href="{{ url_for('login') }}" class="btn btn-secondary btn-block btn-sm">Sign in</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</header>
+
+{% include "partials/flash.html" %}
+
+<main id="main" class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-divider bg-slate-900 text-slate-300 mt-auto">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-12">
+    <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div>
+        <div class="flex items-center gap-2.5 mb-3">
+          {% include "partials/logo.html" %}
+          <span class="font-display font-bold text-[16px] text-white">Mzalendo</span>
+        </div>
+        <p class="text-[13px] text-slate-400 max-w-[34ch] leading-relaxed">
+          A manufacturing operating system for workshops that run on paper, notebooks
+          and basic phones. Built in Nairobi for the Jua Kali floor.
+        </p>
+        <p class="mt-4 font-mono text-[11px] text-slate-500">Dial {{ ussd_code }} to reach the floor menu.</p>
+      </div>
+      <div>
+        <p class="label mb-3 text-slate-500">Product</p>
+        <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
+          <li><a href="{{ url_for('platform') }}" class="text-slate-400 hover:text-signal-400">Platform</a></li>
+          <li><a href="{{ url_for('pricing') }}" class="text-slate-400 hover:text-signal-400">Pricing</a></li>
+          <li><a href="{{ url_for('jua_kali') }}" class="text-slate-400 hover:text-signal-400">Jua Kali</a></li>
+          <li><a href="{{ url_for('healthz') }}" class="text-slate-400 hover:text-signal-400">Service status</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="label mb-3 text-slate-500">Channels</p>
+        <ul class="list-none m-0 p-0 grid gap-2 text-[13px] text-slate-400">
+          <li>USSD menu</li>
+          <li>Bulk and premium SMS</li>
+          <li>Web dashboard</li>
+          <li>CSV export</li>
+        </ul>
+      </div>
+      <div>
+        <p class="label mb-3 text-slate-500">Company</p>
+        <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
+          <li><a href="{{ url_for('security_page') }}" class="text-slate-400 hover:text-signal-400">Security</a></li>
+          <li><a href="{{ url_for('login') }}" class="text-slate-400 hover:text-signal-400">Sign in</a></li>
+          <li><a href="{{ url_for('signup') }}" class="text-slate-400 hover:text-signal-400">Create a plant</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-10 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+      <p class="font-mono text-[11px] text-slate-500 m-0">
+        © {{ now.year }} Winebald Technologies · Mzalendo v{{ APP_VERSION }}
+      </p>
+      <p class="font-mono text-[11px] text-slate-500 m-0">
+        Telco layer powered by Africa's Talking
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

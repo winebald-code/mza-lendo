@@ -1,0 +1,86 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Alerts' %}
+{% set kicker = 'Signals' %}
+{% set page_sub = 'Raised automatically when stock, machines, quality or delivery cross a line — plus everything reported from the floor.' %}
+
+{% block page_actions %}
+  {% if page.total %}
+  <form method="post" action="{{ url_for('alerts_read_all') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-secondary btn-sm">{{ icon('check','ico ico-sm') }} Mark all read</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_alerts') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ filter_select('kind', [
+        ('stock','Stock'),('machine','Machine'),('order','Order'),
+        ('quality','Quality'),('safety','Safety'),('supplier','Supplier'),
+        ('production','Production'),('procurement','Procurement')], kind, 'All kinds') }}
+    {{ filter_select('severity', [('critical','Critical'),('high','High'),('medium','Medium'),('low','Low')], sev, 'All severities') }}
+    <label class="check">
+      <input type="checkbox" name="unread" value="1" {% if unread_only %}checked{% endif %}>
+      <span>Unread only</span>
+    </label>
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if kind or sev or unread_only %}<a href="{{ url_for('dash_alerts') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} alert{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <ul class="list-none m-0 p-0">
+    {% for a in page.items %}
+    <li class="px-5 py-4 border-b border-divider/70 last:border-b-0 flex items-start gap-4 {% if not a.is_read %}bg-signal-50/40{% endif %}">
+      <span class="w-[34px] h-[34px] rounded-[11px] grid place-items-center shrink-0 mt-0.5
+        {% if a.severity in ('critical','high') %}bg-bad/10 text-bad{% elif a.severity == 'medium' %}bg-warn/10 text-warn{% else %}bg-signal-50 text-signal-600{% endif %}">
+        {% set kind_icons = {'stock':'box','machine':'wrench','order':'clipboard','quality':'badge-check','safety':'shield','supplier':'truck','production':'cog','procurement':'cart'} %}
+        {{ icon(kind_icons.get(a.kind, 'bell'), 'ico ico-sm') }}
+      </span>
+
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <p class="text-[13.5px] font-semibold text-ink m-0">{{ a.title }}</p>
+          {{ sev_tag(a.severity) }}
+          <span class="tag tag-neutral">{{ a.kind }}</span>
+          {% if not a.is_read %}<span class="tag tag-signal">new</span>{% endif %}
+        </div>
+        {% if a.body %}<p class="text-[12.5px] text-slate-500 m-0 leading-relaxed">{{ a.body }}</p>{% endif %}
+        {% if a.recommendation %}
+          <p class="text-[12.5px] mt-1.5 mb-0 leading-relaxed">
+            <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Do</span>{{ a.recommendation }}
+          </p>
+        {% endif %}
+        <p class="font-mono text-[10.5px] text-slate-400 mt-2 m-0">
+          {{ a.created_at|dt('%d %b %Y · %H:%M') }} · {{ a.created_at|ago }}
+        </p>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        {% set kind_links = {'stock':'dash_materials','machine':'dash_machines','order':'dash_orders','quality':'dash_quality','safety':'dash_safety','supplier':'dash_suppliers','production':'dash_runs','procurement':'dash_purchase_orders'} %}
+        {% if kind_links.get(a.kind) %}
+          <a href="{{ url_for(kind_links[a.kind]) }}" class="btn btn-secondary btn-sm">Open</a>
+        {% endif %}
+        {% if not a.is_read %}
+        <form method="post" action="{{ url_for('alert_read', alert_id=a.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-icon" title="Mark read" aria-label="Mark read">{{ icon('check','ico ico-sm') }}</button>
+        </form>
+        {% endif %}
+        {% if current_user.can_write %}
+        <form method="post" action="{{ url_for('alert_delete', alert_id=a.id) }}" data-confirm="Delete this alert?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-icon text-slate-400 hover:text-bad" title="Delete" aria-label="Delete">{{ icon('trash','ico ico-sm') }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {{ pager(page, 'dash_alerts', 'kind=' ~ kind ~ '&severity=' ~ sev ~ ('&unread=1' if unread_only else '')) }}
+  {% else %}
+    {{ empty_state('bell', 'No alerts match', 'Either the plant is running clean or the filters are too narrow.') }}
+  {% endif %}
+</section>
+{% endblock %}

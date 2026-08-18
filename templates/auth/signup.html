@@ -1,0 +1,109 @@
+{% extends "auth/_layout.html" %}
+{% set auth_title = 'Set up your plant' %}
+{% set auth_kicker = 'Getting started' %}
+{% set auth_headline = 'Ten minutes from signing up to a worker reporting production on a Nokia.' %}
+{% set auth_body = 'We seed your new plant with sensible stages, a starter material list and the USSD menu already wired to your number.' %}
+
+{% block content %}
+<h1 class="font-display text-[28px] font-bold tracking-[-0.03em] m-0">Set up your plant</h1>
+<p class="text-[13.5px] text-slate-500 mt-2 mb-8">You become the owner. Add your team afterwards from Users.</p>
+
+<form method="post" class="grid gap-1" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <p class="kicker mb-1">The workshop</p>
+  <div class="field">
+    <label for="f-factory_name">Workshop or factory name <span class="text-signal-600">*</span></label>
+    <input id="f-factory_name" name="factory_name" class="input {% if errors.factory_name %}input-err{% endif %}"
+           value="{{ form.factory_name|default('') }}" required placeholder="Kamukunji Metalworks" autofocus>
+    {% if errors.factory_name %}<p class="err m-0">{{ errors.factory_name }}</p>{% endif %}
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+    <div class="field">
+      <label for="f-sector">Sector</label>
+      <input id="f-sector" name="sector" class="input" value="{{ form.sector|default('') }}" placeholder="Metal fabrication">
+    </div>
+    <div class="field">
+      <label for="f-county">County</label>
+      <input id="f-county" name="county" class="input" value="{{ form.county|default('Nairobi') }}" placeholder="Nairobi">
+    </div>
+  </div>
+
+  <p class="kicker mt-5 mb-1">You</p>
+  <div class="field">
+    <label for="f-full_name">Your name <span class="text-signal-600">*</span></label>
+    <input id="f-full_name" name="full_name" class="input {% if errors.full_name %}input-err{% endif %}"
+           value="{{ form.full_name|default('') }}" required placeholder="Grace Wanjiku" autocomplete="name">
+    {% if errors.full_name %}<p class="err m-0">{{ errors.full_name }}</p>{% endif %}
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+    <div class="field">
+      <label for="f-username">Username <span class="text-signal-600">*</span></label>
+      <input id="f-username" name="username" class="input {% if errors.username %}input-err{% endif %}"
+             value="{{ form.username|default('') }}" required placeholder="gwanjiku" autocomplete="username">
+      {% if errors.username %}<p class="err m-0">{{ errors.username }}</p>
+      {% else %}<p class="hint m-0">Lowercase letters, digits, dots</p>{% endif %}
+    </div>
+    <div class="field">
+      <label for="f-phone">Phone</label>
+      <input id="f-phone" name="phone" type="tel" class="input" value="{{ form.phone|default('') }}"
+             placeholder="0712 345 678" autocomplete="tel">
+      <p class="hint m-0">Where plant alerts are sent</p>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="f-email">Email <span class="text-signal-600">*</span></label>
+    <input id="f-email" name="email" type="email" class="input {% if errors.email %}input-err{% endif %}"
+           value="{{ form.email|default('') }}" required placeholder="you@workshop.co.ke" autocomplete="email">
+    {% if errors.email %}<p class="err m-0">{{ errors.email }}</p>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="f-password">Password <span class="text-signal-600">*</span></label>
+    <div class="relative">
+      <input id="f-password" name="password" type="password" data-strength
+             class="input pr-11 {% if errors.password %}input-err{% endif %}" required autocomplete="new-password">
+      <button type="button" data-reveal="f-password" aria-label="Show password"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 btn btn-ghost btn-icon !w-[34px] !h-[34px] text-slate-400">
+        {{ icon('eye','ico ico-sm') }}{{ icon('eye-off','ico ico-sm hidden') }}
+      </button>
+    </div>
+    {% if errors.password %}<p class="err m-0">{{ errors.password }}</p>{% endif %}
+    <div id="pw-meter" class="flex gap-1 mt-2.5" aria-hidden="true">
+      {% for i in range(5) %}<span class="flex-1 h-[4px] rounded-full bg-divider transition-colors"></span>{% endfor %}
+    </div>
+    <ul class="grid grid-cols-2 gap-x-3 gap-y-1 mt-2.5 list-none p-0 m-0">
+      {% for key, text in [('len','12 characters'),('upper','Capital letter'),('lower','Small letter'),('digit','A number'),('symbol','A symbol')] %}
+        <li data-rule="{{ key }}" class="flex items-center gap-1.5 text-[11.5px] text-slate-400 transition-colors">
+          <span class="dot bg-divider transition-colors"></span>{{ text }}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="field">
+    <label for="f-password2">Confirm password <span class="text-signal-600">*</span></label>
+    <input id="f-password2" name="password2" type="password"
+           class="input {% if errors.password2 %}input-err{% endif %}" required autocomplete="new-password">
+    {% if errors.password2 %}<p class="err m-0">{{ errors.password2 }}</p>{% endif %}
+  </div>
+
+  <label class="check mt-3">
+    <input type="checkbox" name="terms" value="1" {% if form.terms %}checked{% endif %}>
+    <span>I accept the terms of service and the privacy policy.</span>
+  </label>
+  {% if errors.terms %}<p class="err mt-1 mb-0">{{ errors.terms }}</p>{% endif %}
+
+  <button type="submit" class="btn btn-primary btn-block mt-5">
+    {{ icon('arrow-right','ico ico-sm') }} Create the plant
+  </button>
+</form>
+
+<p class="text-[13px] text-slate-500 mt-7 pt-6 border-t border-divider m-0">
+  Already set up?
+  <a href="{{ url_for('login') }}" class="font-medium text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">Sign in</a>
+</p>
+{% endblock %}

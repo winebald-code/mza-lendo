@@ -1,0 +1,60 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Customers' %}
+{% set kicker = 'Sell' %}
+{% set page_sub = 'Who you build for. Customers with SMS updates switched on hear from the plant automatically as their order moves.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='customers') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('customer_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New customer</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_customers') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search name, company, phone…') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+    {% if term %}<a href="{{ url_for('dash_customers') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} customer{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Customer</th><th>Company</th><th>Phone</th><th>Email</th><th>SMS</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for c in page.items %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-2.5">
+              <span class="w-[30px] h-[30px] rounded-full bg-fog border border-divider text-slate-500 font-mono text-[10.5px] font-semibold grid place-items-center shrink-0">{{ c.name|initials }}</span>
+              <a href="{{ url_for('customer_detail', customer_id=c.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ c.name }}</a>
+            </div>
+          </td>
+          <td class="text-[12.5px] text-slate-500 max-w-[180px] truncate">{{ c.company or '—' }}</td>
+          <td class="font-mono text-[11.5px] text-slate-500">{{ c.phone or '—' }}</td>
+          <td class="text-[12.5px] text-slate-500 max-w-[200px] truncate">{{ c.email or '—' }}</td>
+          <td>{% if c.sms_updates %}<span class="tag tag-ok">on</span>{% else %}<span class="tag tag-neutral">off</span>{% endif %}</td>
+          <td>{% if c.is_active %}<span class="tag tag-signal">active</span>{% else %}<span class="tag tag-neutral">archived</span>{% endif %}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('customer_detail', customer_id=c.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.can_write %}
+                <a href="{{ url_for('customer_form', customer_id=c.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_customers', 'q=' ~ term) }}
+  {% else %}
+    {{ empty_state('users', 'No customers match' if term else 'No customers yet',
+        'Try a different search term.' if term else 'Add the people and businesses you build for. Orders attach to a customer, and status SMS goes out from here.',
+        url_for('customer_form') if current_user.can_write and not term else None, 'Add customer') }}
+  {% endif %}
+</section>
+{% endblock %}

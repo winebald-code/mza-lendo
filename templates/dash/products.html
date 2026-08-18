@@ -1,0 +1,67 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Products' %}
+{% set kicker = 'Make' %}
+{% set page_sub = 'What you sell, and the bill of materials behind each one. The BOM is what lets the plant work out shortages and consume stock automatically.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='products') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('product_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New product</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_products') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search name, SKU, category…') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Search</button>
+    {% if term %}<a href="{{ url_for('dash_products') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} product{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>SKU</th><th>Product</th><th>Category</th><th class="r">Sell price</th><th class="r">Material cost</th><th class="r">Margin</th><th class="r">Build</th><th>BOM</th><th></th></tr></thead>
+      <tbody>
+        {% for p in page.items %}
+        <tr>
+          <td><span class="font-mono text-[11.5px] text-slate-500">{{ p.sku }}</span></td>
+          <td>
+            <a href="{{ url_for('product_detail', product_id=p.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ p.name }}</a>
+            {% if not p.is_active %}<span class="tag tag-neutral ml-1.5">inactive</span>{% endif %}
+          </td>
+          <td class="text-[12.5px] text-slate-500">{{ p.category or '—' }}</td>
+          <td class="r num text-[12.5px] font-medium">{{ p.unit_price|money }}</td>
+          <td class="r num text-[12.5px] text-slate-500">{{ p.material_cost|money }}</td>
+          <td class="r">
+            {% if p.margin_pct is not none %}
+              <span class="num text-[12.5px] font-semibold {% if p.margin_pct < 15 %}text-bad{% elif p.margin_pct < 30 %}text-warn{% else %}text-ok{% endif %}">{{ p.margin_pct }}%</span>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="r num text-[12.5px] text-slate-500">{{ p.build_days }}d</td>
+          <td>
+            {% if p.bom %}<span class="tag tag-ok">{{ p.bom|length }} item{{ '' if p.bom|length == 1 else 's' }}</span>
+            {% else %}<span class="tag tag-warn">none</span>{% endif %}
+          </td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('product_detail', product_id=p.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.can_write %}
+                <a href="{{ url_for('product_form', product_id=p.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_products', 'q=' ~ term) }}
+  {% else %}
+    {{ empty_state('cube', 'No products match' if term else 'No products yet',
+        'Try a different search term.' if term else 'Define what you build, then attach a bill of materials so the plant can plan stock against orders.',
+        url_for('product_form') if current_user.can_write and not term else None, 'Add product') }}
+  {% endif %}
+</section>
+{% endblock %}

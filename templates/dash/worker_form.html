@@ -1,0 +1,59 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New worker' %}
+{% set kicker = 'Workers' %}
+{% set page_sub = 'The phone number identifies this worker on the USSD menu. The PIN is optional and only needed if you want a second check.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Person</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Full name', item.name if item else '', 'text', errors, None, True, 'Peter Mwangi') }}
+        {{ field('employee_no', 'Employee number', item.employee_no if item else '', 'text', errors, 'Optional', False, 'EMP-014') }}
+        {{ field('phone', 'Phone number', item.phone if item else '', 'tel', errors,
+                 'Kenyan format — saved as +254…', True, '0712 345 678') }}
+        {{ field('daily_rate', 'Daily rate', item.daily_rate if item else '0', 'number', errors, 'Optional', False, '0.00', 'step="0.01" min="0"') }}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Work</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('trade', 'Trade', item.trade if item else '', 'text', errors, None, False, 'Welder') }}
+        {{ field('station', 'Station', item.station if item else '', 'text', errors, None, False, 'Bay 3') }}
+        {{ select('shift', 'Shift', [('day','Day'),('night','Night')], item.shift if item else 'day', errors,
+                  'Used when broadcasting to one shift') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-notes">Notes</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Certifications, restrictions, next of kin…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Handset access</h2>
+      <div class="field">
+        <label for="f-pin">{{ 'Reset PIN' if item else 'PIN' }}</label>
+        <input id="f-pin" name="pin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+               class="input font-mono" placeholder="{{ 'Leave blank to keep the current PIN' if item else '1234' }}">
+        <p class="hint m-0">4–6 digits. Workers are already identified by their phone number, so this is a second check rather than a login.</p>
+      </div>
+      <label class="check mt-3">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+        <span>Active — can use the USSD menu</span>
+      </label>
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Add worker' }}</button>
+      <a href="{{ url_for('dash_workers') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('worker_delete', worker_id=item.id), 'Delete worker', item.name, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

@@ -1,0 +1,26 @@
+# Nixpacks build for Railway.
+# Node is present only to compile the Tailwind stylesheet at build time;
+# nothing in the running application depends on it.
+
+[phases.setup]
+nixPkgs = ["python311", "nodejs_20", "gcc"]
+
+[phases.install]
+cmds = [
+  "python -m venv --copies /opt/venv",
+  ". /opt/venv/bin/activate && pip install --upgrade pip",
+  ". /opt/venv/bin/activate && pip install -r requirements-postgres.txt",
+  "npm ci --omit=dev || npm install"
+]
+
+[phases.build]
+cmds = [
+  "npx tailwindcss -i static/css/input.css -o static/css/app.css --minify"
+]
+
+[start]
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"
+
+[variables]
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"

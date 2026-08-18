@@ -1,0 +1,114 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.number) if item else 'New order' %}
+{% set kicker = 'Orders' %}
+{% set page_sub = 'Add the products and quantities. Unit price fills in from the product but you can override it per line.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1140px]" data-total-scope>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Order</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('customer_id', 'Customer', obj_options(customers),
+                  (item.customer_id if item else request.args.get('customer_id')), errors,
+                  'Only active customers appear here', 'Choose a customer', True) }}
+        {{ field('due_date', 'Due date', (item.due_date.isoformat() if item and item.due_date else ''), 'date', errors, 'Drives the schedule and the late warnings') }}
+        {{ select('priority', 'Priority', [('low','Low'),('normal','Normal'),('high','High'),('rush','Rush')],
+                  item.priority if item else 'normal', errors, 'Rush jobs sort to the top of the floor') }}
+        {% if item %}
+          {{ select('status', 'Status', pairs(ORDER_STATUSES), item.status, errors, 'Changing this texts the customer') }}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Line items</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">At least one product is required</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-row-add="#order-lines">{{ icon('plus','ico ico-sm') }} Add line</button>
+      </div>
+
+      <div class="p-5">
+        <div id="order-lines" class="grid gap-3">
+          {# Template row — cloned by JS, never submitted #}
+          <div data-row data-row-template hidden class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_130px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Product</label>
+              <select name="product_id[]" class="select" data-product-select disabled>
+                <option value="">Choose…</option>
+                {% for p in products %}<option value="{{ p.id }}" data-price="{{ p.unit_price }}">{{ p.name }} · {{ p.sku }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Qty</label>
+              <input type="number" name="quantity[]" class="input" step="0.01" min="0" data-qty data-default="1" disabled>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Unit price</label>
+              <input type="number" name="unit_price[]" class="input" step="0.01" min="0" data-price disabled>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove line">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+
+          {% set lines = item.items if item and item.items else [None] %}
+          {% for line in lines %}
+          <div data-row class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_130px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Product</label>
+              <select name="product_id[]" class="select" data-product-select>
+                <option value="">Choose…</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}" data-price="{{ p.unit_price }}" {% if line and line.product_id == p.id %}selected{% endif %}>{{ p.name }} · {{ p.sku }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Qty</label>
+              <input type="number" name="quantity[]" class="input" step="0.01" min="0" data-qty value="{{ line.quantity if line else 1 }}">
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Unit price</label>
+              <input type="number" name="unit_price[]" class="input" step="0.01" min="0" data-price value="{{ line.unit_price if line else '' }}">
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove line">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if errors.items %}<p class="err mt-3 mb-0">{{ errors.items }}</p>{% endif %}
+
+        <div class="flex items-center justify-between gap-4 mt-5 pt-4 border-t border-divider">
+          <p class="label m-0">Order total</p>
+          <p class="num text-[19px] font-semibold m-0"><span data-grand-total>0.00</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Notes</h2>
+      <div class="field">
+        <label for="f-notes">Instructions for the floor</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Finish, tolerances, delivery arrangements…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Payment</h2>
+      {{ field('deposit', 'Deposit taken', item.deposit if item else '0', 'number', errors,
+               'Recorded against the order total', False, '0.00', 'step="0.01" min="0"') }}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create order' }}</button>
+      <a href="{{ url_for('dash_orders') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('order_delete', order_id=item.id), 'Delete order', item.number, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

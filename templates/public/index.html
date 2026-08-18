@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Mzalendo — manufacturing operations for African workshops{% endblock %}
+{% block description %}The floor reports on a feature phone. You read the whole plant on one screen. Built for Kenyan manufacturing SMEs and Jua Kali workshops.{% endblock %}
+
+{% block content %}
+{% from "partials/icons.html" import icon %}
+
+{# ══════════════ HERO ══════════════ #}
+<section class="relative overflow-hidden border-b border-divider">
+  <div class="absolute inset-0 grid-lines opacity-60" aria-hidden="true"></div>
+  <div class="absolute -right-40 -top-40 w-[560px] h-[560px] rounded-full bg-signal-500/[0.07] blur-3xl" aria-hidden="true"></div>
+
+  <div class="relative max-w-shell mx-auto px-5 sm:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+    <div class="grid lg:grid-cols-[1.05fr_1fr] gap-14 xl:gap-20 items-center">
+
+      <div>
+        <p class="kicker mb-5">Manufacturing operations · Nairobi</p>
+        <h1 class="font-display text-[38px] sm:text-[52px] xl:text-[60px] font-bold leading-[1.03] tracking-[-0.035em] m-0">
+          The floor reports on a feature phone.<br>
+          <span class="text-signal-600">You read the whole plant</span> on one screen.
+        </h1>
+        <p class="lede mt-7 max-w-[54ch]">
+          Most workshop software assumes everyone has a smartphone, a data bundle and the patience
+          to learn an app. Mzalendo assumes the opposite. Workers dial a USSD code from whatever
+          handset they already own. What they enter becomes your inventory, your schedule and one
+          honest number for the health of the plant.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3 mt-9">
+          <a href="{{ url_for('signup') }}" class="btn btn-primary">
+            {{ icon('arrow-right','ico ico-sm') }} Set up your plant
+          </a>
+          <a href="{{ url_for('login') }}" class="btn btn-secondary">
+            {{ icon('lock','ico ico-sm') }} Sign in to the demo
+          </a>
+        </div>
+
+        <dl class="grid grid-cols-3 gap-6 mt-12 pt-9 border-t border-divider max-w-[460px]">
+          <div>
+            <dt class="label m-0">Needs</dt>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">No data</dd>
+          </div>
+          <div>
+            <dt class="label m-0">Runs on</dt>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">Any handset</dd>
+          </div>
+          <div>
+            <dt class="label m-0">Session</dt>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">Under 30s</dd>
+          </div>
+        </dl>
+      </div>
+
+      {# The two halves, side by side #}
+      <div class="grid gap-4">
+        {# Pulse card #}
+        <div class="card shadow-s2 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-divider bg-fog/50">
+            <p class="kicker m-0">Manufacturing Pulse</p>
+            <span class="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
+              <span class="dot bg-ok animate-blink"></span> live
+            </span>
+          </div>
+          <div class="p-5 flex items-center gap-6">
+            {# Compact 44-tick gauge, statically rendered #}
+            <div class="relative w-[118px] h-[118px] shrink-0">
+              <svg viewBox="0 0 200 200" class="w-full h-full -rotate-[135deg]" aria-label="Overall plant health 72 percent">
+                {% set lit = 32 %}
+                {% for i in range(44) %}
+                  <rect x="97" y="8" width="6" height="{{ 20 if i < lit else 13 }}" rx="1.5"
+                        fill="{{ '#D97706' if i < lit else '#D7DCE2' }}"
+                        transform="rotate({{ i * 270 / 43 }} 100 100)"
+                        {% if i < lit %}opacity="{{ 0.45 + 0.55 * i / 44 }}"{% endif %} />
+                {% endfor %}
+              </svg>
+              <div class="absolute inset-0 grid place-items-center text-center">
+                <div>
+                  <p class="font-display text-[30px] font-bold leading-none tracking-[-0.04em] text-warn m-0">72<span class="text-[0.42em] align-top">%</span></p>
+                  <p class="label mt-1.5 m-0">Health</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-2.5 flex-1 min-w-0">
+              {% for name, v, tone in [('Production', 78, 'ok'), ('Inventory', 54, 'warn'),
+                                       ('Orders', 81, 'ok'), ('Maintenance', 46, 'bad'), ('Suppliers', 88, 'ok')] %}
+              <div>
+                <div class="flex items-baseline justify-between gap-2 mb-1">
+                  <span class="text-[11.5px] text-slate-600">{{ name }}</span>
+                  <span class="num text-[11px] font-semibold {% if tone=='ok' %}text-ok{% elif tone=='warn' %}text-warn{% else %}text-bad{% endif %}">{{ v }}</span>
+                </div>
+                <div class="flex items-stretch gap-[2px] h-[6px]">
+                  {% for i in range(20) %}
+                    <span class="flex-1 rounded-[1px] {% if i < (v / 5)|int %}{% if tone=='ok' %}bg-ok{% elif tone=='warn' %}bg-warn{% else %}bg-bad{% endif %}{% else %}bg-divider{% endif %}"></span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="px-5 py-3.5 border-t border-divider bg-fog/40">
+            <p class="text-[12px] text-slate-600 m-0 leading-snug">
+              <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Why</span>
+              Welding bay C is down and two runs depend on it. Aluminium sheet is at zero.
+            </p>
+          </div>
+        </div>
+
+        {# Handset card #}
+        <div class="rounded-panel bg-slate-900 p-5 shadow-s2 border border-slate-700">
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker text-slate-500 m-0">On the floor</p>
+            <span class="font-mono text-[10px] text-signal-500">{{ ussd_code }}</span>
+          </div>
+          <div class="rounded-[10px] bg-[#0a1a0f] border border-slate-950 p-3.5">
+            <pre class="term m-0 whitespace-pre-wrap">MZALENDO - Kamukunji Metalworks
+Habari Joseph
+1. My tasks
+2. Report production
+3. Report stock
+4. Machine fault
+5. Safety incident
+6. Clock in or out
+7. Stock check</pre>
+          </div>
+          <p class="text-[11.5px] text-slate-400 mt-3 m-0 leading-snug">
+            No app to install. No bundle to buy. Works on the cheapest phone in the workshop.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ══════════════ THE PROBLEM ══════════════ #}
+<section class="border-b border-divider">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
+    <div class="max-w-[62ch]" data-reveal-on-scroll>
+      <p class="kicker mb-4">The gap</p>
+      <h2 class="font-display text-[28px] sm:text-[36px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+        A workshop owner already knows what is wrong. Finding out costs them the afternoon.
+      </h2>
+      <p class="lede mt-6">
+        The information exists. It is in a supervisor's head, a notebook by the grinder, a pile of
+        delivery notes and three WhatsApp groups. Pulling it together means walking the floor and
+        asking. By the time you know the steel ran out, the run is already late.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 mt-12">
+      {% for ico, title, body in [
+        ('box','Stock is a guess','You find out a material is finished when someone needs it. The reorder happens after the line has already stopped.'),
+        ('cog','Progress is a rumour','Nobody can say what a run is at without walking over and counting. Late orders are discovered at the deadline.'),
+        ('wrench','Breakdowns travel slowly','A machine goes down at nine and the office hears at two, once the damage to the schedule is already done.')] %}
+      <div class="card card-pad" data-reveal-on-scroll>
+        <span class="inline-grid place-items-center w-[42px] h-[42px] rounded-[13px] bg-fog border border-divider text-slate-500 mb-4">{{ icon(ico) }}</span>
+        <h3 class="text-[16px] font-semibold m-0 mb-2">{{ title }}</h3>
+        <p class="text-[13px] text-slate-500 leading-relaxed m-0">{{ body }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ══════════════ HOW IT WORKS ══════════════ #}
+<section class="border-b border-divider bg-surface">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
+    <div class="max-w-[58ch] mb-12" data-reveal-on-scroll>
+      <p class="kicker mb-4">How it works</p>
+      <h2 class="font-display text-[28px] sm:text-[36px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+        Two surfaces, one system.
+      </h2>
+      <p class="lede mt-5">
+        The floor gets a menu that works on any phone. The office gets a dashboard. Neither has to
+        wait for the other, and nothing is entered twice.
+      </p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="card card-pad" data-reveal-on-scroll>
+        <span class="inline-grid place-items-center w-[42px] h-[42px] rounded-[13px] bg-signal-50 text-signal-600 mb-5">{{ icon('phone') }}</span>
+        <h3 class="text-[19px] font-semibold m-0 mb-2.5">Workers dial in</h3>
+        <p class="text-[13.5px] text-slate-500 leading-relaxed mb-5">
+          A welder finishes twelve gates, dials the code and enters the number. A grinder starts
+          smoking, he reports it in four keypresses. The plant knows immediately.
+        </p>
+        <ul class="list-none m-0 p-0 grid gap-2.5">
+          {% for what in ['Report production against a run','Issue, receive or count stock',
+                          'Flag a machine fault by severity','Report an injury or a near miss','Clock in and out'] %}
+          <li class="flex items-start gap-2.5 text-[13px] text-slate-600">
+            <span class="text-signal-600 shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="card card-pad" data-reveal-on-scroll>
+        <span class="inline-grid place-items-center w-[42px] h-[42px] rounded-[13px] bg-ink text-white mb-5">{{ icon('gauge') }}</span>
+        <h3 class="text-[19px] font-semibold m-0 mb-2.5">The office reads one number</h3>
+        <p class="text-[13.5px] text-slate-500 leading-relaxed mb-5">
+          Five subsystems, weighted by what stops a plant fastest, resolved into a single score —
+          and, more usefully, a ledger of exactly what moved it and what to do about it.
+        </p>
+        <ul class="list-none m-0 p-0 grid gap-2.5">
+          {% for what in ['Inventory with automatic reorder alerts','Orders planned into dated runs',
+                          'Material shortages worked out from the BOM','Machines, services and downtime',
+                          'Supplier reliability earned from deliveries'] %}
+          <li class="flex items-start gap-2.5 text-[13px] text-slate-600">
+            <span class="text-signal-600 shrink-0 mt-[1px]">{{ icon('check','ico ico-sm') }}</span>{{ what }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ══════════════ THE PULSE ══════════════ #}
+<section class="border-b border-divider">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
+    <div class="grid lg:grid-cols-[1fr_1.1fr] gap-12 xl:gap-16 items-center">
+      <div data-reveal-on-scroll>
+        <p class="kicker mb-4">The signature</p>
+        <h2 class="font-display text-[28px] sm:text-[36px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+          A number is useless without the reason behind it.
+        </h2>
+        <p class="lede mt-6">
+          Plenty of software will show you a dashboard. Mzalendo tells you which of the five
+          subsystems moved, by how much, and the one action that would move it back. Every finding
+          links straight to the record you need to change.
+        </p>
+        <a href="{{ url_for('platform') }}" class="btn btn-secondary mt-7">
+          How the score is built {{ icon('arrow-right','ico ico-sm') }}
+        </a>
+      </div>
+
+      <div class="card overflow-hidden shadow-s2" data-reveal-on-scroll>
+        <div class="px-5 py-3.5 border-b border-divider bg-fog/50 flex items-center justify-between">
+          <p class="kicker m-0">Signal ledger</p>
+          <span class="tag tag-neutral">3 findings</span>
+        </div>
+        <ol class="list-none m-0 p-0">
+          {% for sev, tone, title, body, action in [
+            ('critical','bad','Welding bay C is down','Two runs are assigned to it and neither can proceed. Reported from the floor 40 minutes ago.','Assign a technician'),
+            ('high','bad','Aluminium sheet is at zero','Three products use it. The next run needs 8 sheets and there are none.','Draft a purchase order'),
+            ('medium','warn','RUN-0004 has slipped','Due yesterday at 40%. Nothing has been reported against it in two days.','Reassign or move the date')] %}
+          <li class="px-5 py-4 border-b border-divider/70 last:border-b-0">
+            <div class="flex items-start justify-between gap-3 mb-1.5">
+              <p class="text-[13.5px] font-semibold text-ink m-0 leading-snug">{{ title }}</p>
+              <span class="tag tag-{{ tone }} shrink-0">{{ sev }}</span>
+            </div>
+            <p class="text-[12.5px] text-slate-500 m-0 leading-relaxed">{{ body }}</p>
+            <p class="text-[12.5px] mt-2 mb-0">
+              <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Do</span>{{ action }}
+            </p>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ══════════════ RUNNING NOW ══════════════ #}
+<section class="border-b border-divider bg-slate-900 text-white relative overflow-hidden">
+  <div class="absolute inset-0 hatch opacity-[0.05]" aria-hidden="true"></div>
+  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-14">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      {% for label, value, sub in [
+        ('Plants running', stats.factories, 'On this installation'),
+        ('Workers registered', stats.workers, 'Reachable by handset'),
+        ('Handset sessions', stats.sessions, 'Reports from the floor'),
+        ('Messages handled', stats.messages, 'Alerts, updates, replies')] %}
+      <div>
+        <p class="label text-slate-500 m-0">{{ label }}</p>
+        <p class="font-display text-[36px] font-bold tracking-[-0.03em] mt-2 m-0">{{ value }}</p>
+        <p class="text-[12px] text-slate-400 mt-1 m-0">{{ sub }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ══════════════ CTA ══════════════ #}
+<section>
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-24">
+    <div class="card card-pad text-center max-w-[720px] mx-auto grid-lines">
+      <p class="kicker mb-4">Get started</p>
+      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+        Set up a plant in ten minutes.
+      </h2>
+      <p class="lede mt-5 max-w-[46ch] mx-auto">
+        You get a starter material list, sensible production stages and the USSD menu already wired
+        up. Add your workers' numbers and the floor can start reporting the same afternoon.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
+        <a href="{{ url_for('signup') }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} Set up your plant</a>
+        <a href="{{ url_for('pricing') }}" class="btn btn-secondary">See pricing</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

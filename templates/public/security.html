@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Security — {{ APP_NAME }}{% endblock %}
+{% block description %}How Mzalendo protects plant data: content security policy, HSTS, CSRF protection, per-tenant scoping, account lockout and a full audit trail.{% endblock %}
+
+{% block content %}
+{% from "partials/icons.html" import icon %}
+
+<section class="border-b border-divider relative overflow-hidden">
+  <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
+  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
+    <div class="max-w-[62ch]">
+      <p class="kicker mb-5">Security</p>
+      <h1 class="font-display text-[36px] sm:text-[46px] font-bold leading-[1.06] tracking-[-0.035em] m-0">
+        Your order book is commercially sensitive. We treat it that way.
+      </h1>
+      <p class="lede mt-6">
+        A plant's stock levels, margins and customer list are exactly the things a competitor would
+        like to see. What follows is what the application actually does, not a statement of intent.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-divider bg-surface">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16">
+    <div class="max-w-[54ch] mb-10">
+      <p class="kicker mb-4">Response headers</p>
+      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
+        Set on every response, including this one.
+      </h2>
+      <p class="lede mt-5">
+        You can verify all of these yourself against this page — either in your browser's network
+        tab or by running it through an external header scanner.
+      </p>
+    </div>
+
+    <div class="card overflow-hidden">
+      <table class="tbl">
+        <thead><tr><th>Header</th><th>What it does</th></tr></thead>
+        <tbody>
+          {% for header, what in [
+            ('Content-Security-Policy','Scripts and styles load only from this origin, each carrying a nonce generated fresh for the request. No inline script without that nonce will execute, which shuts down most injection attempts.'),
+            ('Strict-Transport-Security','Two year max-age, subdomains included, preload set. After the first visit the browser refuses to talk to us over plain HTTP.'),
+            ('X-Content-Type-Options','nosniff — the browser respects the declared content type rather than guessing at it.'),
+            ('X-Frame-Options','DENY. The dashboard cannot be placed in a frame, which rules out clickjacking.'),
+            ('Referrer-Policy','strict-origin-when-cross-origin, so internal paths never leak to third parties.'),
+            ('Permissions-Policy','Camera, microphone, geolocation, payment and the rest are switched off. The application needs none of them.'),
+            ('Cross-Origin-Opener-Policy','same-origin, isolating the browsing context from anything that opens us.'),
+            ('Cache-Control','no-store on every authenticated page, so plant data is not left in a shared machine\'s cache.')] %}
+          <tr>
+            <td class="font-mono text-[11.5px] font-semibold whitespace-nowrap align-top pt-3">{{ header }}</td>
+            <td class="text-[12.5px] text-slate-500 leading-relaxed">{{ what }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-divider">
+  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16">
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {% for ico, title, body in [
+        ('lock','Passwords','Hashed with a salted one-way function, never stored or logged in the clear. New passwords must be twelve characters with upper case, lower case, a digit and a symbol.'),
+        ('shield','Account lockout','Six failed attempts locks the account for fifteen minutes. This makes credential stuffing impractical without locking honest people out for long.'),
+        ('key','Forced rotation','Seeded and reset passwords are temporary. The account cannot reach any page other than the change-password screen until a new one is set.'),
+        ('building','Tenant isolation','Every query is scoped to a plant. There is no code path that returns another plant\'s records, and Enterprise can run a wholly separate database.'),
+        ('badge-check','CSRF protection','Every state-changing form carries a token tied to the session. The USSD and SMS callbacks are exempt by necessity and are instead rate limited and validated.'),
+        ('list','Audit trail','Who did what, when, and from which address. Written for every meaningful change and not editable from the interface at all.'),
+        ('user-cog','Least privilege','Five roles from viewer to owner. A supervisor can run the floor without seeing margins; a viewer can see everything and change nothing.'),
+        ('signal','Rate limiting','Applied per address across the application, with tighter limits on sign-in and the telco callbacks.'),
+        ('server','No third-party scripts','Nothing loads from an analytics network or a CDN except the font files. There is no tag manager and no session recorder.')] %}
+      <div class="card card-pad" data-reveal-on-scroll>
+        <span class="inline-grid place-items-center w-[40px] h-[40px] rounded-[12px] bg-fog border border-divider text-slate-500 mb-4">{{ icon(ico) }}</span>
+        <h3 class="text-[15.5px] font-semibold m-0 mb-2">{{ title }}</h3>
+        <p class="text-[13px] text-slate-500 leading-relaxed m-0">{{ body }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="bg-slate-900 text-white relative overflow-hidden">
+  <div class="absolute inset-0 hatch opacity-[0.05]" aria-hidden="true"></div>
+  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-14">
+    <div class="max-w-[62ch]">
+      <p class="kicker text-signal-500 mb-4">Reporting a problem</p>
+      <h2 class="font-display text-[24px] sm:text-[30px] font-bold leading-[1.14] tracking-[-0.03em] m-0">
+        If you find something, tell us before you tell anyone else.
+      </h2>
+      <p class="text-[14px] text-slate-300 mt-5 leading-relaxed">
+        Write to <a href="mailto:security@mzalendo.africa" class="text-signal-500 underline decoration-signal-500/40 underline-offset-2">security@mzalendo.africa</a>
+        with enough detail to reproduce it. We will confirm receipt within two working days and will
+        not pursue anyone who reports in good faith and gives us reasonable time to fix it.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

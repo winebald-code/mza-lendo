@@ -1,0 +1,149 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.name %}
+{% set kicker = 'Machine ' ~ item.code %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_machines') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Machines</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('machine_form', machine_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+    <a href="{{ url_for('ticket_form') }}?machine_id={{ item.id }}" class="btn btn-primary btn-sm">{{ icon('tool','ico ico-sm') }} Log a fault</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if item.status == 'down' %}
+<div class="alert alert-bad mb-6">
+  <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
+  <p class="m-0">This machine is down. Any run assigned to it is stalled until it comes back — check the open faults below.</p>
+</div>
+{% elif item.service_state == 'overdue' %}
+<div class="alert alert-warn mb-6">
+  <span class="shrink-0 mt-[1px]">{{ icon('clock','ico ico-sm') }}</span>
+  <p class="m-0">Service was due on {{ item.next_service|d('%d %B') }}. Running past a service interval is how a planned stop becomes an unplanned one.</p>
+</div>
+{% endif %}
+
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+    <section class="card">
+      <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5"><p class="label m-0">Status</p><div class="mt-2">{{ status_tag(item.status) }}</div></div>
+        <div class="p-5"><p class="label m-0">Runtime</p><p class="stat-v mt-1 m-0">{{ item.runtime_hours|qty }}<span class="text-[0.5em] text-slate-400 ml-1">h</span></p></div>
+        <div class="p-5">
+          <p class="label m-0">Open faults</p>
+          <p class="stat-v mt-1 m-0 {% if tickets|selectattr('status','in',['open','assigned','in_progress'])|list|length %}text-bad{% endif %}">
+            {{ tickets|selectattr('status','in',['open','assigned','in_progress'])|list|length }}
+          </p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Total downtime</p>
+          <p class="stat-v mt-1 m-0">{{ (downtime / 60)|round(1) }}<span class="text-[0.5em] text-slate-400 ml-1">h</span></p>
+          <p class="font-mono text-[10.5px] text-slate-400 mt-1 m-0">{{ downtime }} minutes logged</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Fault history</h2></div>
+      {% if tickets %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Reference</th><th>Fault</th><th>Reported</th><th>By</th><th class="r">Downtime</th><th>Severity</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr>
+              <td><span class="font-mono text-[11.5px] font-semibold text-slate-600">{{ t.reference }}</span></td>
+              <td class="text-[12.5px] max-w-[180px] truncate">{{ t.fault_type }}</td>
+              <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ t.created_at|dt('%d %b · %H:%M') }}</td>
+              <td class="text-[12.5px] text-slate-500">{{ t.worker.name if t.worker else 'office' }}</td>
+              <td class="r num text-[12.5px] text-slate-500">{{ t.downtime_minutes or 0 }}m</td>
+              <td>{{ sev_tag(t.severity) }}</td>
+              <td>{{ status_tag(t.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('badge-check', 'No faults recorded', 'This machine has never been reported as faulty.') }}
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Recent runs</h2></div>
+      {% if runs %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Run</th><th>Product</th><th>Progress</th><th>Dates</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for r in runs %}
+            <tr>
+              <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
+              <td class="text-[12.5px] max-w-[170px] truncate">{{ r.product.name if r.product else '—' }}</td>
+              <td class="w-[120px]">{{ progress(r.progress, 'bad' if r.is_at_risk else ('ok' if r.progress == 100 else 'signal')) }}</td>
+              <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ r.start_date|d('%d %b') }} → {{ r.end_date|d('%d %b') }}</td>
+              <td>{{ status_tag(r.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('cog', 'No runs on this machine', 'Assign it to a production run and the history builds up here.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Change status</h2>
+      <form method="post" action="{{ url_for('machine_status', machine_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="status" class="select" aria-label="New status">
+          {% for s in MACHINE_STATUSES %}<option value="{{ s }}" {% if s == item.status %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-block">{{ icon('refresh','ico ico-sm') }} Update</button>
+      </form>
+      <p class="hint mt-3 mb-0">Marking a machine down raises an alert and texts the managers on file.</p>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Record a service</h2>
+      <form method="post" action="{{ url_for('machine_service', machine_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field !mb-0">
+          <label for="f-serviced_on">Date serviced</label>
+          <input id="f-serviced_on" name="serviced_on" type="date" class="input" value="{{ today.isoformat() }}">
+        </div>
+        <button type="submit" class="btn btn-secondary btn-block">{{ icon('badge-check','ico ico-sm') }} Mark serviced</button>
+      </form>
+      <p class="hint mt-3 mb-0">Resets the clock — next due {{ item.service_interval_days }} days later.</p>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Code</dt><dd class="font-mono text-[12px] m-0">{{ item.code }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Type</dt><dd class="text-[12.5px] m-0">{{ item.kind or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Location</dt><dd class="text-[12.5px] m-0">{{ item.location or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Commissioned</dt><dd class="font-mono text-[11.5px] text-slate-500 m-0">{{ item.commissioned_on|d('%d %b %Y') }}</dd></div>
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">Last serviced</dt><dd class="font-mono text-[11.5px] text-slate-500 m-0">{{ item.last_service_at|d('%d %b %Y') }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Next due</dt>
+          <dd class="font-mono text-[11.5px] m-0 {% if item.service_state == 'overdue' %}text-bad font-semibold{% elif item.service_state == 'due' %}text-warn font-semibold{% else %}text-slate-500{% endif %}">{{ item.next_service|d('%d %b %Y') }}</dd>
+        </div>
+      </dl>
+      {% if item.notes %}
+      <div class="mt-5 pt-5 border-t border-divider">
+        <p class="label mb-2">Notes</p>
+        <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+      </div>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

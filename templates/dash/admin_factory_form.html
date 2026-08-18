@@ -1,0 +1,59 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New plant' %}
+{% set kicker = 'Platform administration' %}
+{% set page_sub = 'A plant is a fully isolated tenant with its own users, records and telco credentials.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Plant</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Plant name', item.name if item else '', 'text', errors, None, True, 'Kamukunji Metalworks') }}
+        {{ field('sector', 'Sector', item.sector if item else 'General manufacturing', 'text', errors) }}
+        {{ field('county', 'County', item.county if item else 'Nairobi', 'text', errors) }}
+        {{ field('currency', 'Currency', item.currency if item else 'KES', 'text', errors, None, False, 'KES', 'maxlength="8"') }}
+        {{ field('phone', 'Phone', item.phone if item else '', 'tel', errors) }}
+        {{ field('email', 'Email', item.email if item else '', 'email', errors) }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-address">Address</label>
+        <textarea id="f-address" name="address" class="textarea" rows="2">{{ item.address if item else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Service</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('plan', 'Plan', [('starter','Starter'),('business','Business'),('enterprise','Enterprise')],
+                  item.plan if item else 'starter', errors) }}
+        {{ field('ussd_code', 'USSD code', item.ussd_code if item else '', 'text', errors,
+                 'The shortcode issued for this plant', False, '*384*7788#') }}
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <label class="check">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+        <span>Active — users can sign in</span>
+      </label>
+      {% if item %}
+      <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Slug</dt><dd class="font-mono text-[11px] m-0">{{ item.slug }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Created</dt><dd class="font-mono text-[11px] text-slate-400 m-0">{{ item.created_at|dt('%d %b %Y') }}</dd></div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create plant' }}</button>
+      <a href="{{ url_for('admin_factories') }}" class="btn btn-secondary btn-block">Cancel</a>
+    </div>
+  </aside>
+</form>
+{% endblock %}

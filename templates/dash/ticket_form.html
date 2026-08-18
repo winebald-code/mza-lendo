@@ -1,0 +1,72 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.reference) if item else 'Log a fault' %}
+{% set kicker = 'Maintenance' %}
+{% set page_sub = 'Critical faults stop the machine automatically and text whoever is on the managers list.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">The fault</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('machine_id', 'Machine', obj_options(machines),
+                  (item.machine_id if item else request.args.get('machine_id')), errors,
+                  None, 'Choose a machine', True) }}
+        {{ select('fault_type', 'Fault type', pairs(FAULT_TYPES.values()|list, False),
+                  item.fault_type if item else '', errors, 'Same list the USSD menu offers') }}
+        {{ select('severity', 'Severity', pairs(SEVERITIES), item.severity if item else 'medium', errors,
+                  'Critical marks the machine down straight away') }}
+        {{ select('worker_id', 'Reported by', obj_options(workers), item.worker_id if item else '', errors,
+                  'Leave blank if it came from the office', 'Office') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-description">What is wrong <span class="text-signal-600">*</span></label>
+        <textarea id="f-description" name="description" class="textarea" rows="3" required
+                  placeholder="What it does, what changed, any noise or smell…">{{ item.description if item else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Handling</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('assigned_to_id', 'Assign to', obj_options(technicians, 'full_name'),
+                  item.assigned_to_id if item else '', errors, 'They get an SMS when assigned', 'Unassigned') }}
+        {{ select('status', 'Status', pairs(TICKET_STATUSES), item.status if item else 'open', errors) }}
+        {{ field('downtime_minutes', 'Downtime (minutes)', item.downtime_minutes if item else '0', 'number', errors,
+                 'Feeds the downtime figures in Reports', False, '0', 'min="0"') }}
+      </div>
+      <div class="field mt-1">
+        <label for="f-resolution">Resolution</label>
+        <textarea id="f-resolution" name="resolution" class="textarea" rows="3"
+                  placeholder="What fixed it, what parts went in…">{{ item.resolution if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Notification</h2>
+      <label class="check">
+        <input type="checkbox" name="notify" {% if not item %}checked{% endif %}>
+        <span>Text the assigned technician</span>
+      </label>
+      <p class="hint mt-3 mb-0">New tickets always notify. Tick this to re-send on an edit.</p>
+      {% if item %}
+      <dl class="mt-4 pt-4 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Reference</dt><dd class="font-mono text-[12px] m-0">{{ item.reference }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Open for</dt><dd class="num text-[12.5px] m-0">{{ item.age_hours|round(1) }}h</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Source</dt><dd class="m-0"><span class="tag tag-neutral">{{ item.source }}</span></dd></div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Log the fault' }}</button>
+      <a href="{{ url_for('dash_maintenance') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('ticket_delete', ticket_id=item.id), 'Delete ticket', item.reference, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

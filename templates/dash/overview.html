@@ -1,0 +1,322 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Overview' %}
+{% set kicker = factory.name %}
+{% set page_sub = 'Everything the plant is doing right now, and what needs a decision from you today.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_ussd_simulator') }}" class="btn btn-secondary btn-sm">{{ icon('phone','ico ico-sm') }} Handset simulator</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('order_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New order</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# ══════════════ MANUFACTURING PULSE ══════════════ #}
+<section class="card overflow-hidden mb-6">
+  <div class="grid lg:grid-cols-[300px_1fr] xl:grid-cols-[300px_320px_1fr]">
+
+    {# Ring #}
+    <div class="p-6 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-divider bg-fog/40 grid-lines">
+      <p class="kicker mb-4">Manufacturing Pulse</p>
+      {{ pulse_ring(pulse.overall, pulse.overall_band, 200) }}
+      <p class="text-[12px] text-slate-500 text-center mt-4 mb-0 max-w-[26ch] leading-snug">
+        {% if pulse.overall_band == 'ok' %}
+          The plant is holding its line. Keep the reorder points honest.
+        {% elif pulse.overall_band == 'warn' %}
+          Workable, but three or four things need attention before they compound.
+        {% else %}
+          Several subsystems are pulling the plant down. Start at the top of the ledger.
+        {% endif %}
+      </p>
+      <a href="{{ url_for('dash_pulse') }}" class="btn btn-ghost btn-xs mt-3">
+        Full breakdown {{ icon('arrow-right','ico ico-sm') }}
+      </a>
+    </div>
+
+    {# Subsystem meters #}
+    <div class="p-6 border-b xl:border-b-0 xl:border-r border-divider">
+      <p class="label mb-4">Subsystems</p>
+      {{ pulse_bars(pulse.scores, pulse.bands, {
+        'production': url_for('dash_runs'),
+        'inventory': url_for('dash_materials'),
+        'orders': url_for('dash_orders'),
+        'maintenance': url_for('dash_machines'),
+        'suppliers': url_for('dash_suppliers')}) }}
+      <div class="mt-5 pt-4 border-t border-divider grid grid-cols-3 gap-3 text-center">
+        <div><p class="num text-[17px] font-semibold m-0">{{ pulse.counts.runs }}</p><p class="label mt-0.5 m-0">Open runs</p></div>
+        <div><p class="num text-[17px] font-semibold m-0 {% if pulse.counts.low + pulse.counts.out %}text-warn{% endif %}">{{ pulse.counts.low + pulse.counts.out }}</p><p class="label mt-0.5 m-0">Low stock</p></div>
+        <div><p class="num text-[17px] font-semibold m-0 {% if pulse.counts.down %}text-bad{% endif %}">{{ pulse.counts.down }}</p><p class="label mt-0.5 m-0">Down</p></div>
+      </div>
+    </div>
+
+    {# Signal ledger — why the number moved #}
+    <div class="p-6">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <p class="label m-0">Signal ledger</p>
+        <span class="font-mono text-[10px] text-slate-400">{{ pulse.findings|length }} finding{{ '' if pulse.findings|length == 1 else 's' }}</span>
+      </div>
+      {% if pulse.findings %}
+        <ol class="list-none m-0 p-0 grid gap-3 max-h-[290px] overflow-y-auto pr-1">
+          {% for f in pulse.findings[:6] %}
+          <li class="relative pl-4 border-l-2 {% if f.severity in ('critical','high') %}border-bad{% elif f.severity == 'medium' %}border-warn{% else %}border-signal-500{% endif %}">
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-[13px] font-semibold text-ink m-0 leading-snug">{{ f.title }}</p>
+              {{ sev_tag(f.severity) }}
+            </div>
+            <p class="text-[12px] text-slate-500 mt-1 mb-1.5 leading-snug">{{ f.body }}</p>
+            <p class="text-[12px] m-0 leading-snug">
+              <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Do</span>
+              <a href="{{ url_for(f.link) }}" class="text-ink hover:text-signal-600 underline decoration-divider decoration-1 underline-offset-2">{{ f.action }}</a>
+            </p>
+          </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="text-center py-10">
+          <span class="inline-grid place-items-center w-[44px] h-[44px] rounded-[14px] bg-ok/10 text-ok mb-3">{{ icon('check','ico ico-lg') }}</span>
+          <p class="text-[13px] font-semibold m-0">Nothing is pulling the plant down</p>
+          <p class="text-[12px] text-slate-500 mt-1 m-0">Stock, machines and orders all sit inside their limits.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ══════════════ KPI STRIP ══════════════ #}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 mb-6">
+  {{ kpi('Open orders', kpis.open_orders, kpis.due_this_week ~ ' due this week', 'clipboard', 'ink', url_for('dash_orders')) }}
+  {{ kpi('Order book', kpis.order_value|money_kpi, 'Value not yet dispatched', 'coins', 'ink') }}
+  {{ kpi('Active runs', kpis.active_runs, pulse.counts.at_risk ~ ' behind schedule', 'cog', 'warn' if pulse.counts.at_risk else 'ink', url_for('dash_runs')) }}
+  {{ kpi('Stock on hand', kpis.stock_value|money_kpi, kpis.low_stock ~ ' items under minimum', 'box', 'bad' if kpis.low_stock else 'ink', url_for('dash_materials')) }}
+  {{ kpi('Open faults', kpis.open_tickets, kpis.machines_down ~ ' machines stopped', 'tool', 'bad' if kpis.machines_down else 'ink', url_for('dash_maintenance')) }}
+  {{ kpi('On the floor', kpis.present_today ~ '/' ~ kpis.workers, 'Clocked in today', 'helmet', 'ink', url_for('dash_attendance')) }}
+</section>
+
+<div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+
+  <div class="grid gap-6">
+    {# ── Production throughput ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Units completed</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Last 14 days, from run reports</p>
+        </div>
+        <a href="{{ url_for('dash_reports') }}" class="btn btn-ghost btn-xs">Reports {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      <div class="p-5">
+        <div data-bars='{{ series|tojson }}' class="h-[150px]"></div>
+      </div>
+    </section>
+
+    {# ── Runs on the floor ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">On the floor</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Runs that have not finished</p>
+        </div>
+        <a href="{{ url_for('dash_runs') }}" class="btn btn-ghost btn-xs">All runs {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if runs %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Run</th><th>Product</th><th>Progress</th><th>Worker</th><th>Due</th><th></th></tr></thead>
+          <tbody>
+            {% for r in runs %}
+            <tr>
+              <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
+              <td class="max-w-[180px] truncate">{{ r.product.name if r.product else '—' }}</td>
+              <td class="w-[150px]">
+                <div class="flex items-center gap-2">
+                  {{ progress(r.progress, 'bad' if r.is_at_risk else ('ok' if r.progress == 100 else 'signal')) }}
+                  <span class="num text-[11px] text-slate-500 w-[34px] text-right">{{ r.progress }}%</span>
+                </div>
+              </td>
+              <td class="text-[12.5px] text-slate-500">{{ r.worker.name if r.worker else 'Unassigned' }}</td>
+              <td class="num text-[12px] {% if r.is_at_risk %}text-bad font-semibold{% else %}text-slate-500{% endif %}">{{ r.end_date|d('%d %b') }}</td>
+              <td>{{ status_tag(r.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('cog', 'Nothing is running', 'Plan production from an order, or start a run directly.', url_for('run_form') if current_user.role in ('super_admin','owner','manager','supervisor') else None, 'Start a run') }}
+      {% endif %}
+    </section>
+
+    {# ── Orders due ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Orders by due date</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Soonest first</p>
+        </div>
+        <a href="{{ url_for('dash_orders') }}" class="btn btn-ghost btn-xs">All orders {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if upcoming %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Order</th><th>Customer</th><th class="r">Value</th><th>Due</th><th>Stage</th></tr></thead>
+          <tbody>
+            {% for o in upcoming %}
+            <tr>
+              <td><a href="{{ url_for('order_detail', order_id=o.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ o.number }}</a></td>
+              <td class="max-w-[170px] truncate text-[12.5px]">{{ o.customer.name if o.customer else '—' }}</td>
+              <td class="r text-[12.5px]">{{ o.total|money }}</td>
+              <td class="num text-[12px]">
+                {% if o.is_late %}
+                  <span class="text-bad font-semibold">{{ (o.days_left * -1) }}d late</span>
+                {% elif o.days_left is not none %}
+                  <span class="{% if o.days_left <= 2 %}text-warn font-semibold{% else %}text-slate-500{% endif %}">{{ o.due_date|d('%d %b') }}</span>
+                {% else %}<span class="text-slate-400">—</span>{% endif %}
+              </td>
+              <td>{{ status_tag(o.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('clipboard', 'The order book is empty', 'Record your first customer order to start planning production.', url_for('order_form') if current_user.can_write else None, 'New order') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="grid gap-6 content-start">
+    {# ── Alerts ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Alerts</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Raised by the engine and the floor</p>
+        </div>
+        <a href="{{ url_for('dash_alerts') }}" class="btn btn-ghost btn-xs">All {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if alerts %}
+      <ul class="list-none m-0 p-0">
+        {% for a in alerts %}
+        <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 {% if not a.is_read %}bg-signal-50/40{% endif %}">
+          <div class="flex items-start gap-2.5">
+            <span class="dot mt-[7px] shrink-0 {% if a.severity in ('critical','high') %}bg-bad{% elif a.severity == 'medium' %}bg-warn{% else %}bg-signal-500{% endif %}"></span>
+            <div class="min-w-0 flex-1">
+              <p class="text-[12.5px] font-semibold text-ink m-0 leading-snug">{{ a.title }}</p>
+              {% if a.recommendation %}<p class="text-[11.5px] text-slate-500 mt-1 m-0 leading-snug">{{ a.recommendation }}</p>{% endif %}
+              <p class="font-mono text-[10px] text-slate-400 mt-1.5 m-0">{{ a.created_at|ago }}</p>
+            </div>
+            {% if not a.is_read %}
+            <form method="post" action="{{ url_for('alert_read', alert_id=a.id) }}" class="shrink-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-ghost btn-xs" title="Mark read" aria-label="Mark read">{{ icon('check','ico ico-sm') }}</button>
+            </form>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('bell', 'No alerts', 'The engine raises one the moment stock, a machine or an order slips.') }}
+      {% endif %}
+    </section>
+
+    {# ── Low stock ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Reorder line</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Closest to running out</p>
+        </div>
+        {% if current_user.can_write %}
+        <form method="post" action="{{ url_for('procurement_auto') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-xs">{{ icon('cart','ico ico-sm') }} Draft POs</button>
+        </form>
+        {% endif %}
+      </div>
+      {% if low_materials %}
+      <ul class="list-none m-0 p-0">
+        {% for m in low_materials %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0">
+          <div class="flex items-center justify-between gap-3 mb-1.5">
+            <a href="{{ url_for('material_detail', material_id=m.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 truncate">{{ m.name }}</a>
+            <span class="num text-[12px] font-semibold shrink-0 {% if m.stock_state=='out' %}text-bad{% elif m.stock_state=='low' %}text-warn{% else %}text-slate-500{% endif %}">
+              {{ m.quantity|qty }} {{ m.unit }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            {{ progress(m.stock_pct, 'bad' if m.stock_state=='out' else ('warn' if m.stock_state=='low' else 'signal'), 5) }}
+            <span class="font-mono text-[10px] text-slate-400 shrink-0 w-[62px] text-right">min {{ m.min_stock|qty }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('package-check', 'Everything is above its line', 'No material is close to the reorder point.') }}
+      {% endif %}
+    </section>
+
+    {# ── Open faults ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Open faults</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Mostly reported over USSD</p>
+        </div>
+        <a href="{{ url_for('dash_maintenance') }}" class="btn btn-ghost btn-xs">All {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if tickets %}
+      <ul class="list-none m-0 p-0">
+        {% for t in tickets %}
+        <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-[12.5px] font-semibold text-ink m-0 truncate">{{ t.machine.name if t.machine else 'Machine' }} — {{ t.fault_type }}</p>
+              <p class="font-mono text-[10px] text-slate-400 mt-1 m-0">
+                {{ t.reference }} · {{ t.worker.name if t.worker else 'office' }} · {{ t.age_hours }}h open
+              </p>
+            </div>
+            {{ sev_tag(t.severity) }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('wrench', 'No open faults', 'Every machine is reporting clear.') }}
+      {% endif %}
+    </section>
+
+    {# ── Floor activity ── #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Floor activity</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Latest handset sessions</p>
+        </div>
+        <a href="{{ url_for('dash_ussd_sessions') }}" class="btn btn-ghost btn-xs">All {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if feed %}
+      <ul class="list-none m-0 p-0">
+        {% for s in feed %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0 flex items-center gap-3">
+          <span class="w-[30px] h-[30px] rounded-[9px] bg-fog border border-divider grid place-items-center text-slate-400 shrink-0">{{ icon('phone','ico ico-sm') }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[12.5px] font-medium text-ink m-0 truncate">{{ s.worker.name if s.worker else s.phone_number }}</p>
+            <p class="font-mono text-[10px] text-slate-400 mt-0.5 m-0 truncate">{{ s.outcome or 'session' }} · {{ s.last_input or '—' }}</p>
+          </div>
+          <span class="font-mono text-[10px] text-slate-400 shrink-0">{{ s.started_at|ago }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('signal', 'No sessions yet', 'Open the handset simulator to walk through the worker menu.', url_for('dash_ussd_simulator'), 'Open simulator') }}
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/charts.js') }}" defer></script>
+{% endblock %}

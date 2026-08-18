@@ -1,0 +1,57 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'USSD sessions' %}
+{% set kicker = 'Reach' %}
+{% set page_sub = 'Every handset session against the plant code. This is the floor talking to the system.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_ussd_simulator') }}" class="btn btn-primary btn-sm">{{ icon('phone','ico ico-sm') }} Handset simulator</a>
+{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-3 mb-6">
+  {{ kpi('Total sessions', total, 'Since the plant went live', 'signal') }}
+  {{ kpi('Completed', completed, 'Reached an END screen', 'check', 'ok' if completed else 'ink') }}
+  {{ kpi('Completion rate', ((completed / total * 100)|round|int ~ '%') if total else '—',
+         'Sessions that finished what they started', 'target',
+         'ok' if total and (completed / total) > 0.8 else 'warn' if total else 'ink') }}
+</section>
+
+<section class="card">
+  <form method="get" action="{{ url_for('dash_ussd_sessions') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ filter_select('status', [('active','Active'),('completed','Completed'),('abandoned','Abandoned'),('failed','Failed')], status, 'Any status') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if status %}<a href="{{ url_for('dash_ussd_sessions') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} session{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Session</th><th>Worker</th><th>Number</th><th>Path taken</th><th>Outcome</th><th class="r">Hops</th><th>Started</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in page.items %}
+        <tr>
+          <td><span class="font-mono text-[10.5px] text-slate-400">{{ s.session_id|truncate(14, True, '…') }}</span></td>
+          <td>
+            {% if s.worker %}<a href="{{ url_for('worker_detail', worker_id=s.worker_id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ s.worker.name }}</a>
+            {% else %}<span class="text-slate-400 text-[12.5px]">unregistered</span>{% endif %}
+          </td>
+          <td class="font-mono text-[11.5px] text-slate-500">{{ s.phone_number }}</td>
+          <td><span class="font-mono text-[11px] text-signal-700 bg-signal-50 px-1.5 py-0.5 rounded">{{ s.last_input or '—' }}</span></td>
+          <td class="text-[12.5px] text-slate-500 max-w-[220px] truncate">{{ s.outcome or '—' }}</td>
+          <td class="r num text-[12.5px] text-slate-500">{{ s.hops }}</td>
+          <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ s.started_at|dt('%d %b · %H:%M') }}</td>
+          <td>{{ status_tag(s.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_ussd_sessions', 'status=' ~ status) }}
+  {% else %}
+    {{ empty_state('signal', 'No sessions match' if status else 'No sessions yet',
+        'Try another status filter.' if status else 'Nobody has dialled the plant code yet. Open the simulator to walk the menu yourself.',
+        url_for('dash_ussd_simulator') if not status else None, 'Open simulator') }}
+  {% endif %}
+</section>
+{% endblock %}

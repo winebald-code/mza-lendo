@@ -1,0 +1,138 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Reports' %}
+{% set kicker = 'Reach' %}
+{% set page_sub = 'The last ' ~ days ~ ' days of the plant, and a CSV of anything you want to take away.' %}
+
+{% block page_actions %}
+  {% for d in [7, 30, 90, 365] %}
+  <a href="{{ url_for('dash_reports') }}?days={{ d }}"
+     class="px-3 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
+            {% if days == d %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
+    {{ d }}d
+  </a>
+  {% endfor %}
+{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+  {{ kpi('Orders', summary.orders, 'Placed in period', 'clipboard') }}
+  {{ kpi('Order value', summary.revenue|money_kpi, 'Booked in period', 'coins') }}
+  {{ kpi('Runs', summary.runs, 'Raised in period', 'cog') }}
+  {{ kpi('Units made', summary.units|qty, 'Reported complete', 'cube') }}
+  {{ kpi('On-time', summary.on_time ~ '%', 'Orders not late', 'target', 'ok' if summary.on_time >= 90 else ('warn' if summary.on_time >= 70 else 'bad')) }}
+  {{ kpi('QC pass rate', summary.qc_rate ~ '%', qc_pass ~ ' pass / ' ~ qc_fail ~ ' fail', 'badge-check', 'ok' if summary.qc_rate >= 90 else 'warn') }}
+  {{ kpi('Downtime', (summary.downtime / 60)|round(1) ~ 'h', summary.tickets ~ ' faults logged', 'wrench', 'bad' if summary.downtime > 600 else 'ink') }}
+  {{ kpi('Floor traffic', summary.ussd, summary.sms ~ ' SMS sent', 'signal') }}
+</section>
+
+<div class="grid gap-6 xl:grid-cols-2">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Order book by stage</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Where the period's orders currently sit</p>
+      </div>
+    </div>
+    <div class="p-5">
+      {% if by_status %}
+      <div class="flex flex-wrap items-center gap-6">
+        {% set palette = {'new':'#8B939E','confirmed':'#FF6A00','scheduled':'#FF8A33','in_production':'#D97706',
+                          'quality_check':'#B45309','ready':'#1F8A5B','dispatched':'#15703F','completed':'#07090B','cancelled':'#D7DCE2'} %}
+        <div class="w-[148px] h-[148px] shrink-0" data-total-label="ORDERS"
+             data-donut='[{% for s, n in by_status.items() %}{"k":"{{ s|replace('_',' ') }}","v":{{ n }},"c":"{{ palette.get(s, '#8B939E') }}"}{{ ',' if not loop.last }}{% endfor %}]'></div>
+        <dl class="grid gap-2 m-0 flex-1 min-w-[150px]">
+          {% for s, n in by_status.items() %}
+          <div class="flex items-center gap-2.5">
+            <span class="w-[10px] h-[10px] rounded-[2px] shrink-0" data-css-bg="{{ palette.get(s, '#8B939E') }}"></span>
+            <dt class="text-[12.5px] text-slate-600 flex-1 capitalize m-0">{{ ORDER_STATUS_LABELS.get(s, s|replace('_',' ')) }}</dt>
+            <dd class="num text-[12.5px] font-semibold m-0">{{ n }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+      </div>
+      {% else %}
+        {{ empty_state('clipboard', 'No orders in this period', 'Widen the window, or record an order.') }}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Most ordered products</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">By units on customer orders</p>
+      </div>
+    </div>
+    <div class="p-5">
+      {% if top_products %}
+        <div data-ranks='{{ top_products|tojson }}'></div>
+      {% else %}
+        {{ empty_state('cube', 'Nothing ordered', 'No order lines fall inside this window.') }}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Material consumption</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Issued to the floor or written off as waste</p>
+      </div>
+    </div>
+    <div class="p-5">
+      {% if consumed %}
+        <div data-ranks='{{ consumed|tojson }}'></div>
+      {% else %}
+        {{ empty_state('box', 'No consumption recorded', 'No stock has left the store in this window.') }}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Downtime by machine</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Minutes lost to faults</p>
+      </div>
+    </div>
+    <div class="p-5">
+      {% if downtime %}
+        <div data-ranks='{{ downtime|tojson }}'></div>
+      {% else %}
+        {{ empty_state('wrench', 'No downtime logged', 'Either nothing broke, or the minutes are not being recorded on tickets.') }}
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<section class="card mt-6">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title m-0">Export data</h2>
+      <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">CSV of your whole plant, not just this window</p>
+    </div>
+  </div>
+  <div class="p-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+    {% for ds, label, ico in [
+      ('materials','Materials','box'), ('stock-ledger','Stock ledger','history'),
+      ('products','Products','cube'), ('suppliers','Suppliers','truck'),
+      ('purchase-orders','Purchase orders','cart'), ('customers','Customers','users'),
+      ('orders','Orders','clipboard'), ('workers','Workers','helmet'),
+      ('attendance','Attendance','clock'), ('machines','Machines','wrench'),
+      ('maintenance','Maintenance','tool'), ('quality','Quality','badge-check'),
+      ('safety','Safety','shield'), ('messages','Messages','message'),
+      ('pulse','Pulse history','pulse')] %}
+    <a href="{{ url_for('export_csv', dataset=ds) }}"
+       class="flex items-center gap-3 px-4 py-3 rounded-panel border border-divider bg-surface hover:border-ink hover:shadow-s1 transition-all">
+      <span class="text-slate-400">{{ icon(ico,'ico ico-sm') }}</span>
+      <span class="text-[12.5px] font-medium text-ink flex-1">{{ label }}</span>
+      <span class="text-slate-300">{{ icon('download','ico ico-sm') }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/charts.js') }}" defer></script>
+{% endblock %}

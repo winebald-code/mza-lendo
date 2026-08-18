@@ -1,0 +1,114 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.reference) if item else 'New inspection' %}
+{% set kicker = 'Quality' %}
+{% set page_sub = 'Tick what passed. Saving as failed raises an alert and texts the managers.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">What is being inspected</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('product_id', 'Product', obj_options(products), item.product_id if item else '', errors, None, 'Not product specific') }}
+        {{ select('order_id', 'Against order', obj_options(orders, 'number'), item.order_id if item else '', errors, None, 'Not tied to an order') }}
+        {{ select('run_id', 'Against run', obj_options(runs, 'reference'), item.run_id if item else '', errors, None, 'Not tied to a run') }}
+        {{ field('standard', 'Standard', item.standard if item else 'KEBS', 'text', errors, 'What you are inspecting against', False, 'KEBS') }}
+        {{ field('sample_size', 'Sample size', item.sample_size if item else '1', 'number', errors, 'How many units were checked', False, '1', 'min="1"') }}
+        {{ field('defects_found', 'Defects found', item.defects_found if item else '0', 'number', errors, None, False, '0', 'min="0"') }}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Checklist</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Tick each item that passed; add a note where it did not</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-row-add="#qc-checks">{{ icon('plus','ico ico-sm') }} Add check</button>
+      </div>
+      <div class="p-5">
+        <div id="qc-checks" class="grid gap-3">
+          <div data-row data-row-template hidden class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-2.5 items-end">
+            <label class="check !mb-0 pb-2.5">
+              <input type="checkbox" data-check-index disabled>
+              <span class="sr-only">Passed</span>
+            </label>
+            <div class="field !mb-0">
+              <label class="flabel">Check</label>
+              <input type="text" name="check_label[]" class="input" placeholder="What was checked" disabled>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Note</label>
+              <input type="text" name="check_note[]" class="input" placeholder="Optional" disabled>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+
+          {% set checks = item.checks if item and item.checks else [] %}
+          {% if checks %}
+            {% for c in checks %}
+            <div data-row class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-2.5 items-end">
+              <label class="check !mb-0 pb-2.5">
+                <input type="checkbox" name="check_pass_{{ loop.index0 }}" {% if c.passed %}checked{% endif %}>
+                <span class="sr-only">Passed</span>
+              </label>
+              <div class="field !mb-0">
+                <label class="flabel">Check</label>
+                <input type="text" name="check_label[]" class="input" value="{{ c.label }}">
+              </div>
+              <div class="field !mb-0">
+                <label class="flabel">Note</label>
+                <input type="text" name="check_note[]" class="input" value="{{ c.note }}" placeholder="Optional">
+              </div>
+              <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+            </div>
+            {% endfor %}
+          {% else %}
+            {% for label in default_checks %}
+            <div data-row class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-2.5 items-end">
+              <label class="check !mb-0 pb-2.5">
+                <input type="checkbox" name="check_pass_{{ loop.index0 }}" checked>
+                <span class="sr-only">Passed</span>
+              </label>
+              <div class="field !mb-0">
+                <label class="flabel">Check</label>
+                <input type="text" name="check_label[]" class="input" value="{{ label }}">
+              </div>
+              <div class="field !mb-0">
+                <label class="flabel">Note</label>
+                <input type="text" name="check_note[]" class="input" placeholder="Optional">
+              </div>
+              <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+            </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Notes</h2>
+      <div class="field">
+        <label for="f-notes">Inspector notes</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Anything the batch record should carry…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Result</h2>
+      {{ select('status', 'Outcome', [('pending','Pending — not decided yet'),('pass','Pass'),('fail','Fail')],
+                item.status if item else 'pending', errors, 'A fail raises an alert and sends SMS') }}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save inspection' if item else 'Record inspection' }}</button>
+      <a href="{{ url_for('dash_quality') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('qc_delete', inspection_id=item.id), 'Delete inspection', item.reference, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

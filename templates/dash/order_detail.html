@@ -1,0 +1,226 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.number %}
+{% set kicker = item.customer.name if item.customer else 'Order' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_orders') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Orders</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('order_form', order_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+    {% if item.status in ('new','confirmed') %}
+    <form method="post" action="{{ url_for('order_plan', order_id=item.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary btn-sm">{{ icon('calendar','ico ico-sm') }} Plan production</button>
+    </form>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+
+    {# Status pipeline #}
+    <section class="card card-pad">
+      <p class="label mb-4">Progress</p>
+      <ol class="list-none m-0 p-0 flex flex-wrap items-center gap-y-3">
+        {% set flow = ['new','confirmed','scheduled','in_production','quality_check','ready','dispatched','completed'] %}
+        {% set current_idx = flow.index(item.status) if item.status in flow else -1 %}
+        {% for s in flow %}
+          {% set done = current_idx >= loop.index0 %}
+          <li class="flex items-center">
+            <div class="flex flex-col items-center gap-2 w-[74px] text-center">
+              <span class="w-[26px] h-[26px] rounded-full grid place-items-center shrink-0 border-2
+                {% if done %}bg-signal-500 border-signal-500 text-ink{% else %}bg-surface border-divider text-slate-300{% endif %}">
+                {% if done %}{{ icon('check','ico ico-sm') }}{% else %}<span class="font-mono text-[10px]">{{ loop.index }}</span>{% endif %}
+              </span>
+              <span class="text-[10.5px] leading-tight {% if done %}text-ink font-medium{% else %}text-slate-400{% endif %}">{{ ORDER_STATUS_LABELS.get(s, s|replace('_',' ')) }}</span>
+            </div>
+            {% if not loop.last %}
+              <span class="w-[14px] h-[2px] -mt-5 {% if current_idx > loop.index0 %}bg-signal-500{% else %}bg-divider{% endif %}"></span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+      {% if item.status == 'cancelled' %}
+        <div class="alert alert-bad mt-5"><span class="shrink-0 mt-[1px]">{{ icon('x','ico ico-sm') }}</span><p class="m-0">This order was cancelled.</p></div>
+      {% endif %}
+    </section>
+
+    {# Lines #}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Line items</h2></div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Product</th><th>SKU</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Line total</th></tr></thead>
+          <tbody>
+            {% for line in item.items %}
+            <tr>
+              <td><a href="{{ url_for('product_detail', product_id=line.product_id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ line.product.name if line.product else '—' }}</a></td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ line.product.sku if line.product else '—' }}</td>
+              <td class="r num text-[12.5px]">{{ line.quantity|qty }}</td>
+              <td class="r num text-[12.5px]">{{ line.unit_price|money }}</td>
+              <td class="r num text-[12.5px] font-medium">{{ (line.quantity * line.unit_price)|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-ink">
+              <td colspan="4" class="r label !text-ink py-3">Order total</td>
+              <td class="r num text-[15px] font-semibold py-3">{{ item.total|money }}</td>
+            </tr>
+            {% if item.deposit %}
+            <tr>
+              <td colspan="4" class="r label py-2">Deposit paid</td>
+              <td class="r num text-[12.5px] text-ok py-2">−{{ item.deposit|money }}</td>
+            </tr>
+            <tr>
+              <td colspan="4" class="r label py-2">Balance due</td>
+              <td class="r num text-[13.5px] font-semibold py-2">{{ (item.total - item.deposit)|money }}</td>
+            </tr>
+            {% endif %}
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    {# Material readiness #}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Material readiness</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">What this order consumes against what is on the shelf now</p>
+        </div>
+        {% set gaps = shortages|selectattr('gap','greaterthan',0)|list %}
+        {% if gaps %}<span class="tag tag-bad">{{ gaps|length }} short</span>{% else %}<span class="tag tag-ok">ready to build</span>{% endif %}
+      </div>
+      {% if shortages %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Material</th><th class="r">Required</th><th class="r">On hand</th><th class="r">Shortfall</th><th></th></tr></thead>
+          <tbody>
+            {% for row in shortages %}
+            <tr>
+              <td><a href="{{ url_for('material_detail', material_id=row.material.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ row.material.name }}</a></td>
+              <td class="r num text-[12.5px]">{{ row.required|qty }} {{ row.material.unit }}</td>
+              <td class="r num text-[12.5px] text-slate-500">{{ row.available|qty }}</td>
+              <td class="r num text-[12.5px] {% if row.gap > 0 %}text-bad font-semibold{% else %}text-slate-400{% endif %}">
+                {{ row.gap|qty if row.gap > 0 else '—' }}
+              </td>
+              <td class="r">{% if row.gap > 0 %}<span class="tag tag-bad">order more</span>{% else %}<span class="tag tag-ok">covered</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('package-check', 'Nothing to check', 'These products have no bill of materials yet, so material use cannot be worked out.') }}
+      {% endif %}
+    </section>
+
+    {# Runs #}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Production runs</h2></div>
+      {% if item.runs %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Run</th><th>Product</th><th class="r">Qty</th><th>Progress</th><th>Dates</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for r in item.runs %}
+            <tr>
+              <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
+              <td class="text-[12.5px] max-w-[160px] truncate">{{ r.product.name if r.product else '—' }}</td>
+              <td class="r num text-[12.5px]">{{ r.produced|qty }}/{{ r.quantity|qty }}</td>
+              <td class="w-[130px]">{{ progress(r.progress, 'bad' if r.is_at_risk else ('ok' if r.progress == 100 else 'signal')) }}</td>
+              <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ r.start_date|d('%d %b') }} → {{ r.end_date|d('%d %b') }}</td>
+              <td>{{ status_tag(r.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('cog', 'Not planned yet', 'Planning turns each line into a dated run with stages, so the floor knows what to do and when.') }}
+      {% endif %}
+    </section>
+
+    {% if inspections %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Quality inspections</h2></div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Reference</th><th>When</th><th class="r">Sample</th><th class="r">Defects</th><th>Result</th></tr></thead>
+          <tbody>
+            {% for q in inspections %}
+            <tr>
+              <td><a href="{{ url_for('qc_detail', inspection_id=q.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ q.reference }}</a></td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ q.created_at|dt('%d %b %Y') }}</td>
+              <td class="r num text-[12.5px]">{{ q.sample_size }}</td>
+              <td class="r num text-[12.5px] {% if q.defects_found %}text-bad{% endif %}">{{ q.defects_found }}</td>
+              <td>{{ status_tag(q.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Move status</h2>
+      <p class="text-[12px] text-slate-500 mb-4 leading-snug">
+        {% if item.customer and item.customer.sms_updates %}
+          {{ item.customer.name }} gets an SMS on every change.
+        {% else %}
+          SMS updates are off for this customer, so nothing is sent.
+        {% endif %}
+      </p>
+      <form method="post" action="{{ url_for('order_status', order_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="status" class="select" aria-label="New status">
+          {% for s in ORDER_STATUSES %}
+            <option value="{{ s }}" {% if s == item.status %}selected{% endif %}>{{ ORDER_STATUS_LABELS.get(s, s|replace('_',' ')) }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-block">{{ icon('send','ico ico-sm') }} Update status</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Status</dt><dd class="m-0">{{ status_tag(item.status) }}</dd></div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Priority</dt>
+          <dd class="m-0">{% set pt = {'rush':'bad','high':'warn','normal':'neutral','low':'neutral'} %}<span class="tag tag-{{ pt.get(item.priority,'neutral') }}">{{ item.priority }}</span></dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Due</dt>
+          <dd class="num text-[12.5px] m-0 {% if item.is_late %}text-bad font-semibold{% endif %}">{{ item.due_date|d('%d %b %Y') }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Placed</dt><dd class="font-mono text-[11px] text-slate-400 m-0">{{ item.created_at|dt('%d %b %Y') }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Source</dt><dd class="m-0"><span class="tag tag-neutral">{{ item.source }}</span></dd></div>
+      </dl>
+
+      {% if item.customer %}
+      <div class="mt-5 pt-5 border-t border-divider">
+        <p class="label mb-2">Customer</p>
+        <a href="{{ url_for('customer_detail', customer_id=item.customer.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ item.customer.name }}</a>
+        {% if item.customer.company %}<p class="text-[12px] text-slate-500 mt-0.5 m-0">{{ item.customer.company }}</p>{% endif %}
+        {% if item.customer.phone %}<p class="font-mono text-[11.5px] text-slate-500 mt-1 m-0">{{ item.customer.phone }}</p>{% endif %}
+      </div>
+      {% endif %}
+    </section>
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

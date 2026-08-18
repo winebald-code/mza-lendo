@@ -1,0 +1,78 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.reference) if item else 'New production run' %}
+{% set kicker = 'Production' %}
+{% set page_sub = 'Stages come from the product and are created automatically. Leave the end date blank to let the build time work it out.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">What is being made</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('product_id', 'Product', obj_options(products),
+                  (item.product_id if item else request.args.get('product_id')), errors,
+                  'Its stages become this run’s checklist', 'Choose a product', True) }}
+        {{ field('quantity', 'Quantity to make', item.quantity if item else '1', 'number', errors,
+                 None, True, '1', 'step="0.01" min="0.01"') }}
+        {{ select('order_id', 'Against order', obj_options(orders, 'number'),
+                  (item.order_id if item else request.args.get('order_id')), errors,
+                  'Optional — links the run to a customer order', 'Not tied to an order') }}
+        {% if item %}
+          {{ field('produced', 'Units completed so far', item.produced, 'number', errors, None, False, '0', 'step="0.01" min="0"') }}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Who and when</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('machine_id', 'Machine', obj_options(machines), item.machine_id if item else '', errors,
+                  'Machines that are down still appear, but flag a risk', 'No machine assigned') }}
+        {{ select('worker_id', 'Worker', obj_options(workers), item.worker_id if item else '', errors,
+                  'They will see this run under “My tasks” on their handset', 'Unassigned') }}
+        {{ field('start_date', 'Start date', (item.start_date.isoformat() if item and item.start_date else today.isoformat()), 'date', errors) }}
+        {{ field('end_date', 'Target finish', (item.end_date.isoformat() if item and item.end_date else ''), 'date', errors,
+                 'Blank uses the product build time') }}
+        {% if item %}
+          {{ select('status', 'Status', pairs(RUN_STATUSES), item.status, errors) }}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Notes</h2>
+      <div class="field">
+        <label for="f-notes">Anything the floor should know</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Setup notes, tolerances, which jig to use…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if item and item.stages %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Stages</h2>
+      <ol class="list-none m-0 p-0 grid gap-2">
+        {% for s in item.stages %}
+        <li class="flex items-center gap-2.5">
+          <span class="w-[20px] h-[20px] rounded-full grid place-items-center shrink-0 {% if s.status == 'done' %}bg-ok text-white{% else %}bg-fog border border-divider text-slate-400{% endif %}">
+            {% if s.status == 'done' %}{{ icon('check','ico ico-sm') }}{% else %}<span class="font-mono text-[9px]">{{ s.sequence }}</span>{% endif %}
+          </span>
+          <span class="text-[12.5px] {% if s.status == 'done' %}text-slate-400 line-through{% else %}text-ink{% endif %}">{{ s.name }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+      <p class="hint mt-3 mb-0">Stages are fixed once a run exists. Change the product to change them.</p>
+    </section>
+    {% endif %}
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Start the run' }}</button>
+      <a href="{{ url_for('dash_runs') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('run_delete', run_id=item.id), 'Delete run', item.reference, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

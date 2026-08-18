@@ -1,0 +1,237 @@
+{% from "partials/icons.html" import icon %}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PULSE RING — the signature instrument.
+   A segmented analogue panel meter: 44 ticks around a 270° arc, lit up to the
+   score. Deliberately not a smooth donut; a factory gauge reads in notches.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+{% macro pulse_ring(score, band='ok', size=190, label='Overall health') -%}
+{% set ticks = 44 %}
+{% set lit = (score * ticks / 100)|round(0,'floor')|int %}
+{% set colour = {'ok':'#1F8A5B','warn':'#D97706','bad':'#D62828'}[band] %}
+<div class="relative shrink-0" data-css-w="{{ size }}px" data-css-h="{{ size }}px">
+  <svg viewBox="0 0 200 200" class="w-full h-full -rotate-[135deg]" role="img" aria-label="{{ label }} {{ score }} percent">
+    {% for i in range(ticks) %}
+      {% set angle = i * 270 / (ticks - 1) %}
+      {% set on = i < lit %}
+      <rect x="97" y="8" width="6" height="{{ 20 if on else 13 }}" rx="1.5"
+            fill="{{ colour if on else '#D7DCE2' }}"
+            transform="rotate({{ angle }} 100 100)"
+            {% if on %}opacity="{{ 0.45 + 0.55 * i / ticks }}"{% endif %} />
+    {% endfor %}
+  </svg>
+  <div class="absolute inset-0 grid place-items-center text-center">
+    <div>
+      <p class="font-display font-bold leading-none tracking-[-0.04em] m-0"
+         data-css-fs="{{ (size * 0.26)|int }}px" data-css-color="{{ colour }}">{{ score }}<span class="text-[0.42em] align-top ml-0.5">%</span></p>
+      <p class="label mt-2 mb-0">{{ label }}</p>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PULSE BARS — one segmented meter per subsystem, 20 cells each.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+{% macro pulse_bars(scores, bands, links={}) -%}
+{% set names = {'production':'Production','inventory':'Inventory','orders':'Orders','maintenance':'Maintenance','suppliers':'Suppliers'} %}
+<div class="grid gap-4">
+  {% for key in ['production','inventory','orders','maintenance','suppliers'] %}
+    {% set v = scores[key] %}
+    {% set band = bands[key] %}
+    {% set lit = (v / 5)|round(0,'floor')|int %}
+    <div>
+      <div class="flex items-baseline justify-between gap-3 mb-1.5">
+        {% if links.get(key) %}
+          <a href="{{ links[key] }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ names[key] }}</a>
+        {% else %}
+          <span class="text-[12.5px] font-medium text-ink">{{ names[key] }}</span>
+        {% endif %}
+        <span class="num text-[12.5px] font-semibold
+          {% if band=='ok' %}text-ok{% elif band=='warn' %}text-warn{% else %}text-bad{% endif %}">{{ v }}%</span>
+      </div>
+      <div class="flex items-stretch gap-[3px] h-[10px]" role="img" aria-label="{{ names[key] }} {{ v }} percent">
+        {% for i in range(20) %}
+          <span class="flex-1 rounded-[1.5px] {% if i < lit %}{% if band=='ok' %}bg-ok{% elif band=='warn' %}bg-warn{% else %}bg-bad{% endif %}{% else %}bg-divider{% endif %}"
+                {% if i < lit %}data-css-opacity="{{ 0.5 + 0.5 * i / 20 }}"{% endif %}></span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+
+{# ─── Severity tag ─────────────────────────────────────────────────────── #}
+{% macro sev_tag(severity) -%}
+{% set m = {'critical':'bad','high':'bad','medium':'warn','low':'neutral','info':'signal'} %}
+<span class="tag tag-{{ m.get(severity,'neutral') }}">{{ severity }}</span>
+{%- endmacro %}
+
+
+{# ─── Status tag ───────────────────────────────────────────────────────── #}
+{% macro status_tag(status, tone=None) -%}
+{% set auto = {
+  'new':'neutral','confirmed':'signal','scheduled':'signal','in_production':'warn',
+  'quality_check':'warn','ready':'ok','dispatched':'ok','completed':'ok','cancelled':'neutral',
+  'planned':'neutral','running':'warn','paused':'neutral','blocked':'bad','done':'ok',
+  'draft':'neutral','sent':'signal','partial':'warn','received':'ok',
+  'idle':'neutral','maintenance':'warn','down':'bad','retired':'neutral',
+  'open':'bad','assigned':'warn','in_progress':'warn','resolved':'ok','closed':'neutral',
+  'pass':'ok','fail':'bad','pending':'neutral','active':'signal','abandoned':'warn','failed':'bad',
+  'ok':'ok','low':'warn','out':'bad','watch':'warn','simulated':'neutral','queued':'neutral',
+  'Success':'ok','Sent':'ok','rejected':'bad'} %}
+<span class="tag tag-{{ tone or auto.get(status,'neutral') }}">{{ status|replace('_',' ') }}</span>
+{%- endmacro %}
+
+
+{# ─── Empty state ──────────────────────────────────────────────────────── #}
+{% macro empty_state(icon_name, title, body, action_url=None, action_label=None) -%}
+<div class="text-center py-14 px-6">
+  <span class="inline-grid place-items-center w-[52px] h-[52px] rounded-[16px] bg-fog border border-divider text-slate-400 mb-4">
+    {{ icon(icon_name, 'ico ico-lg') }}
+  </span>
+  <h3 class="text-[16px] font-semibold m-0 mb-1.5">{{ title }}</h3>
+  <p class="text-[13px] text-slate-500 max-w-[42ch] mx-auto m-0">{{ body }}</p>
+  {% if action_url %}
+    <a href="{{ action_url }}" class="btn btn-primary btn-sm mt-5">{{ icon('plus','ico ico-sm') }} {{ action_label }}</a>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+
+{# ─── Pagination ───────────────────────────────────────────────────────── #}
+{% macro pager(page, endpoint, extra='') -%}
+{% if page.pages > 1 %}
+<div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t border-divider">
+  <p class="font-mono text-[11px] text-slate-400 m-0">
+    {{ page.first_index }}–{{ page.last_index }} of {{ page.total }}
+  </p>
+  <nav class="flex items-center gap-1" aria-label="Pages">
+    <a href="?page={{ page.page - 1 }}{% if extra %}&{{ extra }}{% endif %}"
+       class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if not page.has_prev %}pointer-events-none opacity-35{% endif %}"
+       aria-label="Previous page">{{ icon('arrow-left','ico ico-sm') }}</a>
+    {% for n in page.window %}
+      <a href="?page={{ n }}{% if extra %}&{{ extra }}{% endif %}"
+         class="min-w-[32px] h-[32px] px-2 grid place-items-center rounded-control font-mono text-[12px] border transition-colors
+                {% if n == page.page %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}"
+         {% if n == page.page %}aria-current="page"{% endif %}>{{ n }}</a>
+    {% endfor %}
+    <a href="?page={{ page.page + 1 }}{% if extra %}&{{ extra }}{% endif %}"
+       class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if not page.has_next %}pointer-events-none opacity-35{% endif %}"
+       aria-label="Next page">{{ icon('arrow-right','ico ico-sm') }}</a>
+  </nav>
+</div>
+{% endif %}
+{%- endmacro %}
+
+
+{# ─── Delete button with confirmation ──────────────────────────────────── #}
+{% macro delete_form(action, label='Delete', what='this record', small=True) -%}
+<form method="post" action="{{ action }}" class="inline"
+      data-confirm="Delete {{ what }}? This cannot be undone.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-danger {{ 'btn-sm' if small else '' }}">
+    {{ icon('trash','ico ico-sm') }}<span class="{{ 'sr-only sm:not-sr-only' if small else '' }}">{{ label }}</span>
+  </button>
+</form>
+{%- endmacro %}
+
+
+{# ─── KPI tile ─────────────────────────────────────────────────────────── #}
+{% macro kpi(label, value, sub=None, icon_name=None, tone='ink', href=None) -%}
+{% set tones = {'ink':'text-ink','ok':'text-ok','warn':'text-warn','bad':'text-bad','signal':'text-signal-600'} %}
+{% set _t = value|string %}
+{% set vsize = '' if _t|length <= 9 else ('stat-v-md' if _t|length <= 15 else 'stat-v-sm') %}
+<{{ 'a' if href else 'div' }} {% if href %}href="{{ href }}"{% endif %}
+   class="card card-pad block {% if href %}hover:border-ink hover:shadow-s2 transition-all{% endif %}">
+  <div class="flex items-start justify-between gap-2 mb-2.5">
+    <p class="label m-0">{{ label }}</p>
+    {% if icon_name %}<span class="text-slate-300">{{ icon(icon_name,'ico ico-sm') }}</span>{% endif %}
+  </div>
+  <p class="stat-v {{ vsize }} m-0 {{ tones.get(tone,'text-ink') }}">{{ value }}</p>
+  {% if sub %}<p class="text-[11.5px] text-slate-400 mt-1.5 m-0 leading-snug">{{ sub }}</p>{% endif %}
+</{{ 'a' if href else 'div' }}>
+{%- endmacro %}
+
+
+{# ─── Field wrapper ────────────────────────────────────────────────────── #}
+{% macro field(name, label, value='', type='text', errors={}, hint=None, required=False, placeholder='', attrs='') -%}
+<div class="field">
+  <label for="f-{{ name }}">{{ label }}{% if required %} <span class="text-signal-600">*</span>{% endif %}</label>
+  <input id="f-{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+         class="input {% if errors.get(name) %}input-err{% endif %}" placeholder="{{ placeholder }}"
+         {% if required %}required{% endif %} {{ attrs|safe }}>
+  {% if errors.get(name) %}<p class="err m-0">{{ errors[name] }}</p>
+  {% elif hint %}<p class="hint m-0">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+
+{# ─── Select wrapper ───────────────────────────────────────────────────── #}
+{% macro select(name, label, options, selected=None, errors={}, hint=None, blank=None, required=False) -%}
+<div class="field">
+  <label for="f-{{ name }}">{{ label }}{% if required %} <span class="text-signal-600">*</span>{% endif %}</label>
+  <select id="f-{{ name }}" name="{{ name }}" class="select {% if errors.get(name) %}input-err{% endif %}" {% if required %}required{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for val, text in options %}
+      <option value="{{ val }}" {% if selected is not none and val|string == selected|string %}selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.get(name) %}<p class="err m-0">{{ errors[name] }}</p>
+  {% elif hint %}<p class="hint m-0">{{ hint }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+
+{# ─── Toolbar: search + filters ────────────────────────────────────────── #}
+{% macro toolbar_open(action) -%}
+<form method="get" action="{{ action }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+{%- endmacro %}
+
+{% macro search_box(value='', placeholder='Search…') -%}
+<div class="relative flex-1 min-w-[180px] max-w-[300px]">
+  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">{{ icon('search','ico ico-sm') }}</span>
+  <input type="search" name="q" value="{{ value }}" placeholder="{{ placeholder }}"
+         class="input h-[38px] min-h-0 py-0 pl-9 text-[13px]" aria-label="{{ placeholder }}">
+</div>
+{%- endmacro %}
+
+{% macro filter_select(name, options, selected='', blank='All') -%}
+<select name="{{ name }}" class="select h-[38px] min-h-0 py-0 text-[13px] w-auto min-w-[130px]" aria-label="{{ name }}">
+  <option value="">{{ blank }}</option>
+  {% for val, text in options %}
+    <option value="{{ val }}" {% if val|string == selected|string %}selected{% endif %}>{{ text }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+
+{% macro toolbar_close(reset_url=None) -%}
+  <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+  {% if reset_url %}<a href="{{ reset_url }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+</form>
+{%- endmacro %}
+
+
+{# ─── Progress bar ─────────────────────────────────────────────────────── #}
+{% macro progress(pct, tone='signal', height=6) -%}
+{% set tones = {'signal':'bg-signal-500','ok':'bg-ok','warn':'bg-warn','bad':'bg-bad','ink':'bg-ink'} %}
+<div class="w-full rounded-full bg-divider overflow-hidden" data-css-h="{{ height }}px" role="progressbar"
+     aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+  <div class="{{ tones.get(tone,'bg-signal-500') }} h-full rounded-full transition-[width] duration-500"
+       data-css-w="{{ [pct, 100]|min }}%"></div>
+</div>
+{%- endmacro %}
+
+
+{# ─── Section card head ────────────────────────────────────────────────── #}
+{% macro card_head(title, sub=None) -%}
+<div class="card-head">
+  <div>
+    <h2 class="card-title m-0">{{ title }}</h2>
+    {% if sub %}<p class="text-[11.5px] text-slate-400 mt-0.5 m-0">{{ sub }}</p>{% endif %}
+  </div>
+  <div class="flex items-center gap-2">{{ caller() if caller is defined else '' }}</div>
+</div>
+{%- endmacro %}

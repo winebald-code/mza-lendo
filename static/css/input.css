@@ -1,0 +1,216 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --rail-w: 264px;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-fog text-ink font-sans text-[14px] leading-[1.6] antialiased;
+  }
+  h1, h2, h3, h4 { @apply font-display text-ink; }
+  h1 { @apply text-[clamp(2.25rem,5.2vw,3.5rem)] font-bold leading-[1.02] tracking-[-0.03em]; }
+  h2 { @apply text-[clamp(1.6rem,3.2vw,2.25rem)] font-bold leading-[1.08] tracking-[-0.02em]; }
+  h3 { @apply text-[1.5rem] font-semibold leading-[1.15] tracking-[-0.015em]; }
+  h4 { @apply text-[1.125rem] font-semibold leading-[1.25] tracking-[-0.01em]; }
+  a { @apply text-slate-600 no-underline transition-colors; }
+  a:hover { @apply text-signal-500; }
+  :focus-visible { @apply outline-none ring-2 ring-signal-500 ring-offset-2 ring-offset-fog rounded-[6px]; }
+  ::selection { @apply bg-signal-200 text-ink; }
+  table { border-collapse: collapse; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  /* Scrollbars — thin, industrial */
+  * { scrollbar-width: thin; scrollbar-color: #D7DCE2 transparent; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: #D7DCE2; border-radius: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Components
+   ───────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Typographic utilities ------------------------------------ */
+  .kicker { @apply font-mono text-[11px] font-semibold uppercase tracking-kicker text-signal-600; }
+  .label { @apply font-mono text-[10px] font-semibold uppercase tracking-label text-slate-400; }
+  .lede { @apply text-[1.0625rem] leading-[1.6] text-slate-500; }
+  .num { @apply font-mono tabular-nums; }
+
+  /* Buttons ---------------------------------------------------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[42px] px-5 rounded-control
+           border border-transparent font-medium text-[13.5px] leading-none cursor-pointer
+           transition-all duration-150 select-none whitespace-nowrap;
+  }
+  .btn:disabled, .btn[aria-disabled="true"] { @apply opacity-40 pointer-events-none; }
+  .btn-primary { @apply bg-signal-500 text-ink border-signal-500 shadow-s1; }
+  .btn-primary:hover { @apply bg-signal-400 border-signal-400 -translate-y-px shadow-s2; }
+  .btn-primary:active { @apply bg-signal-600 translate-y-0; }
+  .btn-dark { @apply bg-ink text-white border-ink; }
+  .btn-dark:hover { @apply bg-slate-700 border-slate-700 -translate-y-px; }
+  .btn-secondary { @apply bg-surface text-ink border-divider; }
+  .btn-secondary:hover { @apply border-ink; }
+  .btn-ghost { @apply bg-transparent text-slate-500 border-transparent px-3; }
+  .btn-ghost:hover { @apply text-ink bg-black/[0.04]; }
+  .btn-danger { @apply bg-transparent text-bad border-bad/40; }
+  .btn-danger:hover { @apply bg-bad text-white border-bad; }
+  .btn-sm { @apply min-h-[32px] px-3.5 text-[12.5px] rounded-control; }
+  .btn-xs { @apply min-h-[26px] px-2.5 text-[11px] gap-1 rounded-control; }
+  .btn-icon { @apply w-[38px] h-[38px] px-0 shrink-0; }
+  .btn-block { @apply w-full; }
+
+  /* Surfaces --------------------------------------------------- */
+  .card { @apply bg-surface border border-divider rounded-surface shadow-s1; }
+  .card-pad { @apply p-5; }
+  .card-head { @apply flex items-start justify-between gap-4 px-5 py-4 border-b border-divider; }
+  .card-title { @apply font-display text-[15px] font-semibold tracking-[-0.01em] text-ink; }
+  .panel { @apply bg-surface border border-divider rounded-panel; }
+
+  /* Forms ------------------------------------------------------ */
+  .field { @apply flex flex-col gap-1.5 mb-4; }
+  .field > label, .flabel { @apply font-mono text-[10px] font-semibold uppercase tracking-label text-slate-500; }
+  .input, .select, .textarea {
+    @apply w-full min-h-[42px] px-4 py-2.5 bg-surface text-ink border border-divider
+           rounded-control text-[13.5px] transition-colors placeholder:text-slate-400;
+  }
+  .textarea { @apply min-h-[104px] rounded-surface resize-y leading-[1.55]; }
+  .input:focus, .select:focus, .textarea:focus {
+    @apply outline-none border-signal-500 ring-2 ring-signal-500/25;
+  }
+  .input:disabled, .select:disabled { @apply bg-fog text-slate-400 cursor-not-allowed; }
+  .input-err { @apply border-bad ring-2 ring-bad/20; }
+  .select {
+    @apply appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238B939E' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 16px center;
+  }
+  .hint { @apply text-[11.5px] text-slate-400 leading-snug; }
+  .err { @apply text-[11.5px] text-bad font-medium; }
+  /* Checkbox: .check goes on the <label> wrapper, which lays out the box and
+     its text as a row. Styling the input directly (as this once did) clamped
+     the whole label to 18x18, so the text overflowed and anything following it
+     painted on top. */
+  .check {
+    @apply flex items-start gap-2.5 cursor-pointer select-none;
+  }
+  .check > input[type="checkbox"] {
+    @apply w-[18px] h-[18px] mt-[1px] rounded-[5px] border border-divider bg-surface
+           accent-signal-500 cursor-pointer shrink-0;
+  }
+  .check > span {
+    @apply text-[13px] text-slate-600 leading-snug min-w-0;
+  }
+  .check:hover > span { @apply text-ink; }
+  .check > input[type="checkbox"]:disabled { @apply opacity-40 cursor-not-allowed; }
+  .check:has(> input:disabled) { @apply cursor-not-allowed; }
+
+  /* Tags & status ---------------------------------------------- */
+  .tag {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-control
+           font-mono text-[10.5px] font-semibold uppercase tracking-[0.05em] border whitespace-nowrap;
+  }
+  .tag-ok { @apply bg-ok/10 text-ok border-ok/25; }
+  .tag-warn { @apply bg-warn/10 text-warn border-warn/25; }
+  .tag-bad { @apply bg-bad/10 text-bad border-bad/25; }
+  .tag-signal { @apply bg-signal-500/10 text-signal-700 border-signal-500/30; }
+  .tag-neutral { @apply bg-slate-200 text-slate-500 border-divider; }
+  .tag-ink { @apply bg-ink text-white border-ink; }
+  .dot { @apply w-[6px] h-[6px] rounded-full shrink-0; }
+
+  /* Tables ----------------------------------------------------- */
+  .tbl { @apply w-full text-[13px]; }
+  .tbl thead th {
+    @apply text-left font-mono text-[10px] font-semibold uppercase tracking-label text-slate-400
+           px-4 py-2.5 border-b border-divider bg-fog/60 whitespace-nowrap;
+  }
+  .tbl tbody td { @apply px-4 py-2.5 border-b border-divider/70 align-middle; }
+  .tbl tbody tr { @apply transition-colors; }
+  .tbl tbody tr:hover { @apply bg-signal-50/60; }
+  .tbl tbody tr:last-child td { @apply border-b-0; }
+  .tbl .r { @apply text-right num; }
+
+  /* Alerts ----------------------------------------------------- */
+  .alert { @apply flex items-start gap-3 px-4 py-3 rounded-surface border-l-[3px] text-[13px]; }
+  .alert-ok { @apply bg-ok/[0.07] border-ok text-ok; }
+  .alert-warn { @apply bg-warn/[0.07] border-warn text-warn; }
+  .alert-bad { @apply bg-bad/[0.07] border-bad text-bad; }
+  .alert-info { @apply bg-signal-500/[0.07] border-signal-500 text-signal-700; }
+
+  /* Navigation rail -------------------------------------------- */
+  .rail-link {
+    @apply flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] font-medium
+           text-slate-400 transition-colors relative;
+  }
+  .rail-link:hover { @apply text-white bg-white/[0.05]; }
+  .rail-link.is-active { @apply text-ink bg-signal-500; }
+  .rail-link.is-active .ico { @apply text-ink; }
+  .rail-group { @apply px-3 pt-5 pb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-kicker text-slate-500; }
+
+  /* Icons ------------------------------------------------------ */
+  .ico { @apply w-[17px] h-[17px] shrink-0 stroke-current; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .ico-sm { @apply w-[14px] h-[14px]; }
+  .ico-lg { @apply w-[22px] h-[22px]; }
+
+  /* Pulse gauge (signature element) ---------------------------- */
+  .pulse-seg { @apply flex-1 rounded-[1px] origin-bottom transition-colors duration-300; }
+  .pulse-row { @apply flex items-end gap-[3px] h-[26px]; }
+
+  /* Feature-phone terminal ------------------------------------- */
+  .term {
+    @apply font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap break-words
+           text-signal-300;
+  }
+
+  /* Misc ------------------------------------------------------- */
+  .hairline { @apply border-t border-divider; }
+  /* Headline figure inside a KPI tile. Long values (money with a currency
+     prefix) step down a size rather than overflowing the card. */
+  .stat-v {
+    @apply font-display text-[28px] font-bold leading-[1.05] tracking-[-0.02em] text-ink
+           tabular-nums [overflow-wrap:anywhere];
+  }
+  .stat-v-md { @apply text-[21px]; }
+  .stat-v-sm { @apply text-[17px]; }
+  .link-u { @apply text-ink underline decoration-signal-500 decoration-2 underline-offset-4; }
+  .link-u:hover { @apply text-signal-600; }
+  .skel { @apply bg-divider/60 rounded animate-pulse; }
+  .scroll-x { @apply overflow-x-auto -mx-5 px-5; }
+}
+
+@layer utilities {
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .hatch {
+    background-image: repeating-linear-gradient(
+      135deg, rgba(255,106,0,0.14) 0 6px, transparent 6px 12px);
+  }
+  .rail-scroll { scrollbar-color: #3A4250 transparent; }
+  .rail-scroll::-webkit-scrollbar-thumb { background: #3A4250; }
+  .no-tap { -webkit-tap-highlight-color: transparent; }
+}

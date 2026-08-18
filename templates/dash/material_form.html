@@ -1,0 +1,73 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.name) if item else 'New material' %}
+{% set kicker = 'Inventory' %}
+{% set page_sub = 'The minimum level is what the Pulse engine watches. Set it to the amount you need to survive one supplier lead time.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Identity</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('name', 'Material name', item.name if item else '', 'text', errors, 'What the floor calls it, e.g. “Mild steel sheet 2mm”', True) }}
+        {{ field('code', 'Code', item.code if item else '', 'text', errors, 'Leave blank to generate one', False, 'MAT-0001') }}
+        {{ field('category', 'Category', item.category if item else 'Raw material', 'text', errors, 'Groups the material on the inventory screen') }}
+        {{ field('location', 'Store location', item.location if item else '', 'text', errors, 'Rack, bay or yard reference', False, 'Rack B3') }}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Quantities</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('unit', 'Unit of measure', pairs(UNITS, False), item.unit if item else 'pcs', errors, 'How the floor counts it') }}
+        {{ field('quantity', 'Quantity on hand', item.quantity if item else '0', 'number', errors,
+                 'Changing this on an existing material writes a correction to the ledger', False, '0', 'step="0.01" min="0"') }}
+        {{ field('min_stock', 'Minimum level', item.min_stock if item else '0', 'number', errors,
+                 'Below this, an alert and an SMS go out', False, '0', 'step="0.01" min="0"') }}
+        {{ field('reorder_qty', 'Reorder quantity', item.reorder_qty if item else '0', 'number', errors,
+                 'How much a draft purchase order should ask for', False, '0', 'step="0.01" min="0"') }}
+        {{ field('unit_cost', 'Unit cost', item.unit_cost if item else '0', 'number', errors,
+                 'Used for stock value and product margins', False, '0.00', 'step="0.01" min="0"') }}
+        {{ select('supplier_id', 'Preferred supplier', obj_options(suppliers), item.supplier_id if item else '', errors,
+                  'Used when drafting purchase orders', 'No preferred supplier') }}
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <label class="check">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
+        <span>Active — show on the inventory screen and include in Pulse</span>
+      </label>
+      {% if item %}
+      <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Current level</dt>
+          <dd class="m-0">{{ status_tag(item.stock_state) }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Stock value</dt>
+          <dd class="num text-[13px] font-semibold m-0">{{ item.value|money }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Created</dt>
+          <dd class="font-mono text-[11px] text-slate-400 m-0">{{ item.created_at|dt('%d %b %Y') }}</dd>
+        </div>
+      </dl>
+      {% endif %}
+    </section>
+
+    <div class="flex flex-wrap gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create material' }}</button>
+      <a href="{{ url_for('dash_materials') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}
+        {{ delete_form(url_for('material_delete', material_id=item.id), 'Delete material', item.name, False) }}
+      {% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

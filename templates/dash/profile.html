@@ -1,0 +1,78 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Your profile' %}
+{% set kicker = 'Account' %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start max-w-[1080px]">
+  <div class="grid gap-6">
+    <form method="post" class="card card-pad">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2 class="card-title mb-5">Your details</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        <div class="field">
+          <label for="f-full_name">Full name</label>
+          <input id="f-full_name" name="full_name" class="input" value="{{ current_user.full_name }}">
+        </div>
+        <div class="field">
+          <label for="f-phone">Phone</label>
+          <input id="f-phone" name="phone" type="tel" class="input" value="{{ current_user.phone }}">
+          <p class="hint m-0">Where plant alerts reach you</p>
+        </div>
+        <div class="field sm:col-span-2">
+          <label for="f-email">Email</label>
+          <input id="f-email" name="email" type="email" class="input" value="{{ current_user.email }}">
+          <p class="hint m-0">You sign in with this</p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">{{ icon('check','ico ico-sm') }} Save profile</button>
+    </form>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Your recent activity</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">The last dozen things you did</p>
+        </div>
+      </div>
+      {% if recent %}
+      <ul class="list-none m-0 p-0">
+        {% for a in recent %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0 flex items-center gap-3">
+          <span class="font-mono text-[11px] text-signal-700 bg-signal-50 px-1.5 py-0.5 rounded shrink-0">{{ a.action }}</span>
+          <span class="text-[12.5px] text-slate-500 flex-1 min-w-0 truncate">{{ a.detail or a.entity or '' }}</span>
+          <span class="font-mono text-[10.5px] text-slate-400 shrink-0">{{ a.created_at|ago }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('history', 'Nothing recorded yet', 'Your actions in the dashboard will be listed here.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad text-center">
+      <span class="inline-grid place-items-center w-[62px] h-[62px] rounded-full bg-ink text-white font-mono text-[20px] font-semibold mx-auto mb-3">{{ current_user.initials }}</span>
+      <p class="text-[15px] font-semibold m-0">{{ current_user.full_name or current_user.username }}</p>
+      <p class="font-mono text-[11px] text-slate-400 mt-1 mb-3">{{ current_user.username }}</p>
+      <span class="tag tag-signal">{{ current_user.role_label }}</span>
+      {% if factory %}<p class="text-[12px] text-slate-500 mt-3 m-0">{{ factory.name }}</p>{% endif %}
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Security</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Last sign-in</dt>
+          <dd class="font-mono text-[11px] text-slate-500 m-0">{{ current_user.last_login_at|dt('%d %b %Y · %H:%M') if current_user.last_login_at else 'first session' }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">From</dt>
+          <dd class="font-mono text-[11px] text-slate-500 m-0">{{ current_user.last_login_ip or '—' }}</dd>
+        </div>
+      </dl>
+      <a href="{{ url_for('change_password') }}" class="btn btn-secondary btn-block mt-4">{{ icon('key','ico ico-sm') }} Change password</a>
+    </section>
+  </aside>
+</div>
+{% endblock %}

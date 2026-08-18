@@ -1,0 +1,99 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ (item.full_name or item.username)) if item else 'New user' %}
+{% set kicker = 'Administration' %}
+{% set page_sub = 'New accounts get a generated temporary password and must change it the first time they sign in.' %}
+
+{% block content %}
+{% if generated %}
+<div class="card card-pad mb-6 border-l-[3px] border-l-signal-500">
+  <div class="flex items-start gap-3">
+    <span class="text-signal-600 shrink-0 mt-0.5">{{ icon('key','ico ico-lg') }}</span>
+    <div class="min-w-0 flex-1">
+      <h2 class="card-title mb-1.5">Temporary password</h2>
+      <p class="text-[12.5px] text-slate-500 mb-3 leading-relaxed">
+        This is shown once and never again. Pass it to the person over a channel you trust —
+        they will be forced to change it when they sign in.
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <code class="font-mono text-[15px] font-semibold text-ink bg-fog border border-divider rounded-control px-4 py-2 select-all">{{ generated }}</code>
+        <button type="button" class="btn btn-secondary btn-sm" data-copy="{{ generated }}">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1080px]">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Account</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ field('full_name', 'Full name', item.full_name if item else '', 'text', errors, None, False, 'Grace Wanjiku') }}
+        {{ field('username', 'Username', item.username if item else '', 'text', errors,
+                 'Lowercase letters, digits, dots or underscores', True, 'gwanjiku') }}
+        {{ field('email', 'Email', item.email if item else '', 'email', errors, 'Used to sign in', True, 'grace@workshop.co.ke') }}
+        {{ field('phone', 'Phone', item.phone if item else '', 'tel', errors, 'Gets plant alerts by SMS', False, '0712 345 678') }}
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Access</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {% set assignable = ROLES if current_user.is_super else ROLES|reject('equalto','super_admin')|list %}
+        {{ select('role', 'Role', pairs(assignable), item.role if item else 'viewer', errors,
+                  'See the table on the Users screen for what each role covers', None, True) }}
+        {% if current_user.is_super %}
+          {{ select('factory_id', 'Plant', obj_options(factories),
+                    item.factory_id if item else current_user.factory_id, errors,
+                    'Which plant this account belongs to') }}
+        {% endif %}
+      </div>
+      {% if item and item.id == current_user.id %}
+        <div class="alert alert-info mt-4">
+          <span class="shrink-0 mt-[1px]">{{ icon('info','ico ico-sm') }}</span>
+          <p class="m-0">This is your own account, so you cannot change your own role or disable yourself.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <label class="check">
+        <input type="checkbox" name="is_active" {% if not item or item.is_active_flag %}checked{% endif %}
+               {% if item and item.id == current_user.id %}disabled{% endif %}>
+        <span>Active — can sign in</span>
+      </label>
+      {% if item %}
+      <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Last sign-in</dt>
+          <dd class="font-mono text-[11px] text-slate-500 m-0">{{ item.last_login_at|dt('%d %b %Y') if item.last_login_at else 'never' }}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Temp password</dt>
+          <dd class="m-0">{% if item.must_change_password %}<span class="tag tag-warn">yes</span>{% else %}<span class="tag tag-ok">no</span>{% endif %}</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Locked</dt>
+          <dd class="m-0">{% if item.is_locked %}<span class="tag tag-bad">yes</span>{% else %}<span class="tag tag-ok">no</span>{% endif %}</dd>
+        </div>
+      </dl>
+      {% else %}
+      <p class="hint mt-4 mb-0">A temporary password is generated on save and shown to you once.</p>
+      {% endif %}
+    </section>
+
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create account' }}</button>
+      <a href="{{ url_for('dash_users') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item and item.id != current_user.id %}
+        {{ delete_form(url_for('user_delete', user_id=item.id), 'Delete account', item.username, False) }}
+      {% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

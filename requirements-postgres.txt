@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Mzalendo — PostgreSQL deployment
+#
+#  Use this on Railway, in Docker, or anywhere DATABASE_URL points at Postgres:
+#      pip install -r requirements-postgres.txt
+#
+#  You do NOT need this for local development. app.py falls back to SQLite
+#  whenever DATABASE_URL is unset, and the driver below is only imported when
+#  SQLAlchemy actually opens a Postgres connection.
+# ─────────────────────────────────────────────────────────────────────────────
+
+-r requirements.txt
+
+psycopg2-binary==2.9.12

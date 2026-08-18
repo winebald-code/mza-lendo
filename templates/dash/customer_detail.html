@@ -1,0 +1,80 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.name %}
+{% set kicker = item.company or 'Customer' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_customers') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Customers</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('customer_form', customer_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+    <a href="{{ url_for('order_form') }}?customer_id={{ item.id }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New order</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 xl:grid-cols-[1fr_320px] items-start">
+  <div class="grid gap-6">
+    <section class="card">
+      <div class="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-divider">
+        <div class="p-5">
+          <p class="label m-0">Lifetime spend</p>
+          <p class="stat-v mt-1 m-0">{{ spend|money_kpi }}</p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Orders placed</p>
+          <p class="stat-v mt-1 m-0">{{ orders|length }}</p>
+        </div>
+        <div class="p-5">
+          <p class="label m-0">Open now</p>
+          <p class="stat-v mt-1 m-0">{{ orders|selectattr('status','in',['new','confirmed','scheduled','in_production','quality_check','ready'])|list|length }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Order history</h2></div>
+      {% if orders %}
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Order</th><th>Placed</th><th>Due</th><th class="r">Value</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td><a href="{{ url_for('order_detail', order_id=o.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ o.number }}</a></td>
+              <td class="font-mono text-[11.5px] text-slate-500">{{ o.created_at|dt('%d %b %Y') }}</td>
+              <td class="font-mono text-[11.5px] {% if o.is_late %}text-bad font-semibold{% else %}text-slate-500{% endif %}">{{ o.due_date|d('%d %b %Y') }}</td>
+              <td class="r num text-[12.5px] font-medium">{{ o.total|money }}</td>
+              <td>{{ status_tag(o.status) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state('clipboard', 'No orders yet', 'When this customer places an order it will show here with its full status history.') }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Contact</h2>
+      <dl class="grid gap-3 m-0">
+        <div><dt class="label m-0 mb-1">Phone</dt><dd class="font-mono text-[12.5px] m-0">{{ item.phone or '—' }}</dd></div>
+        <div><dt class="label m-0 mb-1">Email</dt><dd class="text-[12.5px] m-0 break-all">{{ item.email or '—' }}</dd></div>
+        <div><dt class="label m-0 mb-1">Address</dt><dd class="text-[12.5px] m-0 whitespace-pre-line">{{ item.address or '—' }}</dd></div>
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
+          <dt class="label m-0">SMS updates</dt>
+          <dd class="m-0">{% if item.sms_updates %}<span class="tag tag-ok">on</span>{% else %}<span class="tag tag-neutral">off</span>{% endif %}</dd>
+        </div>
+      </dl>
+    </section>
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

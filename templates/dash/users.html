@@ -1,0 +1,107 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Users' %}
+{% set kicker = 'Administration' %}
+{% set page_sub = 'Dashboard accounts. Workers who only use the handset do not need one — add them under Workers instead.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_audit') }}" class="btn btn-secondary btn-sm">{{ icon('list','ico ico-sm') }} Audit trail</a>
+  <a href="{{ url_for('user_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New user</a>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form method="get" action="{{ url_for('dash_users') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search name, username, email…') }}
+    {{ filter_select('role', pairs(ROLES), role, 'Any role') }}
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if term or role %}<a href="{{ url_for('dash_users') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+    <span class="ml-auto font-mono text-[11px] text-slate-400">{{ page.total }} account{{ '' if page.total == 1 else 's' }}</span>
+  </form>
+
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>User</th><th>Role</th>{% if current_user.is_super %}<th>Plant</th>{% endif %}<th>Phone</th><th>Last seen</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for u in page.items %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-2.5">
+              <span class="w-[30px] h-[30px] rounded-full bg-ink text-white font-mono text-[10.5px] font-semibold grid place-items-center shrink-0">{{ u.initials }}</span>
+              <div class="min-w-0">
+                <span class="text-[13px] font-medium text-ink block truncate">{{ u.full_name or u.username }}</span>
+                <span class="font-mono text-[10.5px] text-slate-400 block truncate">{{ u.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% set rtone = {'super_admin':'ink','owner':'signal','manager':'neutral','supervisor':'neutral','viewer':'neutral'} %}
+            <span class="tag tag-{{ rtone.get(u.role,'neutral') }}">{{ u.role_label }}</span>
+          </td>
+          {% if current_user.is_super %}<td class="text-[12.5px] text-slate-500 max-w-[140px] truncate">{{ u.factory.name if u.factory else '—' }}</td>{% endif %}
+          <td class="font-mono text-[11.5px] text-slate-500">{{ u.phone or '—' }}</td>
+          <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ u.last_login_at|dt('%d %b · %H:%M') if u.last_login_at else 'never' }}</td>
+          <td>
+            <div class="flex flex-wrap items-center gap-1">
+              {% if not u.is_active_flag %}<span class="tag tag-neutral">disabled</span>
+              {% elif u.is_locked %}<span class="tag tag-bad">locked</span>
+              {% else %}<span class="tag tag-ok">active</span>{% endif %}
+              {% if u.must_change_password %}<span class="tag tag-warn">temp password</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('user_form', user_id=u.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              <form method="post" action="{{ url_for('user_reset_password', user_id=u.id) }}" data-confirm="Reset the password for {{ u.username }}? They will get a temporary one and must change it at next sign-in.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-ghost btn-icon" title="Reset password" aria-label="Reset password">{{ icon('key','ico ico-sm') }}</button>
+              </form>
+              {% if u.is_locked %}
+              <form method="post" action="{{ url_for('user_unlock', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-ghost btn-icon text-ok" title="Unlock" aria-label="Unlock">{{ icon('lock','ico ico-sm') }}</button>
+              </form>
+              {% endif %}
+              {% if u.id != current_user.id %}
+              <form method="post" action="{{ url_for('user_toggle', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-ghost btn-icon" title="{{ 'Disable' if u.is_active_flag else 'Enable' }}" aria-label="{{ 'Disable' if u.is_active_flag else 'Enable' }}">
+                  {{ icon('eye-off' if u.is_active_flag else 'eye','ico ico-sm') }}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_users', 'q=' ~ term ~ '&role=' ~ role) }}
+  {% else %}
+    {{ empty_state('user-cog', 'No accounts match', 'Try clearing the filters.') }}
+  {% endif %}
+</section>
+
+<section class="card card-pad mt-6">
+  <h2 class="card-title mb-4">What each role can do</h2>
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Role</th><th>Can do</th></tr></thead>
+      <tbody>
+        {% for r, what in [
+          ('Super administrator','Everything, across every plant on the installation. Can create and disable plants.'),
+          ('Owner','Everything inside their own plant, including users, settings and billing details.'),
+          ('Manager','All day-to-day records — orders, stock, production, procurement, quality. No user management.'),
+          ('Supervisor','Floor operations: runs, stages, faults, quality, attendance and safety.'),
+          ('Viewer','Read only. Useful for accountants, auditors and clients.')] %}
+        <tr>
+          <td class="text-[12.5px] font-semibold whitespace-nowrap">{{ r }}</td>
+          <td class="text-[12.5px] text-slate-500">{{ what }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ auth_title|default('Sign in') }} — {{ APP_NAME }}{% endblock %}</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F2F4F6">
+<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="bg-fog">
+{% from "partials/icons.html" import icon, sprite %}
+{{ sprite() }}
+
+<div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
+
+  {# ── Left: the argument ──────────────────────────────────────────────── #}
+  <section class="hidden lg:flex flex-col justify-between bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
+    <div class="absolute inset-0 hatch opacity-[0.06]" aria-hidden="true"></div>
+    <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
+
+    <a href="{{ url_for('home') }}" class="relative flex items-center gap-2.5 w-fit">
+      {% include "partials/logo.html" %}
+      <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Mzalendo</span>
+    </a>
+
+    <div class="relative max-w-[460px]">
+      <p class="kicker text-signal-500 mb-5">{{ auth_kicker|default('Manufacturing operations') }}</p>
+      <h2 class="font-display text-[34px] xl:text-[40px] font-bold leading-[1.08] tracking-[-0.03em] m-0">
+        {{ auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.') }}
+      </h2>
+      <p class="text-[14.5px] text-slate-300 mt-5 leading-relaxed">
+        {{ auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.') }}
+      </p>
+
+      <dl class="grid grid-cols-3 gap-5 mt-10 pt-8 border-t border-white/10">
+        <div>
+          <dt class="label text-slate-500 m-0">Works on</dt>
+          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">Any handset</dd>
+        </div>
+        <div>
+          <dt class="label text-slate-500 m-0">Needs</dt>
+          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">No data</dd>
+        </div>
+        <div>
+          <dt class="label text-slate-500 m-0">Sessions</dt>
+          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">Under 30s</dd>
+        </div>
+      </dl>
+    </div>
+
+    <p class="relative font-mono text-[11px] text-slate-500 m-0">
+      Telco layer powered by Africa's Talking · Nairobi
+    </p>
+  </section>
+
+  {# ── Right: the form ─────────────────────────────────────────────────── #}
+  <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
+    <div class="w-full max-w-[400px] mx-auto">
+      <a href="{{ url_for('home') }}" class="lg:hidden flex items-center gap-2.5 mb-9">
+        {% include "partials/logo.html" %}
+        <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Mzalendo</span>
+      </a>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="grid gap-2 mb-6">
+            {% for category, message in messages %}
+              {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
+              <div class="alert alert-{{ map.get(category,'info') }}">
+                <span class="shrink-0 mt-[1px]">{{ icon('info' if map.get(category,'info') == 'info' else ('check' if map.get(category) == 'ok' else 'alert'), 'ico ico-sm') }}</span>
+                <p class="m-0">{{ message }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+</div>
+
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

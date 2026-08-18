@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ page_title|default('Dashboard') }} — {{ APP_NAME }}{% endblock %}</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0F1216">
+<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="bg-fog">
+{% from "partials/icons.html" import icon, sprite %}
+{% from "dash/_components.html" import pulse_ring, pulse_bars, empty_state, pager, sev_tag, status_tag, kpi, field, select, delete_form, progress, search_box, filter_select, card_head %}
+{{ sprite() }}
+
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:btn focus:btn-dark">Skip to content</a>
+
+{# ── Navigation rail ───────────────────────────────────────────────────── #}
+<div id="rail-scrim" hidden class="fixed inset-0 z-40 bg-ink/50 lg:hidden" data-rail-close></div>
+
+<aside id="rail" class="fixed inset-y-0 left-0 z-50 w-[var(--rail-w)] bg-slate-800 shadow-rail
+       flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
+       aria-label="Sections">
+  <div class="flex items-center gap-2.5 h-[62px] px-4 border-b border-white/[0.07] shrink-0">
+    <a href="{{ url_for('dash_overview') }}" class="flex items-center gap-2.5 no-tap">
+      {% include "partials/logo.html" %}
+      <span class="font-display font-bold text-[15px] tracking-[-0.02em] text-white">Mzalendo</span>
+    </a>
+    <button type="button" class="btn btn-ghost btn-icon ml-auto lg:hidden text-slate-400" data-rail-close aria-label="Close menu">
+      {{ icon('x') }}
+    </button>
+  </div>
+
+  {% if factory %}
+  <div class="px-4 py-3 border-b border-white/[0.07] shrink-0">
+    {% if current_user.is_super %}
+      <form method="get" action="{{ url_for('dash_overview') }}" data-factory-switch>
+        <label class="label text-slate-500 block mb-1.5">Viewing plant</label>
+        <select class="input h-[36px] min-h-0 py-0 text-[12.5px] bg-slate-700 border-slate-600 text-white rounded-[10px]"
+                data-switch-select aria-label="Switch plant">
+          {% for f in factories_all|default([]) %}
+            <option value="{{ url_for('switch_factory', factory_id=f.id) }}" {% if f.id == factory.id %}selected{% endif %}>{{ f.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    {% else %}
+      <p class="label text-slate-500 mb-1">Plant</p>
+      <p class="text-[13.5px] font-semibold text-white leading-tight m-0 truncate">{{ factory.name }}</p>
+      <p class="font-mono text-[10.5px] text-slate-500 mt-0.5 m-0">{{ factory.county }} · {{ factory.plan|title }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <nav class="flex-1 overflow-y-auto rail-scroll px-2.5 pb-4">
+    {% set ep = request.endpoint %}
+    <p class="rail-group">Command</p>
+    <a href="{{ url_for('dash_overview') }}" class="rail-link {% if ep=='dash_overview' %}is-active{% endif %}">{{ icon('gauge') }} Overview</a>
+    <a href="{{ url_for('dash_pulse') }}" class="rail-link {% if ep=='dash_pulse' %}is-active{% endif %}">{{ icon('pulse') }} Manufacturing Pulse</a>
+    <a href="{{ url_for('dash_alerts') }}" class="rail-link {% if ep=='dash_alerts' %}is-active{% endif %}">
+      {{ icon('bell') }} Alerts
+      {% if unread_alerts %}<span class="ml-auto tag tag-signal !py-0 !px-1.5 !text-[10px]">{{ unread_alerts }}</span>{% endif %}
+    </a>
+
+    <p class="rail-group">Materials</p>
+    <a href="{{ url_for('dash_materials') }}" class="rail-link {% if ep in ('dash_materials','material_form','material_detail') %}is-active{% endif %}">{{ icon('box') }} Inventory</a>
+    <a href="{{ url_for('dash_stock_ledger') }}" class="rail-link {% if ep=='dash_stock_ledger' %}is-active{% endif %}">{{ icon('history') }} Stock ledger</a>
+    <a href="{{ url_for('dash_suppliers') }}" class="rail-link {% if ep in ('dash_suppliers','supplier_form','supplier_detail') %}is-active{% endif %}">{{ icon('truck') }} Suppliers</a>
+    <a href="{{ url_for('dash_purchase_orders') }}" class="rail-link {% if ep in ('dash_purchase_orders','po_form','po_detail') %}is-active{% endif %}">{{ icon('cart') }} Procurement</a>
+
+    <p class="rail-group">Make</p>
+    <a href="{{ url_for('dash_products') }}" class="rail-link {% if ep in ('dash_products','product_form','product_detail') %}is-active{% endif %}">{{ icon('cube') }} Products</a>
+    <a href="{{ url_for('dash_runs') }}" class="rail-link {% if ep in ('dash_runs','run_form','run_detail') %}is-active{% endif %}">{{ icon('cog') }} Production</a>
+    <a href="{{ url_for('dash_schedule') }}" class="rail-link {% if ep=='dash_schedule' %}is-active{% endif %}">{{ icon('calendar') }} Schedule</a>
+    <a href="{{ url_for('dash_quality') }}" class="rail-link {% if ep in ('dash_quality','qc_form','qc_detail') %}is-active{% endif %}">{{ icon('badge-check') }} Quality</a>
+
+    <p class="rail-group">Sell</p>
+    <a href="{{ url_for('dash_orders') }}" class="rail-link {% if ep in ('dash_orders','order_form','order_detail') %}is-active{% endif %}">{{ icon('clipboard') }} Orders</a>
+    <a href="{{ url_for('dash_customers') }}" class="rail-link {% if ep in ('dash_customers','customer_form','customer_detail') %}is-active{% endif %}">{{ icon('users') }} Customers</a>
+
+    <p class="rail-group">Plant</p>
+    <a href="{{ url_for('dash_machines') }}" class="rail-link {% if ep in ('dash_machines','machine_form','machine_detail') %}is-active{% endif %}">{{ icon('wrench') }} Machines</a>
+    <a href="{{ url_for('dash_maintenance') }}" class="rail-link {% if ep in ('dash_maintenance','ticket_form') %}is-active{% endif %}">{{ icon('tool') }} Maintenance</a>
+    <a href="{{ url_for('dash_workers') }}" class="rail-link {% if ep in ('dash_workers','worker_form','worker_detail') %}is-active{% endif %}">{{ icon('helmet') }} Workers</a>
+    <a href="{{ url_for('dash_attendance') }}" class="rail-link {% if ep=='dash_attendance' %}is-active{% endif %}">{{ icon('clock') }} Attendance</a>
+    <a href="{{ url_for('dash_safety') }}" class="rail-link {% if ep in ('dash_safety','safety_form') %}is-active{% endif %}">{{ icon('shield') }} Safety</a>
+
+    <p class="rail-group">Reach</p>
+    <a href="{{ url_for('dash_messages') }}" class="rail-link {% if ep=='dash_messages' %}is-active{% endif %}">{{ icon('message') }} Messages</a>
+    <a href="{{ url_for('dash_ussd_sessions') }}" class="rail-link {% if ep=='dash_ussd_sessions' %}is-active{% endif %}">{{ icon('signal') }} USSD sessions</a>
+    <a href="{{ url_for('dash_ussd_simulator') }}" class="rail-link {% if ep=='dash_ussd_simulator' %}is-active{% endif %}">{{ icon('phone') }} Handset simulator</a>
+    <a href="{{ url_for('dash_reports') }}" class="rail-link {% if ep=='dash_reports' %}is-active{% endif %}">{{ icon('chart') }} Reports</a>
+
+    {% if current_user.role in ('super_admin','owner') %}
+    <p class="rail-group">Administration</p>
+    <a href="{{ url_for('dash_users') }}" class="rail-link {% if ep in ('dash_users','user_form') %}is-active{% endif %}">{{ icon('user-cog') }} Users</a>
+    <a href="{{ url_for('dash_audit') }}" class="rail-link {% if ep=='dash_audit' %}is-active{% endif %}">{{ icon('list') }} Audit trail</a>
+    <a href="{{ url_for('dash_settings') }}" class="rail-link {% if ep=='dash_settings' %}is-active{% endif %}">{{ icon('settings') }} Settings</a>
+    {% endif %}
+    {% if current_user.is_super %}
+    <a href="{{ url_for('admin_factories') }}" class="rail-link {% if ep in ('admin_factories','admin_factory_form') %}is-active{% endif %}">{{ icon('building') }} All plants</a>
+    <a href="{{ url_for('admin_system') }}" class="rail-link {% if ep=='admin_system' %}is-active{% endif %}">{{ icon('server') }} System</a>
+    {% endif %}
+
+    <div class="mt-6 mx-1 p-3.5 rounded-[14px] bg-slate-900 border border-white/[0.07]">
+      <p class="label text-slate-500 mb-1.5">Floor line</p>
+      <p class="font-mono text-[15px] font-semibold text-signal-500 m-0 tracking-tight">{{ ussd_code }}</p>
+      <p class="text-[11.5px] text-slate-500 mt-1.5 mb-0 leading-snug">Workers dial this to report from any handset.</p>
+    </div>
+  </nav>
+</aside>
+
+{# ── Main column ───────────────────────────────────────────────────────── #}
+<div class="lg:pl-[var(--rail-w)] min-h-screen flex flex-col">
+
+  <header class="sticky top-0 z-30 bg-fog/90 backdrop-blur-md border-b border-divider">
+    <div class="flex items-center gap-3 h-[62px] px-4 sm:px-6">
+      <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-rail-open aria-label="Open menu">
+        {{ icon('menu') }}
+      </button>
+
+      <div class="relative flex-1 max-w-[420px]" data-search>
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">{{ icon('search','ico ico-sm') }}</span>
+        <input type="search" class="input h-[38px] min-h-0 py-0 pl-9 pr-3 rounded-[12px] text-[13px]"
+               placeholder="Search materials, orders, machines…" autocomplete="off"
+               data-search-input aria-label="Search the plant">
+        <div class="absolute left-0 right-0 top-[44px] card shadow-s2 p-1.5 hidden max-h-[380px] overflow-y-auto z-20"
+             data-search-results role="listbox"></div>
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <a href="{{ url_for('dash_alerts') }}" class="btn btn-secondary btn-icon relative" aria-label="Alerts">
+          {{ icon('bell') }}
+          {% if unread_alerts %}
+            <span class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-signal-500 text-ink font-mono text-[9.5px] font-bold grid place-items-center">{{ unread_alerts if unread_alerts < 100 else '99+' }}</span>
+          {% endif %}
+        </a>
+
+        <div class="relative" data-dropdown>
+          <button type="button" class="flex items-center gap-2 h-[38px] pl-1 pr-2.5 rounded-control border border-divider bg-surface hover:border-ink transition-colors" data-dropdown-trigger aria-expanded="false" aria-haspopup="menu">
+            <span class="w-[28px] h-[28px] rounded-full bg-ink text-white font-mono text-[11px] font-semibold grid place-items-center shrink-0">{{ current_user.initials }}</span>
+            <span class="hidden sm:block text-[12.5px] font-medium text-ink max-w-[110px] truncate">{{ current_user.full_name or current_user.username }}</span>
+            {{ icon('chevron-down','ico ico-sm text-slate-400') }}
+          </button>
+          <div class="absolute right-0 top-[44px] w-[236px] card shadow-s2 p-1.5 hidden z-20" data-dropdown-menu role="menu">
+            <div class="px-3 py-2.5 border-b border-divider mb-1.5">
+              <p class="text-[13px] font-semibold text-ink m-0 truncate">{{ current_user.full_name or current_user.username }}</p>
+              <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0 truncate">{{ current_user.email }}</p>
+              <span class="tag tag-neutral mt-2">{{ current_user.role_label }}</span>
+            </div>
+            <a href="{{ url_for('profile') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('user-cog','ico ico-sm') }} Profile</a>
+            <a href="{{ url_for('change_password') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('key','ico ico-sm') }} Change password</a>
+            <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('globe','ico ico-sm') }} Public site</a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-bad hover:bg-bad/[0.07]" role="menuitem">{{ icon('logout','ico ico-sm') }} Sign out</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {% include "partials/flash.html" %}
+
+  <main id="main" class="flex-1 px-4 sm:px-6 py-6 pb-16">
+    <div class="max-w-shell mx-auto">
+      {% block page_head %}
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          {% if kicker is defined and kicker %}<p class="kicker">{{ kicker }}</p>{% endif %}
+          <h1 class="text-[26px] sm:text-[30px] font-bold tracking-[-0.025em] m-0">{{ page_title|default('Overview') }}</h1>
+          {% if page_sub is defined and page_sub %}<p class="text-[13.5px] text-slate-500 mt-1.5 mb-0 max-w-prose2">{{ page_sub }}</p>{% endif %}
+        </div>
+        <div class="flex flex-wrap items-center gap-2">{% block page_actions %}{% endblock %}</div>
+      </div>
+      {% endblock %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="border-t border-divider px-4 sm:px-6 py-4">
+    <div class="max-w-shell mx-auto flex flex-wrap items-center justify-between gap-3">
+      <p class="font-mono text-[10.5px] text-slate-400 m-0">
+        Mzalendo v{{ APP_VERSION }} · {{ factory.name if factory else 'No plant' }} · {{ now|dt('%d %b %Y, %H:%M') }} {{ TZ_LABEL }}
+      </p>
+      <p class="font-mono text-[10.5px] text-slate-400 m-0">Telco layer by Africa's Talking</p>
+    </div>
+  </footer>
+</div>
+
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

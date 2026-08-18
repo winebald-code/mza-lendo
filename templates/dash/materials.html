@@ -1,0 +1,107 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Inventory' %}
+{% set kicker = 'Materials' %}
+{% set page_sub = 'Every raw material, its level against the reorder point, and what it is worth sitting on the shelf.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='materials') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  <a href="{{ url_for('dash_stock_ledger') }}" class="btn btn-secondary btn-sm">{{ icon('history','ico ico-sm') }} Ledger</a>
+  {% if current_user.can_write %}
+    <a href="{{ url_for('material_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New material</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+  {{ kpi('Items tracked', totals.count, 'Active material records', 'box') }}
+  {{ kpi('Stock value', totals.value|money_kpi, 'Quantity × unit cost', 'coins') }}
+  {{ kpi('Below minimum', totals.low, 'Order before the line stops', 'alert', 'warn' if totals.low else 'ink') }}
+  {{ kpi('Out of stock', totals.out, 'Nothing left on the shelf', 'flame', 'bad' if totals.out else 'ink') }}
+</section>
+
+<section class="card">
+  <form method="get" action="{{ url_for('dash_materials') }}" class="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-divider bg-fog/40">
+    {{ search_box(term, 'Search name, code, category…') }}
+    {{ filter_select('state', [('out','Out of stock'),('low','Below minimum'),('watch','Getting low'),('ok','Healthy')], state, 'Any level') }}
+    <select name="category" class="select h-[38px] min-h-0 py-0 text-[13px] w-auto min-w-[130px]" aria-label="Category">
+      <option value="">Any category</option>
+      {% for c in categories %}<option value="{{ c }}" {% if c == cat %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm">{{ icon('filter','ico ico-sm') }} Apply</button>
+    {% if term or state or cat %}<a href="{{ url_for('dash_materials') }}" class="btn btn-ghost btn-sm">Reset</a>{% endif %}
+  </form>
+
+  {% if items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Code</th><th>Material</th><th>Category</th>
+          <th class="r">On hand</th><th>Level</th>
+          <th class="r">Unit cost</th><th class="r">Value</th><th>Supplier</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in items %}
+        <tr>
+          <td><span class="font-mono text-[11.5px] text-slate-500">{{ m.code }}</span></td>
+          <td>
+            <a href="{{ url_for('material_detail', material_id=m.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ m.name }}</a>
+            {% if m.location %}<span class="block font-mono text-[10px] text-slate-400 mt-0.5">{{ m.location }}</span>{% endif %}
+          </td>
+          <td class="text-[12.5px] text-slate-500">{{ m.category or '—' }}</td>
+          <td class="r">
+            <span class="num text-[12.5px] font-semibold {% if m.stock_state=='out' %}text-bad{% elif m.stock_state=='low' %}text-warn{% endif %}">{{ m.quantity|qty }}</span>
+            <span class="font-mono text-[10.5px] text-slate-400 ml-1">{{ m.unit }}</span>
+          </td>
+          <td class="w-[136px]">
+            <div class="flex items-center gap-2">
+              {{ progress(m.stock_pct, 'bad' if m.stock_state=='out' else ('warn' if m.stock_state=='low' else ('signal' if m.stock_state=='watch' else 'ok')), 5) }}
+              {{ status_tag(m.stock_state) }}
+            </div>
+            <span class="font-mono text-[10px] text-slate-400">min {{ m.min_stock|qty }}</span>
+          </td>
+          <td class="r num text-[12.5px]">{{ m.unit_cost|money }}</td>
+          <td class="r num text-[12.5px] font-medium">{{ m.value|money }}</td>
+          <td class="text-[12.5px] text-slate-500 max-w-[140px] truncate">{{ m.supplier.name if m.supplier else '—' }}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              {% if current_user.can_write %}
+                <a href="{{ url_for('material_detail', material_id=m.id) }}#move" class="btn btn-ghost btn-icon" title="Record movement" aria-label="Record movement">{{ icon('refresh','ico ico-sm') }}</a>
+                <a href="{{ url_for('material_form', material_id=m.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% else %}
+                <a href="{{ url_for('material_detail', material_id=m.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pages > 1 %}
+  {% set qs = 'q=' ~ term ~ '&state=' ~ state ~ '&category=' ~ cat %}
+  <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t border-divider">
+    <p class="font-mono text-[11px] text-slate-400 m-0">Page {{ p }} of {{ pages }} · {{ total }} items</p>
+    <nav class="flex items-center gap-1" aria-label="Pages">
+      <a href="?page={{ p - 1 }}&{{ qs }}" class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if p <= 1 %}pointer-events-none opacity-35{% endif %}" aria-label="Previous page">{{ icon('arrow-left','ico ico-sm') }}</a>
+      {% for n in range([1, p - 2]|max, [pages, [1, p - 2]|max + 4]|min + 1) %}
+        <a href="?page={{ n }}&{{ qs }}"
+           class="min-w-[32px] h-[32px] px-2 grid place-items-center rounded-control font-mono text-[12px] border transition-colors
+                  {% if n == p %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}"
+           {% if n == p %}aria-current="page"{% endif %}>{{ n }}</a>
+      {% endfor %}
+      <a href="?page={{ p + 1 }}&{{ qs }}" class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if p >= pages %}pointer-events-none opacity-35{% endif %}" aria-label="Next page">{{ icon('arrow-right','ico ico-sm') }}</a>
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+    {{ empty_state('box',
+        'No materials match' if (term or state or cat) else 'No materials yet',
+        'Adjust the filters, or clear them to see the whole shelf.' if (term or state or cat) else 'Add the raw materials you buy in. Once each has a minimum level, the Pulse engine watches them for you.',
+        url_for('material_form') if current_user.can_write and not (term or state or cat) else None, 'Add material') }}
+  {% endif %}
+</section>
+{% endblock %}

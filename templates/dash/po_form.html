@@ -1,0 +1,105 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = ('Edit ' ~ item.number) if item else 'New purchase order' %}
+{% set kicker = 'Procurement' %}
+{% set page_sub = 'Unit cost fills in from the material record. Receiving this PO later will put these quantities into stock.' %}
+
+{% block content %}
+<form method="post" class="grid gap-6 xl:grid-cols-[1fr_320px] items-start max-w-[1140px]" data-total-scope>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid gap-6">
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Order</h2>
+      <div class="grid sm:grid-cols-2 gap-x-5 gap-y-1">
+        {{ select('supplier_id', 'Supplier', obj_options(suppliers),
+                  (item.supplier_id if item else request.args.get('supplier_id')), errors,
+                  None, 'Choose a supplier', True) }}
+        {{ field('expected_date', 'Expected delivery', (item.expected_date.isoformat() if item and item.expected_date else ''), 'date', errors,
+                 'Past this date without receipt, the PO counts as overdue') }}
+        {% if item %}
+          {{ select('status', 'Status', pairs(PO_STATUSES), item.status, errors) }}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Materials ordered</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">At least one line is required</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-row-add="#po-lines">{{ icon('plus','ico ico-sm') }} Add line</button>
+      </div>
+      <div class="p-5">
+        <div id="po-lines" class="grid gap-3">
+          <div data-row data-row-template hidden class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_110px_130px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Material</label>
+              <select name="material_id[]" class="select" data-material-select disabled>
+                <option value="">Choose…</option>
+                {% for m in materials %}<option value="{{ m.id }}" data-cost="{{ m.unit_cost }}">{{ m.name }} ({{ m.unit }})</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Quantity</label>
+              <input type="number" name="quantity[]" class="input" step="0.01" min="0" data-qty data-default="1" disabled>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Unit cost</label>
+              <input type="number" name="unit_cost[]" class="input" step="0.01" min="0" data-price disabled>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+
+          {% set lines = item.items if item and item.items else [None] %}
+          {% for line in lines %}
+          <div data-row class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_110px_130px_auto] gap-2.5 items-end">
+            <div class="field !mb-0">
+              <label class="flabel">Material</label>
+              <select name="material_id[]" class="select" data-material-select>
+                <option value="">Choose…</option>
+                {% for m in materials %}
+                  <option value="{{ m.id }}" data-cost="{{ m.unit_cost }}" {% if line and line.material_id == m.id %}selected{% endif %}>{{ m.name }} ({{ m.unit }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Quantity</label>
+              <input type="number" name="quantity[]" class="input" step="0.01" min="0" data-qty value="{{ line.quantity if line else '' }}">
+            </div>
+            <div class="field !mb-0">
+              <label class="flabel">Unit cost</label>
+              <input type="number" name="unit_cost[]" class="input" step="0.01" min="0" data-price value="{{ line.unit_cost if line else '' }}">
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon text-slate-400 hover:text-bad mb-[3px]" data-row-remove aria-label="Remove">{{ icon('trash','ico ico-sm') }}</button>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if errors.lines %}<p class="err mt-3 mb-0">{{ errors.lines }}</p>{% endif %}
+
+        <div class="flex items-center justify-between gap-4 mt-5 pt-4 border-t border-divider">
+          <p class="label m-0">Order total</p>
+          <p class="num text-[19px] font-semibold m-0"><span data-grand-total>0.00</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-5">Notes</h2>
+      <div class="field">
+        <label for="f-notes">Instructions to the supplier</label>
+        <textarea id="f-notes" name="notes" class="textarea" rows="3" placeholder="Delivery window, site contact, grade requirements…">{{ item.notes if item else '' }}</textarea>
+      </div>
+    </section>
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    <div class="grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">{{ icon('check','ico ico-sm') }} {{ 'Save changes' if item else 'Create purchase order' }}</button>
+      <a href="{{ url_for('dash_purchase_orders') }}" class="btn btn-secondary btn-block">Cancel</a>
+      {% if item %}{{ delete_form(url_for('po_delete', po_id=item.id), 'Delete purchase order', item.number, False) }}{% endif %}
+    </div>
+  </aside>
+</form>
+{% endblock %}

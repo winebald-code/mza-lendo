@@ -1,0 +1,71 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = 'Procurement' %}
+{% set kicker = 'Materials' %}
+{% set page_sub = 'Purchase orders against suppliers. Receiving one puts the stock away and updates that supplier’s reliability score.' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('export_csv', dataset='purchase-orders') }}" class="btn btn-secondary btn-sm">{{ icon('download','ico ico-sm') }} Export</a>
+  {% if current_user.can_write %}
+    <form method="post" action="{{ url_for('procurement_auto') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-secondary btn-sm">{{ icon('zap','ico ico-sm') }} Draft from low stock</button>
+    </form>
+    <a href="{{ url_for('po_form') }}" class="btn btn-primary btn-sm">{{ icon('plus','ico ico-sm') }} New purchase order</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="scroll-x flex gap-2 mb-5 pb-1">
+  <a href="{{ url_for('dash_purchase_orders') }}"
+     class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
+            {% if not status %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">All</a>
+  {% for s in PO_STATUSES %}
+  <a href="{{ url_for('dash_purchase_orders') }}?status={{ s }}"
+     class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
+            {% if status == s %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">{{ s|replace('_',' ')|title }}</a>
+  {% endfor %}
+</div>
+
+<section class="card">
+  {% if page.items %}
+  <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>PO</th><th>Supplier</th><th>Raised</th><th>Expected</th><th class="r">Lines</th><th class="r">Value</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for po in page.items %}
+        {% set overdue = po.expected_date and po.expected_date < today and po.status not in ('received','cancelled') %}
+        <tr>
+          <td><a href="{{ url_for('po_detail', po_id=po.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ po.number }}</a></td>
+          <td class="max-w-[200px]">
+            {% if po.supplier %}
+              <a href="{{ url_for('supplier_detail', supplier_id=po.supplier.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 block truncate">{{ po.supplier.name }}</a>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="font-mono text-[11.5px] text-slate-500">{{ po.created_at|dt('%d %b %Y') }}</td>
+          <td class="font-mono text-[11.5px] {% if overdue %}text-bad font-semibold{% else %}text-slate-500{% endif %}">
+            {{ po.expected_date|d('%d %b %Y') }}{% if overdue %} <span class="tag tag-bad ml-1">overdue</span>{% endif %}
+          </td>
+          <td class="r num text-[12.5px]">{{ po.items|length }}</td>
+          <td class="r num text-[12.5px] font-medium">{{ po.total|money }}</td>
+          <td>{{ status_tag(po.status) }}</td>
+          <td>
+            <div class="flex items-center gap-1 justify-end">
+              <a href="{{ url_for('po_detail', po_id=po.id) }}" class="btn btn-ghost btn-icon" title="View" aria-label="View">{{ icon('eye','ico ico-sm') }}</a>
+              {% if current_user.can_write and po.status == 'draft' %}
+                <a href="{{ url_for('po_form', po_id=po.id) }}" class="btn btn-ghost btn-icon" title="Edit" aria-label="Edit">{{ icon('edit','ico ico-sm') }}</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, 'dash_purchase_orders', 'status=' ~ status) }}
+  {% else %}
+    {{ empty_state('cart', 'No purchase orders match' if status else 'No purchase orders yet',
+        'Try another status filter.' if status else 'Raise one by hand, or let the plant draft them for every material sitting below its minimum.',
+        url_for('po_form') if current_user.can_write and not status else None, 'New purchase order') }}
+  {% endif %}
+</section>
+{% endblock %}

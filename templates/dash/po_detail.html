@@ -1,0 +1,139 @@
+{% extends "dash/_layout.html" %}
+{% set page_title = item.number %}
+{% set kicker = item.supplier.name if item.supplier else 'Purchase order' %}
+
+{% block page_actions %}
+  <a href="{{ url_for('dash_purchase_orders') }}" class="btn btn-ghost btn-sm">{{ icon('arrow-left','ico ico-sm') }} Procurement</a>
+  {% if current_user.can_write and item.status == 'draft' %}
+    <a href="{{ url_for('po_form', po_id=item.id) }}" class="btn btn-secondary btn-sm">{{ icon('edit','ico ico-sm') }} Edit</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% set overdue = item.expected_date and item.expected_date < today and item.status not in ('received','cancelled') %}
+
+{% if overdue %}
+<div class="alert alert-bad mb-6">
+  <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
+  <p class="m-0">This delivery was expected on {{ item.expected_date|d('%d %B') }} and has not been received. Chase the supplier — it is currently pulling their reliability score down.</p>
+</div>
+{% endif %}
+
+<div class="grid gap-6 xl:grid-cols-[1fr_330px] items-start">
+  <div class="grid gap-6">
+    <section class="card">
+      <div class="card-head"><h2 class="card-title m-0">Lines</h2></div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Material</th><th class="r">Ordered</th><th class="r">Received</th><th class="r">Outstanding</th><th class="r">Unit cost</th><th class="r">Line total</th></tr></thead>
+          <tbody>
+            {% for line in item.items %}
+            {% set outstanding = (line.quantity or 0) - (line.received_qty or 0) %}
+            <tr>
+              <td><a href="{{ url_for('material_detail', material_id=line.material_id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ line.material.name if line.material else '—' }}</a></td>
+              <td class="r num text-[12.5px]">{{ line.quantity|qty }} {{ line.material.unit if line.material else '' }}</td>
+              <td class="r num text-[12.5px] {% if line.received_qty %}text-ok{% else %}text-slate-400{% endif %}">{{ line.received_qty|qty }}</td>
+              <td class="r num text-[12.5px] {% if outstanding > 0 %}text-warn font-semibold{% else %}text-slate-400{% endif %}">{{ outstanding|qty if outstanding > 0 else '—' }}</td>
+              <td class="r num text-[12.5px]">{{ line.unit_cost|money }}</td>
+              <td class="r num text-[12.5px] font-medium">{{ ((line.quantity or 0) * (line.unit_cost or 0))|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-ink">
+              <td colspan="5" class="r label !text-ink py-3">Purchase order total</td>
+              <td class="r num text-[15px] font-semibold py-3">{{ item.total|money }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    {% if current_user.can_write and item.status not in ('received','cancelled') %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Receive delivery</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Enter what actually arrived — it goes straight into stock</p>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('po_receive', po_id=item.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr><th>Material</th><th class="r">Outstanding</th><th class="r">Received now</th></tr></thead>
+            <tbody>
+              {% for line in item.items %}
+              {% set outstanding = (line.quantity or 0) - (line.received_qty or 0) %}
+              <tr>
+                <td class="text-[12.5px] font-medium">{{ line.material.name if line.material else '—' }}</td>
+                <td class="r num text-[12.5px] text-slate-500">{{ outstanding|qty }} {{ line.material.unit if line.material else '' }}</td>
+                <td class="r w-[150px]">
+                  <input type="number" name="recv_{{ line.id }}" class="input h-[36px] min-h-0 py-0 text-right"
+                         step="0.01" min="0" max="{{ outstanding }}" placeholder="0"
+                         aria-label="Quantity received for {{ line.material.name if line.material else 'line' }}">
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="px-5 py-4 border-t border-divider flex flex-wrap items-center justify-between gap-3">
+          <p class="text-[12px] text-slate-500 m-0 max-w-[46ch] leading-snug">
+            Partial deliveries are fine — receive what came, and the outstanding column keeps the rest.
+          </p>
+          <button type="submit" class="btn btn-primary">{{ icon('package-check','ico ico-sm') }} Receive into stock</button>
+        </div>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="grid gap-6 xl:sticky xl:top-[78px]">
+    {% if current_user.can_write %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Status</h2>
+      <form method="post" action="{{ url_for('po_status', po_id=item.id) }}" class="grid gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="status" class="select" aria-label="New status">
+          {% for s in PO_STATUSES %}<option value="{{ s }}" {% if s == item.status %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-block">{{ icon('refresh','ico ico-sm') }} Update</button>
+      </form>
+      <p class="hint mt-3 mb-0">Marking a PO as sent texts the supplier if they have a number on file.</p>
+    </section>
+    {% endif %}
+
+    <section class="card card-pad">
+      <h2 class="card-title mb-4">Details</h2>
+      <dl class="grid gap-3 m-0">
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Status</dt><dd class="m-0">{{ status_tag(item.status) }}</dd></div>
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Raised</dt><dd class="font-mono text-[11.5px] text-slate-500 m-0">{{ item.created_at|dt('%d %b %Y') }}</dd></div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="label m-0">Expected</dt>
+          <dd class="font-mono text-[11.5px] m-0 {% if overdue %}text-bad font-semibold{% else %}text-slate-500{% endif %}">{{ item.expected_date|d('%d %b %Y') }}</dd>
+        </div>
+        {% if item.received_at %}
+        <div class="flex items-center justify-between gap-3"><dt class="label m-0">Received</dt><dd class="font-mono text-[11.5px] text-ok m-0">{{ item.received_at|dt('%d %b %Y') }}</dd></div>
+        {% endif %}
+      </dl>
+
+      {% if item.supplier %}
+      <div class="mt-5 pt-5 border-t border-divider">
+        <p class="label mb-2">Supplier</p>
+        <a href="{{ url_for('supplier_detail', supplier_id=item.supplier.id) }}" class="text-[13px] font-medium text-ink hover:text-signal-600">{{ item.supplier.name }}</a>
+        {% if item.supplier.phone %}<p class="font-mono text-[11.5px] text-slate-500 mt-1 m-0">{{ item.supplier.phone }}</p>{% endif %}
+        <p class="text-[11.5px] text-slate-400 mt-1 m-0">Reliability {{ item.supplier.reliability }} · {{ item.supplier.lead_time_days }}d lead time</p>
+      </div>
+      {% endif %}
+    </section>
+
+    {% if item.notes %}
+    <section class="card card-pad">
+      <h2 class="card-title mb-3">Notes</h2>
+      <p class="text-[12.5px] text-slate-500 leading-relaxed whitespace-pre-line m-0">{{ item.notes }}</p>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
