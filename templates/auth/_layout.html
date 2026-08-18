@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F2F4F6">
 <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body class="bg-fog">
 {% from "partials/icons.html" import icon, sprite %}
@@ -83,6 +83,6 @@
   </section>
 </div>
 
-<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/app.js') }}" defer></script>
 </body>
 </html>

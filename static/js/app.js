@@ -370,10 +370,9 @@
     const name = tab.getAttribute('data-tab');
     $$('[data-tab]', group).forEach((t) => {
       const on = t === tab;
-      t.classList.toggle('bg-ink', on);
-      t.classList.toggle('text-white', on);
-      t.classList.toggle('border-ink', on);
-      t.classList.toggle('text-slate-500', !on);
+      // One class. Colours live in .tab / .tab.is-active so there is nothing
+      // for competing utilities to win or lose against.
+      t.classList.toggle('is-active', on);
       t.setAttribute('aria-selected', String(on));
     });
     $$('[data-panel]', group).forEach((p) => {
@@ -401,6 +400,24 @@
     function paint(text, kind) {
       screen.textContent = text;
       screen.className = 'term ' + (kind === 'end' ? 'text-signal-200' : 'text-signal-300');
+      revealScreen();
+    }
+
+    // On a phone the on-screen keyboard covers the lower half of the viewport,
+    // so the handset screen ends up above the fold exactly when the reply
+    // lands. Bring it back into view after every exchange and when the field
+    // takes focus.
+    function revealScreen() {
+      if (window.innerWidth >= 640) return;
+      window.requestAnimationFrame(function () {
+        screen.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    }
+    input.addEventListener('focus', function () { setTimeout(revealScreen, 250); });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function () {
+        if (document.activeElement === input) revealScreen();
+      });
     }
 
     function setLive(live) {

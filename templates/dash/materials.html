@@ -88,8 +88,7 @@
       <a href="?page={{ p - 1 }}&{{ qs }}" class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if p <= 1 %}pointer-events-none opacity-35{% endif %}" aria-label="Previous page">{{ icon('arrow-left','ico ico-sm') }}</a>
       {% for n in range([1, p - 2]|max, [pages, [1, p - 2]|max + 4]|min + 1) %}
         <a href="?page={{ n }}&{{ qs }}"
-           class="min-w-[32px] h-[32px] px-2 grid place-items-center rounded-control font-mono text-[12px] border transition-colors
-                  {% if n == p %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}"
+           class="tab !px-2 min-w-[32px] !h-[32px] justify-center font-mono !text-[12px] {% if n == p %}is-active{% endif %}"
            {% if n == p %}aria-current="page"{% endif %}>{{ n }}</a>
       {% endfor %}
       <a href="?page={{ p + 1 }}&{{ qs }}" class="btn btn-secondary btn-icon !w-[32px] !h-[32px] {% if p >= pages %}pointer-events-none opacity-35{% endif %}" aria-label="Next page">{{ icon('arrow-right','ico ico-sm') }}</a>

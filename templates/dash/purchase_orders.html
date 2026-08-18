@@ -17,12 +17,10 @@
 {% block content %}
 <div class="scroll-x flex gap-2 mb-5 pb-1">
   <a href="{{ url_for('dash_purchase_orders') }}"
-     class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
-            {% if not status %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">All</a>
+     class="tab shrink-0 {% if not status %}is-active{% endif %}">All</a>
   {% for s in PO_STATUSES %}
   <a href="{{ url_for('dash_purchase_orders') }}?status={{ s }}"
-     class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
-            {% if status == s %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">{{ s|replace('_',' ')|title }}</a>
+     class="tab shrink-0 {% if status == s %}is-active{% endif %}">{{ s|replace('_',' ')|title }}</a>
   {% endfor %}
 </div>
 

@@ -114,8 +114,7 @@
        aria-label="Previous page">{{ icon('arrow-left','ico ico-sm') }}</a>
     {% for n in page.window %}
       <a href="?page={{ n }}{% if extra %}&{{ extra }}{% endif %}"
-         class="min-w-[32px] h-[32px] px-2 grid place-items-center rounded-control font-mono text-[12px] border transition-colors
-                {% if n == page.page %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}"
+         class="tab !px-2 min-w-[32px] !h-[32px] justify-center font-mono !text-[12px] {% if n == page.page %}is-active{% endif %}"
          {% if n == page.page %}aria-current="page"{% endif %}>{{ n }}</a>
     {% endfor %}
     <a href="?page={{ page.page + 1 }}{% if extra %}&{{ extra }}{% endif %}"

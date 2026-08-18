@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import base64
+import click
 import csv
 import hashlib
 import hmac
@@ -30,6 +31,7 @@ import os
 import re
 import secrets
 import string
+import time
 import urllib.parse
 import urllib.request
 import urllib.error
@@ -129,6 +131,13 @@ class Config:
     AT_SENDER_ID = os.environ.get("AT_SENDER_ID", "")
     AT_SHORTCODE = os.environ.get("AT_SHORTCODE", "")
     AT_USSD_CODE = os.environ.get("AT_USSD_CODE", "*384*7788#")
+    # AT_LIVE=1 removes the simulation fallback entirely: a message either goes
+    # to the gateway or is recorded as failed with the reason.
+    AT_LIVE = _env_bool("AT_LIVE", False)
+    # Shared secret appended to the callback URLs registered with Africa's
+    # Talking. Without it a public callback accepts anyone's POST, which means
+    # a stranger can open USSD sessions and inject delivery reports.
+    AT_WEBHOOK_TOKEN = os.environ.get("AT_WEBHOOK_TOKEN", "")
     AT_ENVIRONMENT = os.environ.get("AT_ENVIRONMENT", "sandbox")   # sandbox|live
     SMS_ENABLED = _env_bool("SMS_ENABLED", False)
 
@@ -188,6 +197,25 @@ PERMISSIONS_POLICY = ", ".join([
 ])
 
 
+def _webhook_guard():
+    """Reject a telco callback that does not carry the shared token.
+
+    Africa's Talking appends whatever query string is registered with the
+    channel, so ?token=... arrives on every hop. Compared in constant time.
+    When no token is configured the callbacks stay open — fine on a laptop,
+    not on a public URL, which is why startup warns about it.
+    """
+    expected = app.config["AT_WEBHOOK_TOKEN"]
+    if not expected:
+        return None
+    given = request.args.get("token") or request.headers.get("X-Webhook-Token", "")
+    if not hmac.compare_digest(str(given), str(expected)):
+        log.warning("callback rejected: bad or missing token on %s from %s",
+                    request.path, request.remote_addr)
+        return make_response("forbidden", 403)
+    return None
+
+
 @app.before_request
 def _security_before_request():
     """Issue a per-request CSP nonce and enforce HTTPS in production."""
@@ -195,9 +223,15 @@ def _security_before_request():
     g.request_started = datetime.now(timezone.utc)
 
     if app.config["FORCE_HTTPS"] and not app.debug and not app.testing:
-        proto = request.headers.get("X-Forwarded-Proto", request.scheme)
-        if proto != "https" and request.method in ("GET", "HEAD"):
-            return redirect(request.url.replace("http://", "https://", 1), code=301)
+        # /healthz is the one exemption. Platform health probes reach the
+        # container directly over http on the private network, so redirecting
+        # them makes a perfectly healthy container look dead and the deploy
+        # never goes green. The route returns no session data and sets no
+        # cookie, so there is nothing to protect in transit.
+        if request.path != "/healthz":
+            proto = request.headers.get("X-Forwarded-Proto", request.scheme)
+            if proto != "https" and request.method in ("GET", "HEAD"):
+                return redirect(request.url.replace("http://", "https://", 1), code=301)
 
 
 @app.after_request
@@ -252,6 +286,12 @@ def _security_after_request(resp: Response) -> Response:
         resp.headers["Strict-Transport-Security"] = (
             "max-age=63072000; includeSubDomains; preload"
         )
+
+    # A fingerprinted asset URL is immutable by construction: change the file
+    # and the URL changes. Safe to cache for a year.
+    if request.path.startswith("/static/") and request.args.get("v"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
 
     # Never let a browser or proxy cache an authenticated page.
     if request.path.startswith(("/dashboard", "/account", "/admin")):
@@ -1292,8 +1332,19 @@ class AfricasTalking:
                         else app.config["AT_API_KEY"])
         self.sender_id = (factory.at_sender_id if factory and factory.at_sender_id
                           else app.config["AT_SENDER_ID"])
+        # Endpoint selection. AT_LIVE wins over AT_ENVIRONMENT, because the
+        # alternative is someone setting AT_LIVE=1 with real credentials and
+        # having every message quietly delivered to the sandbox instead.
+        # A username of literally "sandbox" always means sandbox — that is how
+        # Africa's Talking identifies the sandbox application.
         env = app.config["AT_ENVIRONMENT"]
-        self.endpoint = self.SANDBOX_SMS if (env == "sandbox" or self.username == "sandbox") else self.LIVE_SMS
+        if self.username == "sandbox":
+            self.endpoint = self.SANDBOX_SMS
+        elif app.config["AT_LIVE"] or env in ("production", "live"):
+            self.endpoint = self.LIVE_SMS
+        else:
+            self.endpoint = self.SANDBOX_SMS
+        self.sandbox = self.endpoint == self.SANDBOX_SMS
 
     @property
     def live(self) -> bool:
@@ -1309,6 +1360,22 @@ class AfricasTalking:
 
         message = (message or "").strip()[:640]
         fid = self.factory.id if self.factory else None
+
+        if not self.live and app.config["AT_LIVE"]:
+            # Strict live mode. Silently "sending" a breakdown alert that never
+            # leaves the building is worse than failing loudly, because nobody
+            # finds out until the machine has been down for a shift.
+            reason = ("no API key" if not self.api_key else
+                      "no username" if not self.username else "SMS disabled")
+            for n in numbers:
+                db.session.add(SmsLog(factory_id=fid, direction="out", to_number=n,
+                                      from_number=self.sender_id or "MZALENDO",
+                                      message=message, category=category,
+                                      status="failed", status_code=0,
+                                      error="live mode: " + reason))
+            db.session.commit()
+            log.error("SMS FAILED (live mode, %s) -> %s", reason, ", ".join(numbers))
+            return {"ok": False, "sent": 0, "reason": reason}
 
         if not self.live:
             for n in numbers:
@@ -1664,6 +1731,27 @@ def _obj_options(rows, label_attr: str = "name", value_attr: str = "id"):
     return [(getattr(r, value_attr), getattr(r, label_attr)) for r in rows]
 
 
+_ASSET_FINGERPRINTS = {}
+
+
+def asset_url(filename: str) -> str:
+    """static/… with a content fingerprint appended.
+
+    Without this, a browser that cached app.js keeps running it after a deploy
+    while another that fetched fresh runs the new one — the two disagree and
+    only one of them shows the bug. A changed file gets a new URL instead.
+    """
+    if filename not in _ASSET_FINGERPRINTS:
+        path = os.path.join(app.static_folder, filename)
+        try:
+            with open(path, "rb") as fh:
+                digest = hashlib.sha256(fh.read()).hexdigest()[:10]
+        except OSError:
+            digest = APP_VERSION
+        _ASSET_FINGERPRINTS[filename] = digest
+    return url_for("static", filename=filename) + "?v=" + _ASSET_FINGERPRINTS[filename]
+
+
 @app.context_processor
 def inject_globals():
     fac = current_factory() if current_user.is_authenticated else None
@@ -1697,6 +1785,7 @@ def inject_globals():
         "obj_options": _obj_options,
         "now": _now(),          # naive UTC; the dt filter localises it
         "TZ_LABEL": TZ_LABEL,
+        "asset": asset_url,
         "today": _today(),
         "ussd_code": (fac.ussd_code if fac and fac.ussd_code else app.config["AT_USSD_CODE"]),
         "qs_without": qs_without,
@@ -4445,7 +4534,39 @@ def ussd_track(session_id, phone, service_code, network_code, text, worker,
     return row
 
 
+# A single USSD screen carries roughly 182 GSM characters. Anything longer is
+# truncated by the telco, which cuts a menu line in half and leaves the worker
+# looking at an option they cannot read. Call sites trim individual labels, but
+# a title, a greeting and a plant name are all free text — so the guarantee is
+# enforced here, at the one point every screen leaves through.
+USSD_MAX_CHARS = 182
+
+
+def ussd_fit(body: str) -> str:
+    """Trim a screen to one payload by dropping whole options, never mid-line."""
+    if len(body) <= USSD_MAX_CHARS:
+        return body
+    lines = body.split("\n")
+    if len(lines) < 3:
+        return body[:USSD_MAX_CHARS].rstrip()
+    head, tail = lines[0], lines[-1]
+    # Keep a trailing navigation option ("0. More") — losing it strands the user.
+    keep_tail = bool(re.match(r"^\s*\d+\.", tail))
+    middle = lines[1:-1] if keep_tail else lines[1:]
+    used = len(head) + (len(tail) + 1 if keep_tail else 0)
+    kept = []
+    for line in middle:
+        if used + len(line) + 1 > USSD_MAX_CHARS:
+            break
+        kept.append(line)
+        used += len(line) + 1
+    return "\n".join([head] + kept + ([tail] if keep_tail else []))
+
+
 def ussd_response(body: str, session, outcome=""):
+    prefix, _, rest = body.partition(" ")
+    if prefix in ("CON", "END"):
+        body = prefix + " " + ussd_fit(rest)
     if body.startswith("END") and session:
         session.status = "completed"
         session.ended_at = _now()
@@ -4458,11 +4579,15 @@ def ussd_response(body: str, session, outcome=""):
     return resp
 
 
+@app.route("/webhooks/ussd", methods=["GET", "POST"])
 @app.route("/ussd", methods=["POST", "GET"])
 @app.route("/ussd/callback", methods=["POST", "GET"])
 @csrf.exempt
 @limiter.limit("240 per minute")
 def ussd_callback():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     session_id = request.values.get("sessionId") or "sim-" + secrets.token_hex(6)
     service_code = request.values.get("serviceCode", "")
     phone = request.values.get("phoneNumber", "")
@@ -4810,9 +4935,13 @@ def ussd_callback():
     return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
 
 
+@app.route("/webhooks/ussd/event", methods=["GET", "POST"])
 @app.route("/ussd/events", methods=["POST"])
 @csrf.exempt
 def ussd_events():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     """End-of-session notification from Africa's Talking."""
     session_id = request.values.get("sessionId", "")
     row = UssdSession.query.filter_by(session_id=session_id).first()
@@ -4837,9 +4966,13 @@ SMS_HELP = ("Mzalendo commands: STOCK <material> to check a balance, "
             "TASKS for your jobs.")
 
 
+@app.route("/webhooks/sms/delivery", methods=["GET", "POST"])
 @app.route("/sms/delivery", methods=["POST"])
 @csrf.exempt
 def sms_delivery():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     """Delivery report callback."""
     provider_id = request.values.get("id", "")
     row = SmsLog.query.filter_by(provider_id=provider_id).first()
@@ -4851,9 +4984,13 @@ def sms_delivery():
     return Response("OK", mimetype="text/plain")
 
 
+@app.route("/webhooks/sms/optout", methods=["GET", "POST"])
 @app.route("/sms/optout", methods=["POST"])
 @csrf.exempt
 def sms_optout():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     phone = norm_phone(request.values.get("phoneNumber", ""))
     for c in Customer.query.filter(Customer.phone == phone).all():
         c.sms_updates = False
@@ -4862,9 +4999,13 @@ def sms_optout():
     return Response("OK", mimetype="text/plain")
 
 
+@app.route("/webhooks/sms/subscription", methods=["GET", "POST"])
 @app.route("/sms/subscription", methods=["POST"])
 @csrf.exempt
 def sms_subscription():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     db.session.add(SmsLog(
         direction="in", from_number=norm_phone(request.values.get("phoneNumber", "")),
         to_number=request.values.get("shortCode", ""), category="subscription",
@@ -4874,10 +5015,14 @@ def sms_subscription():
     return Response("OK", mimetype="text/plain")
 
 
+@app.route("/webhooks/sms/inbound", methods=["GET", "POST"])
 @app.route("/sms/incoming", methods=["POST"])
 @csrf.exempt
 @limiter.limit("240 per minute")
 def sms_incoming():
+    guard = _webhook_guard()
+    if guard:
+        return guard
     """
     Two-way SMS. A worker without airtime for a USSD session can still text a
     short command to the shortcode and get an answer back.
@@ -5556,6 +5701,18 @@ def bootstrap(force_demo=None):
     # A quiet nudge rather than a hard failure: FORCE_HTTPS is off by default so
     # local development works, but leaving it off in front of real users means
     # no HSTS and a session cookie that travels unencrypted.
+    if Config.AT_LIVE:
+        missing = [k for k, v in (("AT_USERNAME", Config.AT_USERNAME),
+                                  ("AT_API_KEY", Config.AT_API_KEY)) if not v]
+        if missing:
+            log.error("AT_LIVE=1 but %s not set — every send will be recorded "
+                      "as failed. Set them or unset AT_LIVE.", " and ".join(missing))
+        elif Config.AT_USERNAME == "sandbox":
+            log.warning("AT_LIVE=1 with the sandbox username: messages reach the "
+                        "Africa's Talking simulator, not a handset.")
+        if not Config.AT_WEBHOOK_TOKEN:
+            log.warning("AT_LIVE=1 with no AT_WEBHOOK_TOKEN — your callbacks accept "
+                        "any caller. Anyone who finds the URL can open USSD sessions.")
     if not Config.FORCE_HTTPS:
         log.warning("FORCE_HTTPS is off — fine locally, but set FORCE_HTTPS=1 "
                     "in any deployment so HSTS and Secure cookies are enabled.")
@@ -5563,6 +5720,16 @@ def bootstrap(force_demo=None):
         log.warning("SECRET_KEY is unset, so a random one was generated for this "
                     "process. Sessions will be dropped on every restart. Set one "
                     "with: python3 -c \"import secrets; print(secrets.token_urlsafe(48))\"")
+
+
+# Foreign keys point backwards through this list, so copying in order never
+# violates a constraint on the destination.
+MIGRATION_ORDER = [
+    Factory, User, Worker, Supplier, Material, StockMovement, Product, BomItem,
+    Customer, Order, OrderItem, Machine, MaintenanceTicket, ProductionRun,
+    RunStage, PurchaseOrder, POItem, QcInspection, QcCheck, SafetyIncident,
+    Attendance, SmsLog, UssdSession, Alert, PulseSnapshot, AuditLog,
+]
 
 
 # =============================================================================
@@ -5601,6 +5768,132 @@ def cli_create_admin():
         print("Super administrator created.")
 
 
+@app.cli.command("db-check")
+def cli_db_check():
+    """Backend, reachability and row counts for the configured database."""
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    shown = re.sub(r"://([^:]+):[^@]+@", r"://\1:***@", uri)
+    print(f"  uri      {shown}")
+    print(f"  backend  {uri.split(':', 1)[0]}")
+    with app.app_context():
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            print("  reach    ok")
+        except Exception as exc:
+            print(f"  reach    FAILED — {exc}")
+            return
+        total = 0
+        for model in MIGRATION_ORDER:
+            n = model.query.count()
+            total += n
+            if n:
+                print(f"    {model.__tablename__:22s} {n:>6}")
+        print(f"  rows     {total}")
+
+
+@app.cli.command("db-copy")
+@click.option("--reset", is_flag=True, help="Empty the destination first.")
+def cli_db_copy(reset):
+    """Copy every row from SQLite into the database in DATABASE_URL.
+
+    Run with DATABASE_URL pointing at the *destination*. The source is the
+    local SQLite file. Ids are preserved so foreign keys stay intact, which
+    means Postgres sequences must be realigned afterwards — otherwise the next
+    insert collides with a migrated id. That step is done here.
+    """
+    dest_uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    if dest_uri.startswith("sqlite"):
+        print("  DATABASE_URL still points at SQLite. Nothing to migrate to.")
+        return
+    src_uri = "sqlite:///" + os.path.join(DATA_DIR, "mzalendo.db")
+    print(f"  from   {src_uri}")
+    print(f"  to     {re.sub(r'://([^:]+):[^@]+@', r'://\1:***@', dest_uri)}")
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    src = sessionmaker(bind=create_engine(src_uri))()
+
+    with app.app_context():
+        db.create_all()
+        if reset:
+            for model in reversed(MIGRATION_ORDER):
+                db.session.execute(db.text(f"DELETE FROM {model.__tablename__}"))
+            db.session.commit()
+            print("  destination emptied")
+        occupied = [m.__tablename__ for m in MIGRATION_ORDER if m.query.count()]
+        if occupied:
+            print(f"  destination is not empty: {', '.join(occupied)}")
+            print("  re-run with --reset to overwrite.")
+            return
+
+        moved = 0
+        for model in MIGRATION_ORDER:          # parents before children
+            rows = src.query(model).all()
+            for row in rows:
+                data = {c.name: getattr(row, c.name) for c in model.__table__.columns}
+                db.session.execute(model.__table__.insert().values(**data))
+            if rows:
+                print(f"    {model.__tablename__:22s} {len(rows):>6}")
+            moved += len(rows)
+        db.session.commit()
+
+        # Realign sequences. Inserting explicit ids leaves them behind, and the
+        # very next record created through the UI would collide.
+        if dest_uri.startswith("postgres"):
+            for model in MIGRATION_ORDER:
+                t = model.__tablename__
+                db.session.execute(db.text(
+                    f"SELECT setval(pg_get_serial_sequence('{t}', 'id'), "
+                    f"COALESCE((SELECT MAX(id) FROM {t}), 1), true)"))
+            db.session.commit()
+            print("  sequences realigned")
+        print(f"  {moved} rows copied")
+
+
+@app.cli.command("at-check")
+def cli_at_check():
+    """Print the messaging configuration. Sends nothing, costs nothing."""
+    with app.app_context():
+        fac = Factory.query.filter_by(is_active=True).first()
+        at = AfricasTalking(fac)
+        mode = ("LIVE (strict)" if Config.AT_LIVE else
+                "live" if at.live else "SIMULATION — messages are logged, not sent")
+        sandbox = "sandbox" in at.endpoint
+        print(f"  mode         {mode}")
+        print(f"  endpoint     {at.endpoint}")
+        print(f"  username     {at.username or '(unset)'}")
+        print(f"  api key      {'set (' + at.api_key[:6] + '…)' if at.api_key else '(unset)'}")
+        print(f"  sender id    {at.sender_id or '(none — default sender)'}")
+        print(f"  ussd code    {Config.AT_USSD_CODE}")
+        print(f"  webhook tok  {'set' if Config.AT_WEBHOOK_TOKEN else '(unset — callbacks are OPEN)'}")
+        if sandbox:
+            print("\n  NOTE: this is the sandbox endpoint. USSD answers only in the")
+            print("        Africa's Talking web simulator, never on a real handset,")
+            print("        and SMS reaches the simulator inbox rather than a phone.")
+        if Config.AT_LIVE and not at.api_key:
+            print("\n  ERROR: AT_LIVE=1 with no API key. Every send will be recorded failed.")
+
+
+@app.cli.command("sms-test")
+@click.argument("phone")
+def cli_sms_test(phone):
+    """Send one real SMS and print exactly what the gateway said."""
+    with app.app_context():
+        fac = Factory.query.filter_by(is_active=True).first()
+        at = AfricasTalking(fac)
+        res = at.send(phone, "Mzalendo test message. If you can read this, the "
+                             "gateway is wired up correctly.", category="test")
+        print(f"  result   {res}")
+        row = SmsLog.query.order_by(SmsLog.id.desc()).first()
+        if row:
+            print(f"  logged   status={row.status} code={row.status_code} "
+                  f"id={row.provider_id or '-'} cost={row.cost or '-'}")
+            if row.error:
+                print(f"  error    {row.error}")
+        print("\n  'Success' means the gateway accepted it, not that it arrived.")
+        print("  The delivery-report callback is what confirms delivery.")
+
+
 @app.cli.command("pulse")
 def cli_pulse():
     """Print the current Manufacturing Pulse for every plant."""
@@ -5617,8 +5910,54 @@ def cli_pulse():
 #  SECTION 32 — ENTRYPOINT
 # =============================================================================
 
-with app.app_context():
-    bootstrap()
+def _bootstrap_once():
+    """Create and seed the schema exactly once, whatever starts the process.
+
+    Every Gunicorn worker imports this module, so without serialisation they
+    all reach create_all() and the seed at the same moment. One wins; the
+    others fail on a half-created table and exit with code 3, the master gives
+    up with "Worker failed to boot", and the platform health check reports the
+    service as unavailable — with nothing in the logs that names the cause.
+
+    An exclusive file lock makes the workers take turns. The second one through
+    finds the tables already there and the seed functions no-ops.
+    """
+    try:
+        import fcntl
+    except ImportError:
+        # No fcntl on Windows, where this only ever runs as a single process.
+        with app.app_context():
+            bootstrap()
+        return
+
+    # Poll for the lock rather than blocking on it. A worker that blocks
+    # forever on a lock held by a wedged sibling never reaches the health
+    # check, and the platform reports "service unavailable" with nothing in
+    # the logs to explain it. After the timeout, proceed anyway: create_all()
+    # and the seed are both idempotent, so the worst case is the race we were
+    # avoiding, which is better than a container that never starts.
+    lock_path = os.path.join(DATA_DIR, ".bootstrap.lock")
+    deadline = time.monotonic() + 30
+    with open(lock_path, "w") as handle:
+        acquired = False
+        while time.monotonic() < deadline:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+                break
+            except OSError:
+                time.sleep(0.25)
+        if not acquired:
+            log.warning("bootstrap lock busy for 30s; continuing without it")
+        try:
+            with app.app_context():
+                bootstrap()
+        finally:
+            if acquired:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+_bootstrap_once()
 
 
 if __name__ == "__main__":

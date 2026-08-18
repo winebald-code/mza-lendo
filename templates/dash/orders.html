@@ -13,16 +13,14 @@
 {% block content %}
 <div class="scroll-x flex gap-2 mb-5 pb-1">
   <a href="{{ url_for('dash_orders') }}"
-     class="shrink-0 px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border text-[12.5px] font-medium transition-colors
-            {% if not status %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
-    All <span class="font-mono text-[10.5px] opacity-70">{{ counts.values()|sum }}</span>
+     class="tab shrink-0 {% if not status %}is-active{% endif %}">
+    All <span class="tab-count">{{ counts.values()|sum }}</span>
   </a>
   {% for s in ORDER_STATUSES %}
   <a href="{{ url_for('dash_orders') }}?status={{ s }}"
-     class="shrink-0 px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border text-[12.5px] font-medium transition-colors
-            {% if status == s %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
+     class="tab shrink-0 {% if status == s %}is-active{% endif %}">
     {{ ORDER_STATUS_LABELS.get(s, s|replace('_',' ')) }}
-    <span class="font-mono text-[10.5px] opacity-70">{{ counts.get(s, 0) }}</span>
+    <span class="tab-count">{{ counts.get(s, 0) }}</span>
   </a>
   {% endfor %}
 </div>

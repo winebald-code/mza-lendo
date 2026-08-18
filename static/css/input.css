@@ -126,6 +126,22 @@
   .check > input[type="checkbox"]:disabled { @apply opacity-40 cursor-not-allowed; }
   .check:has(> input:disabled) { @apply cursor-not-allowed; }
 
+  /* Tab / segmented control. Defined as a component because toggling Tailwind
+     utilities from JS is a coin flip: whichever of bg-ink / bg-surface is
+     declared later in the stylesheet wins, regardless of the order the classes
+     appear on the element. That is how the active tab ended up white-on-white. */
+  .tab {
+    @apply px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border
+           border-divider bg-surface text-slate-600 text-[12.5px] font-medium
+           whitespace-nowrap transition-colors cursor-pointer;
+  }
+  .tab:hover { @apply border-ink text-ink bg-fog; }
+  .tab:focus-visible { @apply outline-none ring-2 ring-signal-500/40 border-ink; }
+  .tab.is-active { @apply bg-ink border-ink text-white; }
+  .tab.is-active:hover { @apply bg-slate-800 border-slate-800 text-white; }
+  .tab .ico { @apply shrink-0; }
+  .tab-count { @apply font-mono text-[10.5px] opacity-70; }
+
   /* Tags & status ---------------------------------------------- */
   .tag {
     @apply inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-control

@@ -6,8 +6,7 @@
 {% block page_actions %}
   {% for d in [7, 30, 90, 365] %}
   <a href="{{ url_for('dash_reports') }}?days={{ d }}"
-     class="px-3 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
-            {% if days == d %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">
+     class="tab {% if days == d %}is-active{% endif %}">
     {{ d }}d
   </a>
   {% endfor %}
@@ -134,5 +133,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/charts.js') }}" defer></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/charts.js') }}" defer></script>
 {% endblock %}

@@ -13,12 +13,10 @@
 {% block content %}
 <div data-tabs>
   <div class="flex items-center gap-1.5 mb-5">
-    <button type="button" data-tab="board" role="tab" aria-selected="true"
-            class="px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border bg-ink text-white border-ink text-[12.5px] font-medium transition-colors">
+    <button type="button" data-tab="board" role="tab" aria-selected="true" class="tab is-active">
       {{ icon('grid','ico ico-sm') }} Board
     </button>
-    <button type="button" data-tab="table" role="tab" aria-selected="false"
-            class="px-3.5 h-[34px] inline-flex items-center gap-2 rounded-control border bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink text-[12.5px] font-medium transition-colors">
+    <button type="button" data-tab="table" role="tab" aria-selected="false" class="tab">
       {{ icon('list','ico ico-sm') }} Table
     </button>
   </div>
@@ -67,12 +65,10 @@
   <div data-panel="table" hidden>
     <div class="scroll-x flex gap-2 mb-5 pb-1">
       <a href="{{ url_for('dash_runs') }}"
-         class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium transition-colors
-                {% if not status %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">All</a>
+         class="tab shrink-0 {% if not status %}is-active{% endif %}">All</a>
       {% for s in RUN_STATUSES %}
       <a href="{{ url_for('dash_runs') }}?status={{ s }}"
-         class="shrink-0 px-3.5 h-[34px] inline-flex items-center rounded-control border text-[12.5px] font-medium capitalize transition-colors
-                {% if status == s %}bg-ink text-white border-ink{% else %}bg-surface border-divider text-slate-500 hover:border-ink hover:text-ink{% endif %}">{{ s }}</a>
+         class="tab shrink-0 capitalize {% if status == s %}is-active{% endif %}">{{ s }}</a>
       {% endfor %}
     </div>
 

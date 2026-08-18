@@ -37,6 +37,7 @@ LABEL org.opencontainers.image.title="Mzalendo" \
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
+    PORT=8000 \
     DATA_DIR=/data
 
 WORKDIR /app
@@ -49,20 +50,29 @@ RUN apt-get update \
 COPY requirements.txt requirements-postgres.txt ./
 RUN pip install --upgrade pip && pip install -r requirements-postgres.txt
 
-COPY app.py ./
+COPY app.py gunicorn.conf.py docker-entrypoint.py ./
 COPY templates ./templates
 COPY static ./static
 COPY --from=assets /build/static/css/app.css ./static/css/app.css
 
-# Run unprivileged. /data is a volume so the SQLite file survives a redeploy.
+# The application user exists, but privileges are dropped at *runtime* by the
+# entrypoint rather than with a USER directive here. Platform volumes are
+# mounted owned by root, so an image that has already dropped privileges cannot
+# write to its own database directory.
+#
+# There is deliberately no VOLUME instruction: Railway rejects it, and it buys
+# nothing — persistence comes from the platform volume (or `docker run -v`)
+# mounted at /data.
 RUN useradd --create-home --uid 10001 mzalendo \
  && mkdir -p /data \
  && chown -R mzalendo:mzalendo /app /data
-USER mzalendo
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS "http://127.0.0.1:${PORT}/healthz" || exit 1
+  CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/healthz" || exit 1
 
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
+# No $PORT in the command: gunicorn.conf.py reads it from the environment, so
+# this works whether or not the platform runs it through a shell.
+ENTRYPOINT ["python3", "/app/docker-entrypoint.py"]
+CMD ["gunicorn", "app:app", "-c", "/app/gunicorn.conf.py"]

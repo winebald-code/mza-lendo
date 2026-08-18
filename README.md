@@ -223,6 +223,12 @@ railway up
 `railway.json` and `nixpacks.toml` are committed, so the build installs Python dependencies,
 compiles the stylesheet and starts Gunicorn with a health check on `/healthz`.
 
+Attach a **Railway Volume** mounted at `/data` before the first deploy — the Dockerfile
+deliberately contains no `VOLUME` instruction, because Railway rejects it and persistence comes
+from the platform volume instead. The container starts as root only long enough to take ownership
+of that mount (Railway mounts volumes owned by root), then drops to an unprivileged user before any
+application code runs.
+
 Set these variables in the Railway dashboard:
 
 ```
@@ -351,6 +357,36 @@ mzalendo/
 | 6 Helpers | 14 Materials | 22 Messaging | 30 Seeding |
 | 7 Africa's Talking | 15 Procurement | 23 Reports | 31 CLI |
 | 8 Pulse engine | 16 Products | 24 Users | 32 Entrypoint |
+
+---
+
+## Operational notes
+
+Three things that bite on a real deployment rather than a laptop:
+
+- **`/healthz` is exempt from the HTTPS redirect.** Platform health probes reach the container
+  directly over http on the private network. Redirecting them makes a healthy container look dead
+  and the deploy never goes green. The route returns no session data and sets no cookie.
+- **Static assets carry a content fingerprint** (`app.js?v=<sha256 prefix>`) and are served
+  `immutable` for a year, while pages are `no-store`. Without this, one browser keeps running the
+  cached script after a deploy while another fetches the new one — and only one of them shows the
+  bug.
+- **The port is read in Python, not interpolated by a shell.** `gunicorn.conf.py` reads `PORT`
+  from the environment, so the start command contains no `$PORT`. A platform that runs the start
+  command directly rather than through a shell would otherwise hand gunicorn the literal characters
+  `$PORT` and it refuses to start.
+- **Schema creation is serialised across workers.** Every worker imports the app, so without a lock
+  they race on `create_all()`; one wins and the others exit code 3, which the platform reports as
+  "service unavailable".
+- **The rate limiter counts per process.** The default is two Gunicorn workers, so the effective
+  limit is twice what the configuration says. Drop to `--workers 1`, or point Flask-Limiter at
+  Redis, before the numbers need to be exact.
+
+USSD screens are capped at 182 characters — one GSM payload — at `ussd_response()`, the single
+point every screen leaves through. Anything longer is truncated by the telco, which cuts a menu
+line in half and leaves the worker with an option they cannot read. Call sites trim individual
+labels, but plant names, worker names and material names are all free text, so the guarantee is
+enforced at the boundary: whole options are dropped and the trailing navigation line is preserved.
 
 ---
 
