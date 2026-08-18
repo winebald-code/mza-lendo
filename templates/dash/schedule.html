@@ -52,7 +52,7 @@
           </div>
           <div class="relative grid items-center" data-css-gtc="repeat(14, 1fr)" data-css-minh="30px">
             <a href="{{ url_for('run_detail', run_id=r.id) }}"
-               class="h-[26px] rounded-[7px] px-2.5 flex items-center gap-2 text-white overflow-hidden transition-transform hover:scale-[1.01] shadow-s1
+               class="h-[26px] rounded-[7px] px-2.5 flex items-center gap-2 text-white overflow-hidden transition-shadow hover:shadow-s2 shadow-s1
                       {% if r.status == 'done' %}bg-ok{% elif r.is_at_risk or r.status == 'blocked' %}bg-bad{% elif r.status == 'running' %}bg-signal-500 !text-ink{% else %}bg-slate-600{% endif %}"
                data-css-gc="{{ lane.offset + 1 }} / span {{ lane.span }}"
                title="{{ r.reference }} — {{ r.product.name if r.product else '' }} — {{ r.progress }}%">

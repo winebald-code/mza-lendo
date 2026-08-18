@@ -88,8 +88,15 @@ def _database_uri() -> str:
     """SQLite by default; honours DATABASE_URL if a platform injects one."""
     url = os.environ.get("DATABASE_URL", "").strip()
     if url:
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+        # Pin the driver explicitly to the one requirements-postgres.txt
+        # installs. Railway injects postgresql://, older platforms inject the
+        # legacy postgres:// — and an unqualified URL leaves SQLAlchemy to pick
+        # a default, which is how a deployment ends up asking for a driver that
+        # is not in the image.
+        for prefix in ("postgresql://", "postgres://"):
+            if url.startswith(prefix):
+                url = "postgresql+psycopg2://" + url[len(prefix):]
+                break
         return url
     return "sqlite:///" + os.path.join(DATA_DIR, "mzalendo.db")
 

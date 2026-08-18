@@ -59,23 +59,47 @@
   .num { @apply font-mono tabular-nums; }
 
   /* Buttons ---------------------------------------------------- */
+  /* Buttons.
+     Two rules learned the hard way:
+
+     1. Transition named properties, not `all`. `transition-all` together with a
+        translate leaves the element on a fractional pixel mid-animation, and
+        text drawn at a non-integer offset loses subpixel antialiasing — the
+        label goes pale and looks half-erased, worst on a scaled display. The
+        hover lift is gone for the same reason; colour and shadow carry the
+        affordance without moving the text.
+
+     2. Every state restates its own colour. A hover rule that inherits `color`
+        from the resting rule can end up with a background and no readable
+        foreground the moment anything else touches colour. */
   .btn {
     @apply inline-flex items-center justify-center gap-2 min-h-[42px] px-5 rounded-control
            border border-transparent font-medium text-[13.5px] leading-none cursor-pointer
-           transition-all duration-150 select-none whitespace-nowrap;
+           select-none whitespace-nowrap
+           transition-[background-color,border-color,color,box-shadow] duration-150;
   }
   .btn:disabled, .btn[aria-disabled="true"] { @apply opacity-40 pointer-events-none; }
+  .btn:focus-visible { @apply outline-none ring-2 ring-signal-500 ring-offset-2 ring-offset-fog; }
+
   .btn-primary { @apply bg-signal-500 text-ink border-signal-500 shadow-s1; }
-  .btn-primary:hover { @apply bg-signal-400 border-signal-400 -translate-y-px shadow-s2; }
-  .btn-primary:active { @apply bg-signal-600 translate-y-0; }
+  .btn-primary:hover { @apply bg-signal-400 text-ink border-signal-400 shadow-s2; }
+  .btn-primary:active { @apply bg-signal-600 text-ink border-signal-600 shadow-s1; }
+
   .btn-dark { @apply bg-ink text-white border-ink; }
-  .btn-dark:hover { @apply bg-slate-700 border-slate-700 -translate-y-px; }
+  .btn-dark:hover { @apply bg-slate-800 text-white border-slate-800; }
+  .btn-dark:active { @apply bg-ink text-white border-ink; }
+
   .btn-secondary { @apply bg-surface text-ink border-divider; }
-  .btn-secondary:hover { @apply border-ink; }
-  .btn-ghost { @apply bg-transparent text-slate-500 border-transparent px-3; }
-  .btn-ghost:hover { @apply text-ink bg-black/[0.04]; }
+  .btn-secondary:hover { @apply bg-fog text-ink border-ink; }
+  .btn-secondary:active { @apply bg-divider text-ink border-ink; }
+
+  .btn-ghost { @apply bg-transparent text-slate-600 border-transparent px-3; }
+  .btn-ghost:hover { @apply bg-black/[0.05] text-ink border-transparent; }
+  .btn-ghost:active { @apply bg-black/[0.09] text-ink; }
+
   .btn-danger { @apply bg-transparent text-bad border-bad/40; }
   .btn-danger:hover { @apply bg-bad text-white border-bad; }
+  .btn-danger:active { @apply bg-bad text-white border-bad; }
   .btn-sm { @apply min-h-[32px] px-3.5 text-[12.5px] rounded-control; }
   .btn-xs { @apply min-h-[26px] px-2.5 text-[11px] gap-1 rounded-control; }
   .btn-icon { @apply w-[38px] h-[38px] px-0 shrink-0; }
