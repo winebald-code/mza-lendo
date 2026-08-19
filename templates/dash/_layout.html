@@ -152,7 +152,7 @@
               <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0 truncate">{{ current_user.email }}</p>
               <span class="tag tag-neutral mt-2">{{ current_user.role_label }}</span>
             </div>
-            <a href="{{ url_for('profile') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('user-cog','ico ico-sm') }} Profile</a>
+            <a href="{{ url_for('profile') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('star','ico ico-sm') }} Profile</a>
             <a href="{{ url_for('change_password') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('key','ico ico-sm') }} Change password</a>
             <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-slate-600 hover:bg-fog hover:text-ink" role="menuitem">{{ icon('globe','ico ico-sm') }} Public site</a>
             <a href="{{ url_for('logout') }}" class="flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13px] text-bad hover:bg-bad/[0.07]" role="menuitem">{{ icon('logout','ico ico-sm') }} Sign out</a>

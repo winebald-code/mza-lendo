@@ -41,7 +41,7 @@
       <div class="flex items-center gap-2.5">
         {% if current_user.is_authenticated %}
           <a href="{{ url_for('dash_overview') }}" class="btn btn-primary btn-sm">
-            {{ icon('gauge', 'ico ico-sm') }} Dashboard
+            {{ icon('grid', 'ico ico-sm') }} Dashboard
           </a>
         {% else %}
           {% if ALLOW_PUBLIC_SIGNUP %}
