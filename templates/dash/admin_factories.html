@@ -47,6 +47,11 @@
                   {{ icon('eye-off' if f.is_active else 'eye','ico ico-sm') }}
                 </button>
               </form>
+              <a href="{{ url_for('admin_factory_form', factory_id=f.id) }}#delete"
+                 class="btn btn-ghost btn-icon text-slate-400 hover:text-bad"
+                 title="Delete this plant" aria-label="Delete this plant">
+                {{ icon('trash','ico ico-sm') }}
+              </a>
             </div>
           </td>
         </tr>

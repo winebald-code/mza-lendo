@@ -1275,9 +1275,16 @@ def current_factory_id():
         return None
     if current_user.is_super:
         chosen = session.get("factory_ctx")
-        if chosen:
+        # Verify it still exists. A plant deleted while selected — or an id
+        # left over from a database that has since been reseeded — otherwise
+        # resolves to nothing, and every plant-scoped screen behaves as though
+        # the installation had no plants at all.
+        if chosen and db.session.get(Factory, chosen):
             return chosen
-        first = Factory.query.order_by(Factory.id).first()
+        if chosen:
+            session.pop("factory_ctx", None)
+        first = (Factory.query.filter_by(is_active=True).order_by(Factory.id).first()
+                 or Factory.query.order_by(Factory.id).first())
         return first.id if first else None
     return current_user.factory_id
 
@@ -4523,8 +4530,8 @@ def admin_factory_delete(factory_id):
     purge_factory(fac, protect_emails=(Config.SEED_ADMIN_EMAIL,))
 
     # Anyone still looking at the deleted plant has to be moved off it.
-    if session.get("factory_id") == factory_id:
-        session.pop("factory_id", None)
+    if session.get("factory_ctx") == factory_id:
+        session.pop("factory_ctx", None)
 
     system_audit(None, current_user.username, "factory_delete", "factory",
                  factory_id,
@@ -4583,7 +4590,12 @@ def admin_system():
 #
 # =============================================================================
 
-USSD_PER_PAGE = 5
+# Four, not five. The screen budget is 182 characters and the navigation
+# footer takes about 30 of them; at five items the longest lists overflowed and
+# ussd_fit dropped the last line to make room. That is worse than it sounds —
+# the engine still pages by five, so the dropped item appeared on no page at
+# all and could never be selected. The page size must fit without trimming.
+USSD_PER_PAGE = 4
 
 # Navigation keys. These are the ones Kenyan services already use, so nobody
 # has to learn ours.
@@ -4623,6 +4635,60 @@ def ussd_navigate(tokens):
         else:
             path.append(token)
     return path, False
+
+
+def _trim_to_word(text: str, limit: int) -> str:
+    """Cut to at most `limit`, never through the middle of a word."""
+    if len(text) <= limit:
+        return text.rstrip()
+    if text[limit] == " " or text[limit - 1] == " ":
+        return text[:limit].rstrip()          # the cut already fell on a gap
+    cut = text[:limit]
+    if " " in cut:
+        return cut.rsplit(" ", 1)[0].rstrip(" ,-")
+    return cut
+
+
+def ussd_short(text: str, limit: int) -> str:
+    """Shorten a name to fit a USSD line, keeping it recognisable.
+
+    Two rules, both learned from real names:
+
+    Never cut mid-word. Slicing at a fixed width gives "Heavy duty whe", which
+    a worker has to guess at; dropping the partial word gives "Heavy duty",
+    which reads as a name.
+
+    Keep the last word. "Mild steel sheet 2mm" and "Mild steel sheet 1mm" both
+    shorten to "Mild steel", and a worker choosing by number cannot tell them
+    apart. The size — or the grade, or the colour — is the distinguishing part,
+    so it is kept and the middle is dropped instead: "Mild steel..2mm".
+    """
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+
+    words = text.split()
+    tail = words[-1] if len(words) > 1 else ""
+    # The distinguishing token is usually last — a size, a grade or a colour.
+    # Keep it, but only when enough of the head survives to still name the
+    # thing; "Metal..door" is worse than "Metal cabinet 4".
+    if tail and len(tail) <= 7:
+        head_room = limit - len(tail) - 2          # room for ".." plus the tail
+        if head_room >= 6:
+            head = _trim_to_word(" ".join(words[:-1]), head_room)
+            if len(head) >= 6:
+                return f"{head}..{tail}"
+
+    trimmed = _trim_to_word(text, limit)
+    if len(trimmed) >= max(6, limit // 2):
+        return trimmed
+    return text[:limit - 1].rstrip() + "."
+
+
+def ussd_qty(value, unit: str = "") -> str:
+    """A quantity a person reads the way they would say it."""
+    number = f"{value:g}"
+    return f"{number} {unit}".strip()
 
 
 def ussd_lines(*lines) -> str:
@@ -4790,8 +4856,8 @@ def ussd_callback():
     if not tokens or tokens == [""]:
         first = worker.name.split()[0] if worker.name else "there"
         return ussd_response("CON " + ussd_clean(ussd_lines(
-            f"MZALENDO - {fac.name[:22]}",
-            f"Habari {first[:12]}",
+            f"MZALENDO - {ussd_short(fac.name, 24)}",
+            f"Habari {ussd_short(first, 14)}",
             "1. My tasks",
             "2. Report production",
             "3. Report stock",
@@ -4820,8 +4886,8 @@ def ussd_callback():
                 return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
             return ussd_response(ussd_menu(
                 "MY TASKS", runs, page,
-                lambda r: f"{r.product.name[:14] if r.product else r.reference} "
-                          f"{r.produced:g}/{r.quantity:g}"), sess, "tasks")
+                lambda r: f"{ussd_short(r.product.name if r.product else r.reference, 16)}"
+                          f" - {r.produced:g} of {r.quantity:g} done"), sess, "tasks")
         stages = [s.name for s in chosen.stages if s.status != "done"][:3]
         return ussd_response("END " + ussd_clean(ussd_lines(
             f"{chosen.reference}",
@@ -4848,11 +4914,12 @@ def ussd_callback():
                 return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
             return ussd_response(ussd_menu(
                 "REPORT PRODUCTION", runs, page,
-                lambda r: f"{r.reference} {r.product.name[:12] if r.product else ''}"),
+                lambda r: f"{ussd_short(r.product.name if r.product else '', 15)}"
+                          f" - {r.reference}"),
                 sess, "prod_pick")
         if not tail:
             return ussd_response("CON " + ussd_clean(ussd_lines(
-                f"{chosen.reference} - {chosen.product.name[:18] if chosen.product else ''}",
+                f"{chosen.reference} - {ussd_short(chosen.product.name if chosen.product else '', 18)}",
                 f"Done so far {chosen.produced:g} of {chosen.quantity:g}",
                 "Enter units completed now", USSD_FOOTER_ENTRY)), sess, "prod_qty")
         qty = to_float(tail[0], -1)
@@ -4897,7 +4964,8 @@ def ussd_callback():
                 return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
             return ussd_response(ussd_menu(
                 "REPORT STOCK", materials, page,
-                lambda m: f"{m.name[:16]} {m.quantity:g}{m.unit}"), sess, "stock_pick")
+                lambda m: f"{ussd_short(m.name, 16)} - "
+                          f"{ussd_qty(m.quantity, m.unit)}"), sess, "stock_pick")
         if not tail:
             return ussd_response("CON " + ussd_clean(ussd_lines(
                 f"{chosen.name[:20]} - now {chosen.quantity:g} {chosen.unit}",
@@ -4944,7 +5012,7 @@ def ussd_callback():
                 return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
             return ussd_response(ussd_menu(
                 "SELECT MACHINE", machines, page,
-                lambda m: f"{m.name[:18]}"), sess, "mach_pick")
+                lambda m: ussd_short(m.name, 22)), sess, "mach_pick")
         if not tail:
             return ussd_response("CON " + ussd_clean(ussd_lines(
                 f"{chosen.name[:20]} - what is wrong",
@@ -4993,7 +5061,7 @@ def ussd_callback():
                      ticket.id, f"{chosen.code} {fault}")
         return ussd_response("END " + ussd_clean(ussd_lines(
             f"Logged as {ticket.reference}.",
-            f"{chosen.name[:18]} - {fault}",
+            f"{ussd_short(chosen.name, 18)} - {fault}",
             "A technician has been alerted.")), sess, "mach_saved")
 
     # ---- 5. Safety incident ------------------------------------------------
@@ -5103,7 +5171,8 @@ def ussd_callback():
             return ussd_response("END " + ussd_clean(
                 "All materials are above their minimum. Nothing to reorder."),
                 sess, "stock_ok")
-        lines = [f"{m.name[:14]} {m.quantity:g}{m.unit} min {m.min_stock:g}" for m in low]
+        lines = [f"{ussd_short(m.name, 15)} - {ussd_qty(m.quantity, m.unit)} left, "
+                 f"need {m.min_stock:g}" for m in low]
         return ussd_response("END " + ussd_clean(ussd_lines("BELOW MINIMUM", *lines)),
                              sess, "stock_check")
 
