@@ -176,7 +176,7 @@ class Config:
     AT_API_KEY = _env_str("AT_API_KEY", "")
     AT_SENDER_ID = _env_str("AT_SENDER_ID", "")
     AT_SHORTCODE = _env_str("AT_SHORTCODE", "")
-    AT_USSD_CODE = _env_str("AT_USSD_CODE", "*384*7788#")
+    AT_USSD_CODE = _env_str("AT_USSD_CODE", "*384*1153#")
     # AT_LIVE=1 removes the simulation fallback entirely: a message either goes
     # to the gateway or is recorded as failed with the reason.
     AT_LIVE = _env_bool("AT_LIVE", False)
@@ -4499,6 +4499,41 @@ def admin_factory_toggle(factory_id):
     return redirect(url_for("admin_factories"))
 
 
+@app.route("/admin/factories/<int:factory_id>/delete", methods=["POST"])
+@login_required
+@roles_required("super_admin")
+def admin_factory_delete(factory_id):
+    """Delete a plant and everything in it. Irreversible, so it is guarded."""
+    fac = Factory.query.get_or_404(factory_id)
+
+    # Typing the name is the confirmation. A plant can hold years of records and
+    # a misplaced click should not be enough to end them.
+    typed = (request.form.get("confirm") or "").strip().lower()
+    if typed != fac.name.strip().lower():
+        flash("Type the plant name exactly to confirm deletion. Nothing was "
+              "deleted.", "warn")
+        return redirect(url_for("admin_factory_form", factory_id=fac.id))
+
+    name = fac.name
+    counts = {
+        "materials": Material.query.filter_by(factory_id=fac.id).count(),
+        "orders": Order.query.filter_by(factory_id=fac.id).count(),
+        "workers": Worker.query.filter_by(factory_id=fac.id).count(),
+    }
+    purge_factory(fac, protect_emails=(Config.SEED_ADMIN_EMAIL,))
+
+    # Anyone still looking at the deleted plant has to be moved off it.
+    if session.get("factory_id") == factory_id:
+        session.pop("factory_id", None)
+
+    system_audit(None, current_user.username, "factory_delete", "factory",
+                 factory_id,
+                 f"{name} ({counts['materials']} materials, {counts['orders']} "
+                 f"orders, {counts['workers']} workers)")
+    flash(f"{name} and everything in it has been deleted.", "ok")
+    return redirect(url_for("admin_factories"))
+
+
 @app.route("/admin/system")
 @roles_required("super_admin")
 def admin_system():
@@ -4550,6 +4585,45 @@ def admin_system():
 
 USSD_PER_PAGE = 5
 
+# Navigation keys. These are the ones Kenyan services already use, so nobody
+# has to learn ours.
+USSD_BACK = "0"        # one step back
+USSD_HOME = "00"       # main menu, from any depth
+USSD_MORE = "98"       # next page of a long list
+USSD_EXIT = "99"       # end the session
+
+USSD_FOOTER_ROOT = "99 Exit"
+USSD_FOOTER_DEEP = "0 Back  00 Menu  99 Exit"
+USSD_FOOTER_PAGED = "98 More  0 Back  00 Menu  99 Exit"
+# On a screen that asks for a number, 0 is taken as Back rather than as the
+# quantity zero. Reporting zero of something is not a useful entry, and a
+# worker who sees the footer is not surprised by it.
+USSD_FOOTER_ENTRY = "0 Back  00 Menu  99 Exit"
+
+
+def ussd_navigate(tokens):
+    """Apply the navigation keys to the accumulated path.
+
+    Africa's Talking replays the whole path on every hop, so the menu is a pure
+    function of it. That makes navigation a matter of rewriting the path rather
+    than remembering anything: Back pops the last step, Menu empties the stack,
+    Exit stops the session. The business logic underneath needs no changes.
+
+    Returns (path, exit_requested).
+    """
+    path = []
+    for token in tokens:
+        if token == USSD_EXIT:
+            return path, True
+        if token == USSD_HOME:
+            path = []
+        elif token == USSD_BACK:
+            if path:
+                path.pop()
+        else:
+            path.append(token)
+    return path, False
+
 
 def ussd_lines(*lines) -> str:
     return "\n".join(str(l) for l in lines if l is not None)
@@ -4566,10 +4640,9 @@ def ussd_menu(title: str, items, page: int, labeller, per_page=USSD_PER_PAGE,
     start = page * per_page
     window = items[start:start + per_page]
     lines = [f"{i}. {labeller(o)}" for i, o in enumerate(window, 1)]
-    if start + per_page < len(items):
-        lines.append("0. More")
-    if footer:
-        lines.append(footer)
+    has_more = start + per_page < len(items)
+    lines.append(footer if footer else
+                 (USSD_FOOTER_PAGED if has_more else USSD_FOOTER_DEEP))
     if not window:
         return "END " + ussd_clean(f"{title}\nNothing to show.")
     return "CON " + ussd_clean(ussd_lines(title, *lines))
@@ -4584,7 +4657,7 @@ def ussd_pick(tokens, items, per_page=USSD_PER_PAGE):
     page, i = 0, 0
     while i < len(tokens):
         t = tokens[i]
-        if t == "0" and (page + 1) * per_page < len(items):
+        if t == USSD_MORE and (page + 1) * per_page < len(items):
             page += 1
             i += 1
             continue
@@ -4643,8 +4716,9 @@ def ussd_fit(body: str) -> str:
     if len(lines) < 3:
         return body[:USSD_MAX_CHARS].rstrip()
     head, tail = lines[0], lines[-1]
-    # Keep a trailing navigation option ("0. More") — losing it strands the user.
-    keep_tail = bool(re.match(r"^\s*\d+\.", tail))
+    # Always keep the last line. It is either a numbered option or the
+    # navigation footer, and dropping either strands the reader with no way on.
+    keep_tail = True
     middle = lines[1:-1] if keep_tail else lines[1:]
     used = len(head) + (len(tail) + 1 if keep_tail else 0)
     kept = []
@@ -4689,6 +4763,11 @@ def ussd_callback():
 
     tokens = [t for t in text.split("*")] if text else []
     tokens = [t.strip() for t in tokens]
+    tokens, wants_exit = ussd_navigate(tokens)
+    if wants_exit:
+        sess = ussd_track(session_id, phone, service_code, network, text, None,
+                          None, status="completed", outcome="exited")
+        return ussd_response("END Thank you. Goodbye.", sess, "exited")
 
     worker = ussd_find_worker(phone)
     if not worker:
@@ -4719,7 +4798,8 @@ def ussd_callback():
             "4. Machine fault",
             "5. Safety incident",
             "6. Clock in or out",
-            "7. Stock check")), sess, "root")
+            "7. Stock check",
+            USSD_FOOTER_ROOT)), sess, "root")
 
     choice = tokens[0]
     rest = tokens[1:]
@@ -4774,7 +4854,7 @@ def ussd_callback():
             return ussd_response("CON " + ussd_clean(ussd_lines(
                 f"{chosen.reference} - {chosen.product.name[:18] if chosen.product else ''}",
                 f"Done so far {chosen.produced:g} of {chosen.quantity:g}",
-                "Enter units completed now")), sess, "prod_qty")
+                "Enter units completed now", USSD_FOOTER_ENTRY)), sess, "prod_qty")
         qty = to_float(tail[0], -1)
         if qty < 0:
             return ussd_response("END Enter a number. Dial again.", sess, "invalid")
@@ -4824,7 +4904,7 @@ def ussd_callback():
                 "1. Issued to floor",
                 "2. Received into store",
                 "3. Counted, set balance",
-                "4. Wasted or damaged")), sess, "stock_kind")
+                "4. Wasted or damaged", USSD_FOOTER_DEEP)), sess, "stock_kind")
         kind_map = {"1": "out", "2": "in", "3": "adjust", "4": "waste"}
         kind = kind_map.get(tail[0])
         if not kind:
@@ -4832,8 +4912,9 @@ def ussd_callback():
         if len(tail) < 2:
             verb = {"out": "issued", "in": "received", "adjust": "counted on the shelf",
                     "waste": "wasted"}[kind]
-            return ussd_response("CON " + ussd_clean(
-                f"Enter quantity {verb} in {chosen.unit}"), sess, "stock_qty")
+            return ussd_response("CON " + ussd_clean(ussd_lines(
+                f"Enter quantity {verb} in {chosen.unit}",
+                USSD_FOOTER_ENTRY)), sess, "stock_qty")
         qty = to_float(tail[1], -1)
         if qty < 0:
             return ussd_response("END Enter a number. Dial again.", sess, "invalid")
@@ -4871,7 +4952,7 @@ def ussd_callback():
                 "2. Overheating",
                 "3. Strange noise",
                 "4. Leaking",
-                "5. Other")), sess, "mach_fault")
+                "5. Other", USSD_FOOTER_DEEP)), sess, "mach_fault")
         fault = FAULT_TYPES.get(tail[0])
         if not fault:
             return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
@@ -4880,7 +4961,7 @@ def ussd_callback():
                 "How bad is it",
                 "1. Machine still runs",
                 "2. Running slowly",
-                "3. Machine has stopped")), sess, "mach_severity")
+                "3. Machine has stopped", USSD_FOOTER_DEEP)), sess, "mach_severity")
         sev_map = {"1": "low", "2": "medium", "3": "critical"}
         severity = sev_map.get(tail[1])
         if not severity:
@@ -4925,7 +5006,7 @@ def ussd_callback():
                 "3. Fire or burn",
                 "4. Chemical spill",
                 "5. Electrical hazard",
-                "6. Other")), sess, "safety_kind")
+                "6. Other", USSD_FOOTER_DEEP)), sess, "safety_kind")
         kind = INCIDENT_TYPES.get(rest[0])
         if not kind:
             return ussd_response("END Invalid choice. Dial again.", sess, "invalid")
@@ -4935,7 +5016,7 @@ def ussd_callback():
                 "1. No injury",
                 "2. Minor, first aid",
                 "3. Serious, needs a clinic",
-                "4. Emergency")), sess, "safety_severity")
+                "4. Emergency", USSD_FOOTER_DEEP)), sess, "safety_severity")
         sev_map = {"1": "low", "2": "medium", "3": "high", "4": "critical"}
         severity = sev_map.get(rest[1])
         if not severity:
@@ -4980,7 +5061,8 @@ def ussd_callback():
                            if not rec.check_out
                            else f"Clocked out at {_to_local(rec.check_out):%H:%M}."))
             return ussd_response("CON " + ussd_clean(ussd_lines(
-                f"ATTENDANCE {today:%d %b}", state, "1. Clock in", "2. Clock out")),
+                f"ATTENDANCE {today:%d %b}", state, "1. Clock in", "2. Clock out",
+                USSD_FOOTER_DEEP)),
                 sess, "attend")
         if rest[0] == "1":
             if rec and rec.check_in:
@@ -5755,43 +5837,25 @@ def seed_demo_plant():
 DEMO_SLUG = "kamukunji-metalworks"
 
 
-def remove_demo_plant():
-    """Delete the demonstration plant and everything in it.
+def purge_factory(fac, protect_emails=()):
+    """Delete a plant and every record inside it.
 
-    SEED_DEMO_DATA=0 does not merely decline to create the demo — it takes it
-    away, so flipping the flag is enough to hand a populated instance over as a
-    clean one without touching the database by hand.
-
-    Only the plant carrying DEMO_SLUG is touched. Real plants, and the super
-    administrator, are left alone; if the administrator happened to be viewing
-    the demo, they are simply detached from it.
+    Shared by the demo teardown and the delete button, so the two can never
+    drift apart — a plant removed by hand leaves exactly as little behind as
+    one removed by flipping SEED_DEMO_DATA.
     """
-    fac = Factory.query.filter_by(slug=DEMO_SLUG).first()
-    if not fac:
-        return False
+    protect = {e.strip().lower() for e in protect_emails if e}
 
-    # Anyone still pointing at this plant has to be moved off it first, or the
-    # foreign key blocks the delete. The demo's own owner, manager and
-    # supervisor go with the plant; anyone protected is merely detached.
-    #
-    # Protection is by configured identity as well as by role. Checking the
-    # role alone means an administrator who has been demoted, or whose role was
-    # mangled, is destroyed here and silently recreated with the temporary
-    # password — losing whatever password they had actually set.
-    protected_email = (Config.SEED_ADMIN_EMAIL or "").strip().lower()
-    protected_user = (Config.SEED_ADMIN_USERNAME or "").strip().lower()
     for user in User.query.filter_by(factory_id=fac.id).all():
-        if (user.role == "super_admin"
-                or (user.email or "").lower() == protected_email
-                or (user.username or "").lower() == protected_user):
+        if user.role == "super_admin" or (user.email or "").lower() in protect:
             user.factory_id = None
         else:
             db.session.delete(user)
     db.session.flush()
 
-    # Line items do not carry factory_id — they hang off a product, order, run,
-    # purchase order or inspection. Deleting only the factory-scoped tables
-    # leaves them orphaned, so they go first, addressed through their parent.
+    # Line items hang off a product, order, run, PO or inspection rather than
+    # the plant, so they have to be addressed through their parent or they are
+    # left orphaned.
     for child, parent_fk, parent in (
             (BomItem, BomItem.product_id, Product),
             (OrderItem, OrderItem.order_id, Order),
@@ -5803,7 +5867,6 @@ def remove_demo_plant():
             child.query.filter(parent_fk.in_(parent_ids)).delete(synchronize_session=False)
     db.session.flush()
 
-    # Then the factory-scoped tables, children before parents.
     for model in reversed(MIGRATION_ORDER):
         if model is Factory or model is User:
             continue
@@ -5812,6 +5875,19 @@ def remove_demo_plant():
 
     db.session.delete(fac)
     db.session.commit()
+
+
+def remove_demo_plant():
+    """Delete the demonstration plant when SEED_DEMO_DATA is off.
+
+    Flipping the flag to 0 is therefore enough to hand a populated instance
+    over as a clean one. Only the plant carrying DEMO_SLUG is touched; real
+    plants and the configured administrator are never affected.
+    """
+    fac = Factory.query.filter_by(slug=DEMO_SLUG).first()
+    if not fac:
+        return False
+    purge_factory(fac, protect_emails=(Config.SEED_ADMIN_EMAIL,))
     log.info("demonstration plant removed (SEED_DEMO_DATA is off)")
     return True
 

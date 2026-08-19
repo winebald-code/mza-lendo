@@ -95,7 +95,7 @@
     <a href="{{ url_for('dash_reports') }}" class="rail-link {% if ep=='dash_reports' %}is-active{% endif %}">{{ icon('chart') }} Reports</a>
     {% endif %}
 
-    {% if current_user.role in ('super_admin','owner') %}
+    {% if current_user.role in ('super_admin','owner') and factory %}
     <p class="rail-group">Administration</p>
     <a href="{{ url_for('dash_users') }}" class="rail-link {% if ep in ('dash_users','user_form') %}is-active{% endif %}">{{ icon('user-cog') }} Users</a>
     <a href="{{ url_for('dash_audit') }}" class="rail-link {% if ep=='dash_audit' %}is-active{% endif %}">{{ icon('list') }} Audit trail</a>

@@ -117,6 +117,25 @@ Enter a worker number and press Dial.</pre>
       </ol>
     </section>
 
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">The four keys</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">They work on every screen</p>
+        </div>
+      </div>
+      <ul class="list-none m-0 p-0">
+        {% for key, what in [('0','Go back one step'), ('00','Go to the main menu'),
+                             ('98','See the next page of a long list'),
+                             ('99','Stop and close the session')] %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0 flex items-center gap-4">
+          <span class="font-mono text-[13px] font-semibold text-signal-600 w-[30px]">{{ key }}</span>
+          <span class="text-[13px] text-slate-600">{{ what }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
     <section class="card card-pad">
       <h2 class="card-title mb-3">Why USSD and not an app</h2>
       <div class="grid sm:grid-cols-3 gap-5">

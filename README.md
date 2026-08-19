@@ -206,6 +206,24 @@ machine, which stops the machine, opens a ticket and texts the managers.
 | 6 | Clock in or out |
 | 7 | Stock check — everything below minimum |
 
+### The four keys
+
+The same four keys work on every screen, so nobody has to learn a new pattern. These are the keys
+Kenyan services already use.
+
+| Key | What it does |
+|---|---|
+| `0` | Go back one step |
+| `00` | Go to the main menu |
+| `98` | See the next page of a long list |
+| `99` | Stop and close the session |
+
+Each screen shows the keys it offers along the bottom. The main menu shows only `99 Exit`, because
+there is nowhere to go back to.
+
+On a screen that asks you to type a number, `0` still means back. So you cannot enter 0 as a
+quantity — which is not a useful thing to report anyway.
+
 Workers can also skip the menu entirely and text `HELP`, `TASKS`, `STOCK`, `IN`, `OUT` or `DOWN`.
 
 ---

@@ -56,4 +56,29 @@
     </div>
   </aside>
 </form>
+
+{% if item %}
+<section class="card card-pad mt-6 max-w-[1080px] border-l-[3px] border-l-bad">
+  <h2 class="card-title mb-2">Delete this plant</h2>
+  <p class="text-[13px] text-slate-500 leading-relaxed mb-4 max-w-[70ch]">
+    This removes <strong class="text-ink">{{ item.name }}</strong> and everything inside it —
+    materials, products, orders, runs, machines, workers, messages and history. It cannot be undone.
+    Users who belong only to this plant are removed with it. Export anything you need first from
+    <a href="{{ url_for('dash_reports') }}" class="link-u">Reports</a>.
+  </p>
+  <form method="post" action="{{ url_for('admin_factory_delete', factory_id=item.id) }}"
+        class="grid gap-3 max-w-[440px]"
+        data-confirm="Delete {{ item.name }} and every record in it? This cannot be undone.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field !mb-0">
+      <label for="f-confirm">Type <span class="font-mono text-ink">{{ item.name }}</span> to confirm</label>
+      <input id="f-confirm" name="confirm" class="input" autocomplete="off" required
+             placeholder="{{ item.name }}">
+    </div>
+    <button type="submit" class="btn btn-danger w-fit">
+      {{ icon('trash','ico ico-sm') }} Delete this plant permanently
+    </button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}
