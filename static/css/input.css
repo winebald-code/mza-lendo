@@ -103,6 +103,19 @@
   .btn-sm { @apply min-h-[32px] px-3.5 text-[12.5px] rounded-control; }
   .btn-xs { @apply min-h-[26px] px-2.5 text-[11px] gap-1 rounded-control; }
   .btn-icon { @apply w-[38px] h-[38px] px-0 shrink-0; }
+  /* Icon button on a dark surface. btn-secondary is white-on-fog and reads as
+     a hole punched in the rail; this gives the same circled outline in the
+     rail's own palette, so the close button matches the hamburger and the
+     alert bell it replaces. Defined after .btn so its border and background
+     win the cascade rather than fighting utilities from the markup. */
+  .btn-on-dark {
+    /* 20% white on the rail measures 1.92:1 — technically present, visually
+       absent. 35% clears 3:1, which is the threshold for a non-text outline
+       being reliably visible. */
+    @apply bg-white/[0.06] text-slate-300 border-white/35;
+  }
+  .btn-on-dark:hover { @apply bg-white/[0.12] text-white border-white/50; }
+  .btn-on-dark:focus-visible { @apply ring-signal-500 ring-offset-slate-800; }
   .btn-block { @apply w-full; }
 
   /* Surfaces --------------------------------------------------- */
