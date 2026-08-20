@@ -47,7 +47,7 @@
           {% if ALLOW_PUBLIC_SIGNUP %}
           <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Sign in</a>
           {% endif %}
-          <a href="{{ cta_url }}" class="btn btn-primary btn-sm">
+          <a href="{{ cta_url }}" class="btn btn-primary btn-sm hidden lg:inline-flex">
             {{ cta_label }} {{ icon('arrow-right', 'ico ico-sm') }}
           </a>
         {% endif %}
