@@ -2,27 +2,6 @@
    Bacaan — charts
    Small hand-drawn SVG renderers. No chart library: the shapes here are simple
    and a dependency would cost more than it returns.
-
-   Three constraints this file has to hold:
-
-   1. The script executes once per document. Anything that swaps page content
-      without a document load leaves the new chart hosts empty, because
-      DOMContentLoaded never fires again. Drawing is therefore driven by a
-      MutationObserver over the document, with a signature guard so a host is
-      only rebuilt when its data or its size actually changed.
-
-   2. Charts are drawn at the host's real pixel size instead of a fixed 640px
-      viewBox, so labels keep their stated size and nothing overflows the
-      column on a narrow screen.
-
-   3. Text is placed, never assumed to fit. Value labels and tick labels are
-      laid out right to left; any label that would touch the one after it is
-      dropped, and the end ones are clamped inside the box. That is what puts
-      a full set of labels on a wide column and a readable subset on a phone
-      without either one scrolling sideways.
-
-   Optional per-host attributes: data-x-label, data-y-label (axis titles, set
-   to an empty string to suppress), data-label (aria), data-total-label.
    =========================================================================== */
 (function () {
   'use strict';
@@ -38,9 +17,9 @@
   const MONO = 'IBM Plex Mono, monospace';
   const DISPLAY = 'Space Grotesk, sans-serif';
   const SEL = '[data-bars],[data-line],[data-ranks],[data-donut]';
-  const FS = 10;     /* tick and axis-title size, real px */
-  const FSV = 9.5;   /* value label size */
-  const CW = 0.62;   /* mono character width, as a fraction of font size */
+  const FS = 10;
+  const FSV = 9.5;
+  const CW = 0.62;
 
   function el(name, attrs) {
     const node = document.createElementNS(NS, name);
@@ -107,7 +86,7 @@
 
   function legendWidth(items) {
     let w = -12;
-    items.forEach((it) => { w += 14 + tw(it.k, FS) + 12; });
+    items.forEach((it) => { w += 26 + tw(it.k, FS); });
     return w;
   }
 
@@ -116,23 +95,24 @@
     items.forEach((it) => {
       swatch(svg, x, baseline, it.c);
       txt(svg, { x: x + 14, y: baseline, s: it.k, anchor: 'start' });
-      x += 14 + tw(it.k, FS) + 12;
+      x += 26 + tw(it.k, FS);
     });
   }
 
-  /* Right-to-left label placement. Returns nothing; draws what fits. */
+  /* Labels are placed right to left; whatever would touch its neighbour is
+     dropped, which is what fits a full set on a wide column and a readable
+     subset on a phone. */
   function labelRun(n, get) {
     let taken = Infinity;
     for (let i = n - 1; i >= 0; i--) {
       const o = get(i);
       if (!o) continue;
       if (o.left + o.w > taken - o.gap) continue;
-      o.draw(o);
+      o.draw();
       taken = o.left;
     }
   }
 
-  /* Clamp a centred label inside [2, W - 2]. */
   function place(centre, w, W) {
     let anchor = 'middle', x = centre, left = centre - w / 2;
     if (centre + w / 2 > W - 2) { anchor = 'end'; x = W - 2; left = x - w; }
@@ -187,7 +167,6 @@
       svg.appendChild(rect);
     });
 
-    /* Value above each bar. */
     labelRun(data.length, (i) => {
       if (!(data[i].v > 0)) return null;
       const s = fmt(data[i].v);
@@ -201,7 +180,6 @@
       return p;
     });
 
-    /* Date under each bar. */
     labelRun(data.length, (i) => {
       const s = shortDate(data[i].d);
       const p = place(padL + i * slot + slot / 2, tw(s, FS), W);
@@ -212,7 +190,6 @@
 
     axisTitles(svg, W, H, { left: padL, top: padT, w: plotW, h: plotH }, xt, yt);
 
-    /* Legend shares the axis-title row, and only when it clears the title. */
     const items = [{ c: INK, k: 'Earlier' }, { c: SIGNAL, k: 'Latest' }];
     if (padL + plotW / 2 + tw(xt, FS) / 2 + 14 + legendWidth(items) <= W - padR) {
       legendRow(svg, items, W - padR, H - 4);
@@ -251,10 +228,12 @@
       base - (Math.max(0, Math.min(100, d.v)) / 100) * plotH,
     ]);
 
-    const area = 'M' + pts[0][0] + ',' + base + ' L' +
-      pts.map((p) => p[0] + ',' + p[1]).join(' L') +
-      ' L' + pts[pts.length - 1][0] + ',' + base + ' Z';
-    svg.appendChild(el('path', { d: area, fill: SIGNAL, opacity: 0.1 }));
+    svg.appendChild(el('path', {
+      d: 'M' + pts[0][0] + ',' + base + ' L' +
+         pts.map((p) => p[0] + ',' + p[1]).join(' L') +
+         ' L' + pts[pts.length - 1][0] + ',' + base + ' Z',
+      fill: SIGNAL, opacity: 0.1,
+    }));
 
     svg.appendChild(el('path', {
       d: 'M' + pts.map((p) => p[0] + ',' + p[1]).join(' L'),
@@ -276,7 +255,6 @@
       svg.appendChild(c);
     });
 
-    /* Value under each point, flipped above where the point sits on the floor. */
     labelRun(pts.length, (i) => {
       const s = fmt(data[i].v);
       const p = place(pts[i][0], tw(s, FSV), W);
@@ -342,8 +320,6 @@
     const total = data.reduce((a, d) => a + d.v, 0);
     if (!total) return;
 
-    /* A donut without a key is a set of unnamed arcs, so the legend is drawn
-       whenever the host has room for it and the ring gives up the space. */
     const rowH = 16;
     const legendH = data.length * rowH + 6;
     let mode = 'none';
@@ -425,7 +401,7 @@
     const box = host.getBoundingClientRect();
     const W = Math.round(box.width);
     const H = Math.round(box.height);
-    if (W < 80) return;                       /* hidden, or not laid out yet */
+    if (W < 80) return;
 
     const key = host.getAttribute('data-bars') || host.getAttribute('data-line') ||
                 host.getAttribute('data-ranks') || host.getAttribute('data-donut') || '';
@@ -453,6 +429,8 @@
     pending = requestAnimationFrame(function () { pending = 0; draw(); });
   }
 
+  /* The script only executes once per document, so a page swap that does not
+     reload the document is caught here rather than by DOMContentLoaded. */
   new MutationObserver(schedule)
     .observe(document.documentElement, { childList: true, subtree: true });
 
