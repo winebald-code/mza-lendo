@@ -263,26 +263,30 @@
   document.querySelectorAll('[data-donut]').forEach(donut);
 }
 
-function initCharts() {
-  requestAnimationFrame(() => {
-    draw();
-  });
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCharts);
-} else {
-  initCharts();
-}
-
-window.addEventListener('load', initCharts);
-window.addEventListener('pageshow', initCharts);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) initCharts();
-});
-
-window.addEventListener('resize', () => {
-  clearTimeout(window.__mzChartTimer);
-  window.__mzChartTimer = setTimeout(initCharts, 200);
-});
-})();
+   function redrawCharts() {
+     requestAnimationFrame(() => {
+       requestAnimationFrame(() => {
+         draw();
+       });
+     });
+   }
+   
+   if (document.readyState === 'loading') {
+     document.addEventListener('DOMContentLoaded', redrawCharts);
+   } else {
+     redrawCharts();
+   }
+   
+   window.addEventListener('pageshow', redrawCharts);
+   window.addEventListener('load', redrawCharts);
+   
+   document.addEventListener('visibilitychange', () => {
+     if (!document.hidden) redrawCharts();
+   });
+   
+   window.addEventListener('resize', () => {
+     clearTimeout(window.__mzChartTimer);
+     window.__mzChartTimer = setTimeout(redrawCharts, 200);
+   });
+   
+   })();
