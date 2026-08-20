@@ -38,6 +38,18 @@
   }
 
   applyDataStyles(document);
+
+  /* Everything below that binds to an element rather than delegating has to run
+     again when the page content is replaced. Collected here so there is one
+     list to keep in step rather than a hunt through the file. */
+  const PAGE_INIT = [];
+  function rescan(root) {
+    applyDataStyles(root || document);
+    PAGE_INIT.forEach((fn) => { try { fn(root || document); } catch (e) { /* keep going */ } });
+    if (window.BacaanCharts) window.BacaanCharts();
+  }
+  window.Bacaan = window.Bacaan || {};
+  window.Bacaan.rescan = rescan;
   window.mzApplyStyles = applyDataStyles;
 
   /* ── Content protection ───────────────────────────────────────────────
@@ -323,7 +335,8 @@
   });
 
   /* ── Password strength meter ──────────────────────────────────────────── */
-  const pwField = $('[data-strength]');
+  let pwField = $('[data-strength]');
+  PAGE_INIT.push((root) => { pwField = $('[data-strength]', root) || pwField; });
   if (pwField) {
     const meter = $('#pw-meter');
     const rules = $$('[data-rule]');
@@ -491,8 +504,10 @@
   }
 
   /* ── USSD handset simulator ───────────────────────────────────────────── */
-  const sim = $('[data-ussd-sim]');
-  if (sim) initSimulator(sim);
+  PAGE_INIT.push((root) => {
+    const sim = $('[data-ussd-sim]', root);
+    if (sim && !sim.dataset.simReady) { sim.dataset.simReady = '1'; initSimulator(sim); }
+  });
 
   function initSimulator(root) {
     const screen = $('[data-sim-screen]', root);
@@ -631,6 +646,129 @@
     const sel = e.target.closest('[data-autosubmit] select, select[data-autosubmit]');
     if (sel && sel.form) sel.form.submit();
   });
+
+
+  /* ── In-place navigation ──────────────────────────────────────────────────
+     Clicking the rail swaps the page content instead of reloading the whole
+     document. The rail, the topbar and the fonts stay put, so the sidebar does
+     not flash and scroll position in the rail is kept.
+
+     Progressive enhancement throughout: these are ordinary links, and every
+     branch that cannot be handled cleanly falls back to a normal navigation.
+     Middle-click, modifier-click, downloads and external hosts are left alone,
+     and with JavaScript off the application behaves exactly as before. */
+  const shell = $('#main');
+  const railEl = $('#rail');
+
+  if (shell && railEl && window.history && window.fetch && window.DOMParser) {
+    let bar = null;
+    let token = 0;
+
+    function progress(on) {
+      if (on) {
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.className = 'fixed top-0 left-0 h-[2px] bg-signal-500 z-[60] transition-[width] duration-200';
+          bar.style.width = '0';
+          document.body.appendChild(bar);
+        }
+        requestAnimationFrame(() => { bar.style.width = '70%'; });
+      } else if (bar) {
+        bar.style.width = '100%';
+        setTimeout(() => { if (bar) { bar.remove(); bar = null; } }, 220);
+      }
+    }
+
+    function samePage(url) {
+      return url.pathname === location.pathname && url.search === location.search;
+    }
+
+    /* Only the application shell is swappable. A link out of it — the public
+       site, a file download, a different origin — is a real navigation. */
+    function swappable(url) {
+      if (url.origin !== location.origin) return false;
+      // Exports stream a file. Fetching one only to hand it back to the browser
+      // would download it twice, so they are left as plain links.
+      if (/\/export(\/|$)|\.csv$/.test(url.pathname)) return false;
+      // Sign-out must be a real navigation: the session it ends is the one the
+      // swapped page would be rendered against.
+      if (/\/(logout|signout)(\/|$)/.test(url.pathname)) return false;
+      return /^\/(dashboard|admin|account)(\/|$)/.test(url.pathname);
+    }
+
+    async function go(href, push) {
+      const mine = ++token;
+      progress(true);
+      try {
+        const res = await fetch(href, {
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'fetch', Accept: 'text/html' },
+        });
+        // A sign-in redirect, an export, anything that is not our own HTML:
+        // hand it back to the browser rather than guessing.
+        const type = res.headers.get('content-type') || '';
+        if (!res.ok || type.indexOf('text/html') === -1) { location.assign(href); return; }
+
+        const html = await res.text();
+        if (mine !== token) return;                 // a newer click has overtaken this one
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const nextMain = doc.querySelector('#main');
+        const nextRail = doc.querySelector('#rail');
+        if (!nextMain) { location.assign(href); return; }
+
+        const landed = res.url || href;             // follow any redirect the server made
+        if (push) history.pushState({ spa: true }, '', landed);
+
+        shell.innerHTML = nextMain.innerHTML;
+        if (nextRail) {
+          // Replace the rail's inner markup only, so the element keeps its
+          // open/closed state on mobile and its scroll position on desktop.
+          // Keep the element itself: its open/closed state on mobile lives in
+          // a class on the <aside>, and replacing the node would lose it along
+          // with the rail's scroll position.
+          const keepScroll = railEl.scrollTop;
+          railEl.innerHTML = nextRail.innerHTML;
+          railEl.scrollTop = keepScroll;
+        }
+        if (doc.title) document.title = doc.title;
+
+        // Flash messages live outside main; carry any across.
+        const oldFlash = $('#flash-area');
+        const newFlash = doc.querySelector('#flash-area');
+        if (oldFlash) oldFlash.innerHTML = newFlash ? newFlash.innerHTML : '';
+
+        rescan(document);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        // Move focus to the heading so a screen reader announces the new page.
+        const h1 = $('h1', shell);
+        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
+      } catch (err) {
+        location.assign(href);                      // offline, blocked, anything else
+      } finally {
+        if (mine === token) progress(false);
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target.closest('a[href]');
+      if (!a || a.hasAttribute('download') || a.hasAttribute('data-no-spa')) return;
+      if (a.target && a.target !== '_self') return;
+
+      let url;
+      try { url = new URL(a.getAttribute('href'), location.href); } catch (_) { return; }
+      if (url.hash && samePage(url)) return;        // an in-page anchor
+      if (!swappable(url)) return;
+
+      e.preventDefault();
+      if (innerWidth <= 1024) closeRail();          // the drawer covers the content
+      if (samePage(url)) return;
+      go(url.href, true);
+    });
+
+    addEventListener('popstate', () => { go(location.href, false); });
+  }
 
   /* ── Reveal on scroll (public pages only, respects reduced motion) ────── */
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
