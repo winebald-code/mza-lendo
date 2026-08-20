@@ -88,14 +88,24 @@
 
   /* ── Public header menu ───────────────────────────────────────────────── */
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-menu-toggle]');
-    if (!btn) return;
-    const nav = $('#mobile-nav');
-    if (!nav) return;
-    const open = nav.hidden;
-    nav.hidden = !open;
-    btn.setAttribute('aria-expanded', String(open));
-  });
+  const btn = e.target.closest('[data-menu-toggle]');
+  if (!btn) return;
+
+  const nav = $('#mobile-nav');
+  if (!nav) return;
+
+  const open = nav.hidden;
+
+  nav.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+
+  const openIcon = btn.querySelector('[data-menu-open-icon]');
+  const closeIcon = btn.querySelector('[data-menu-close-icon]');
+
+  if (openIcon) openIcon.classList.toggle('hidden', open);
+  if (closeIcon) closeIcon.classList.toggle('hidden', !open);
+});
 
   /* ── Dropdowns ────────────────────────────────────────────────────────── */
   document.addEventListener('click', (e) => {
