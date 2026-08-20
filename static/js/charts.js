@@ -256,7 +256,7 @@
     return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
-    function draw() {
+  function draw() {
     document.querySelectorAll('[data-bars]').forEach(bars);
     document.querySelectorAll('[data-line]').forEach(line);
     document.querySelectorAll('[data-ranks]').forEach(ranks);
@@ -268,7 +268,6 @@
   } else {
     draw();
   }
-
   window.addEventListener('resize', () => {
     clearTimeout(window.__mzChartTimer);
     window.__mzChartTimer = setTimeout(draw, 200);
