@@ -86,7 +86,7 @@
 {# ══════════════ KPI STRIP ══════════════ #}
 <section class="grid gap-4 grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 mb-6">
   {{ kpi('Open orders', kpis.open_orders, kpis.due_this_week ~ ' due this week', 'clipboard', 'ink', url_for('dash_orders')) }}
-  {{ kpi('Order book', kpis.order_value|money_kpi, 'Value not yet dispatched', 'coins', 'ink') }}
+  {{ kpi('Order book', kpis.order_value|money_kpi, 'Value not yet dispatched', 'coins', 'ink', url_for('dash_orders')) }}
   {{ kpi('Active runs', kpis.active_runs, pulse.counts.at_risk ~ ' behind schedule', 'cog', 'warn' if pulse.counts.at_risk else 'ink', url_for('dash_runs')) }}
   {{ kpi('Stock on hand', kpis.stock_value|money_kpi, kpis.low_stock ~ ' items under minimum', 'box', 'bad' if kpis.low_stock else 'ink', url_for('dash_materials')) }}
   {{ kpi('Open faults', kpis.open_tickets, kpis.machines_down ~ ' machines stopped', 'tool', 'bad' if kpis.machines_down else 'ink', url_for('dash_maintenance')) }}
