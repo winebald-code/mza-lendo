@@ -13,11 +13,11 @@
 {% block content %}
 
 {# ══════════════ MANUFACTURING PULSE ══════════════ #}
-<section class="card overflow-hidden mb-6">
+<section class="card overflow-hidden mb-6 min-w-0">
   <div class="grid lg:grid-cols-[300px_1fr] xl:grid-cols-[300px_320px_1fr]">
 
     {# Ring #}
-    <div class="p-6 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-divider bg-fog/40 grid-lines">
+    <div class="p-6 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-divider bg-fog/40 grid-lines min-w-0">
       <p class="kicker mb-4">Manufacturing Pulse</p>
       {{ pulse_ring(pulse.overall, pulse.overall_band, 200) }}
       <p class="text-[12px] text-slate-500 text-center mt-4 mb-0 max-w-[26ch] leading-snug">
@@ -35,7 +35,7 @@
     </div>
 
     {# Subsystem meters #}
-    <div class="p-6 border-b xl:border-b-0 xl:border-r border-divider">
+    <div class="p-6 border-b xl:border-b-0 xl:border-r border-divider min-w-0">
       <p class="label mb-4">Subsystems</p>
       {{ pulse_bars(pulse.scores, pulse.bands, {
         'production': url_for('dash_runs'),
@@ -51,7 +51,7 @@
     </div>
 
     {# Signal ledger — why the number moved #}
-    <div class="p-6">
+    <div class="p-6 min-w-0">
       <div class="flex items-center justify-between gap-3 mb-4">
         <p class="label m-0">Signal ledger</p>
         <span class="font-mono text-[10px] text-slate-400">{{ pulse.findings|length }} finding{{ '' if pulse.findings|length == 1 else 's' }}</span>
@@ -95,9 +95,9 @@
 
 <div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
 
-  <div class="grid gap-6">
+  <div class="grid gap-6 min-w-0">
     {# ── Production throughput ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Units completed</h2>
@@ -106,12 +106,12 @@
         <a href="{{ url_for('dash_reports') }}" class="btn btn-ghost btn-xs">Reports {{ icon('arrow-right','ico ico-sm') }}</a>
       </div>
       <div class="p-5">
-        <div data-bars='{{ series|tojson }}' class="h-[150px]"></div>
+        <div data-bars='{{ series|tojson }}' class="h-[150px] min-w-0"></div>
       </div>
     </section>
 
     {# ── Runs on the floor ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">On the floor</h2>
@@ -148,7 +148,7 @@
     </section>
 
     {# ── Orders due ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Orders by due date</h2>
@@ -185,9 +185,9 @@
     </section>
   </div>
 
-  <div class="grid gap-6 content-start">
+  <div class="grid gap-6 content-start min-w-0">
     {# ── Alerts ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Alerts</h2>
@@ -222,7 +222,7 @@
     </section>
 
     {# ── Low stock ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Reorder line</h2>
@@ -258,7 +258,7 @@
     </section>
 
     {# ── Open faults ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Open faults</h2>
@@ -288,7 +288,7 @@
     </section>
 
     {# ── Floor activity ── #}
-    <section class="card">
+    <section class="card min-w-0">
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Floor activity</h2>
