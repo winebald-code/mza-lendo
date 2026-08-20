@@ -257,19 +257,22 @@
   }
 
   function draw() {
-    document.querySelectorAll('[data-bars]').forEach(bars);
-    document.querySelectorAll('[data-line]').forEach(line);
-    document.querySelectorAll('[data-ranks]').forEach(ranks);
-    document.querySelectorAll('[data-donut]').forEach(donut);
-  }
+  document.querySelectorAll('[data-bars]').forEach(bars);
+  document.querySelectorAll('[data-line]').forEach(line);
+  document.querySelectorAll('[data-ranks]').forEach(ranks);
+  document.querySelectorAll('[data-donut]').forEach(donut);
+}
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', draw);
-  } else {
-    draw();
-  }
-  window.addEventListener('resize', () => {
-    clearTimeout(window.__mzChartTimer);
-    window.__mzChartTimer = setTimeout(draw, 200);
-  });
-})();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', draw);
+} else {
+  draw();
+}
+
+window.addEventListener('pageshow', draw);
+
+window.addEventListener('resize', () => {
+  clearTimeout(window.__mzChartTimer);
+  window.__mzChartTimer = setTimeout(draw, 200);
+});
+})(); 
