@@ -40,6 +40,18 @@
   applyDataStyles(document);
   window.mzApplyStyles = applyDataStyles;
 
+  /* ── Content protection ───────────────────────────────────────────────
+     Requested for the whole site. Worth being clear about what it is: a
+     deterrent against casual copying, not a security control — view-source,
+     developer tools and curl all still reach the same markup. It is here
+     because it raises the effort slightly, not because it prevents anything. */
+  document.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+    }
+  });
+
   /* ── Navigation rail (mobile) ─────────────────────────────────────────── */
   const rail = $('#rail');
   const scrim = $('#rail-scrim');
