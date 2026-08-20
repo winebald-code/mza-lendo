@@ -263,16 +263,26 @@
   document.querySelectorAll('[data-donut]').forEach(donut);
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', draw);
-} else {
-  draw();
+function initCharts() {
+  requestAnimationFrame(() => {
+    draw();
+  });
 }
 
-window.addEventListener('pageshow', draw);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCharts);
+} else {
+  initCharts();
+}
+
+window.addEventListener('load', initCharts);
+window.addEventListener('pageshow', initCharts);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) initCharts();
+});
 
 window.addEventListener('resize', () => {
   clearTimeout(window.__mzChartTimer);
-  window.__mzChartTimer = setTimeout(draw, 200);
+  window.__mzChartTimer = setTimeout(initCharts, 200);
 });
-})(); 
+})();
