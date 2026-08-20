@@ -50,7 +50,7 @@
   function svgRoot(host, w, h, aria) {
     const svg = el('svg', {
       viewBox: '0 0 ' + w + ' ' + h,
-      width: '100%', height: '100%',
+      width: w, height: h, style: 'max-width:100%',
       preserveAspectRatio: 'xMidYMid meet', role: 'img',
     });
     if (aria) svg.setAttribute('aria-label', aria);
@@ -84,14 +84,10 @@
     if (xt) txt(svg, { x: plot.left + plot.w / 2, y: H - 4, s: xt });
   }
 
-  function legendWidth(items) {
-    let w = -12;
-    items.forEach((it) => { w += 26 + tw(it.k, FS); });
-    return w;
-  }
-
   function legendRow(svg, items, right, baseline) {
-    let x = right - legendWidth(items);
+    let width = -12;
+    items.forEach((it) => { width += 26 + tw(it.k, FS); });
+    let x = right - width;
     items.forEach((it) => {
       swatch(svg, x, baseline, it.c);
       txt(svg, { x: x + 14, y: baseline, s: it.k, anchor: 'start' });
@@ -128,7 +124,8 @@
 
     const yt = attr(host, 'data-y-label', 'Units');
     const xt = attr(host, 'data-x-label', 'Date');
-    const padL = yt ? 44 : 32, padR = 6, padT = 16, padB = xt ? 34 : 22;
+    const key = W >= 560;
+    const padL = yt ? 44 : 32, padR = 6, padT = key ? 26 : 16, padB = xt ? 34 : 22;
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
     if (plotW < 60 || plotH < 40) return;
@@ -173,7 +170,7 @@
       const p = place(padL + i * slot + slot / 2, tw(s, FSV), W);
       p.gap = 6;
       p.draw = () => txt(svg, {
-        x: p.x, y: Math.max(FSV + 2, base - height(data[i].v) - 4),
+        x: p.x, y: Math.max(padT - 5, base - height(data[i].v) - 4),
         s: s, anchor: p.anchor, size: FSV, weight: 600,
         fill: i === data.length - 1 ? SIGNAL_D : INK,
       });
@@ -189,11 +186,7 @@
     });
 
     axisTitles(svg, W, H, { left: padL, top: padT, w: plotW, h: plotH }, xt, yt);
-
-    const items = [{ c: INK, k: 'Earlier' }, { c: SIGNAL, k: 'Latest' }];
-    if (padL + plotW / 2 + tw(xt, FS) / 2 + 14 + legendWidth(items) <= W - padR) {
-      legendRow(svg, items, W - padR, H - 4);
-    }
+    if (key) legendRow(svg, [{ c: INK, k: 'Earlier' }, { c: SIGNAL, k: 'Latest' }], W - padR, 11);
   }
 
   /* ── Sparkline / trend line ───────────────────────────────────────────── */
@@ -397,16 +390,26 @@
   /* ── Render loop ──────────────────────────────────────────────────────── */
   const ro = window.ResizeObserver ? new ResizeObserver(schedule) : null;
 
+  /* A chart is never drawn wider than the space left between its own left
+     edge and the right edge of the screen, so it stays readable without a
+     sideways scroll even if something else on the page is too wide. */
+  function width(box) {
+    const vw = document.documentElement.clientWidth || 0;
+    const x = box.left + (window.scrollX || window.pageXOffset || 0);
+    const room = vw ? Math.max(220, vw - x - 8) : Infinity;
+    return Math.round(Math.min(box.width, room));
+  }
+
   function render(host) {
     const box = host.getBoundingClientRect();
-    const W = Math.round(box.width);
+    const W = width(box);
     const H = Math.round(box.height);
     if (W < 80) return;
 
-    const key = host.getAttribute('data-bars') || host.getAttribute('data-line') ||
-                host.getAttribute('data-ranks') || host.getAttribute('data-donut') || '';
+    const data = host.getAttribute('data-bars') || host.getAttribute('data-line') ||
+                 host.getAttribute('data-ranks') || host.getAttribute('data-donut') || '';
     const sig = W + 'x' + H + '|' + attr(host, 'data-x-label', '') + '|' +
-                attr(host, 'data-y-label', '') + '|' + key;
+                attr(host, 'data-y-label', '') + '|' + data;
     if (host.__sig === sig && host.firstChild) return;
     host.__sig = sig;
 
