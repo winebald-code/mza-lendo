@@ -51,8 +51,7 @@
             {{ cta_label }} {{ icon('arrow-right', 'ico ico-sm') }}
           </a>
         {% endif %}
-        <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
-          {{ icon('menu') }}
+        <button type="button" class="btn btn-secondary btn-icon lg:hidden" data-menu-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu"><span data-menu-open-icon>{{ icon('menu') }}</span><span data-menu-close-icon class="hidden">{{ icon('x') }}</span>
         </button>
       </div>
     </nav>
