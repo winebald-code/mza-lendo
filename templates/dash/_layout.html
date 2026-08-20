@@ -2,13 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>{% block title %}{{ page_title|default('Dashboard') }} — {{ APP_NAME }}{% endblock %}</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0F1216">
 <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var d = document.documentElement;
+  d.style.touchAction = 'pan-x pan-y';
+  d.style.overflowX = 'clip';
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+    document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
+  });
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault();
+  }, { passive: false });
+})();
+</script>
 {% block head %}{% endblock %}
 </head>
 <body class="bg-fog">
@@ -115,7 +128,7 @@
 </aside>
 
 {# ── Main column ───────────────────────────────────────────────────────── #}
-<div class="lg:pl-[var(--rail-w)] min-h-screen flex flex-col">
+<div class="lg:pl-[var(--rail-w)] min-h-screen flex flex-col min-w-0">
 
   <header class="sticky top-0 z-30 bg-fog/90 backdrop-blur-md border-b border-divider">
     <div class="flex items-center gap-3 h-[62px] px-4 sm:px-6">
@@ -123,16 +136,16 @@
         {{ icon('menu') }}
       </button>
 
-      <div class="relative flex-1 max-w-[420px]" data-search>
+      <div class="relative flex-1 min-w-0 max-w-[420px]" data-search>
         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">{{ icon('search','ico ico-sm') }}</span>
-        <input type="search" class="input h-[38px] min-h-0 py-0 pl-9 pr-3 rounded-[12px] text-[13px]"
+        <input type="search" size="1" class="input h-[38px] min-h-0 py-0 pl-9 pr-3 rounded-[12px] text-[13px] min-w-0"
                placeholder="Search materials, orders, machines…" autocomplete="off"
                data-search-input aria-label="Search the plant">
         <div class="absolute left-0 right-0 top-[44px] card shadow-s2 p-1.5 hidden max-h-[380px] overflow-y-auto z-20"
              data-search-results role="listbox"></div>
       </div>
 
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto shrink-0 flex items-center gap-2">
         <a href="{{ url_for('dash_alerts') }}" class="btn btn-secondary btn-icon relative"
            aria-label="Notifications" data-bell data-count="{{ unread_alerts }}">
           {{ icon('bell') }}
@@ -171,11 +184,11 @@
 
   <div id="flash-area">{% include "partials/flash.html" %}</div>
 
-  <main id="main" class="flex-1 px-4 sm:px-6 py-6 pb-16">
-    <div class="max-w-shell mx-auto">
+  <main id="main" class="flex-1 px-4 sm:px-6 py-6 pb-16 min-w-0">
+    <div class="max-w-shell mx-auto min-w-0">
       {% block page_head %}
       <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
+        <div class="min-w-0">
           {% if kicker is defined and kicker %}<p class="kicker">{{ kicker }}</p>{% endif %}
           <h1 class="text-[26px] sm:text-[30px] font-bold tracking-[-0.025em] m-0">{{ page_title|default('Overview') }}</h1>
           {% if page_sub is defined and page_sub %}<p class="text-[13.5px] text-slate-500 mt-1.5 mb-0 max-w-prose2">{{ page_sub }}</p>{% endif %}
