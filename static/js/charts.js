@@ -95,9 +95,6 @@
     });
   }
 
-  /* Labels are placed right to left; whatever would touch its neighbour is
-     dropped, which is what fits a full set on a wide column and a readable
-     subset on a phone. */
   function labelRun(n, get) {
     let taken = Infinity;
     for (let i = n - 1; i >= 0; i--) {
@@ -390,9 +387,6 @@
   /* ── Render loop ──────────────────────────────────────────────────────── */
   const ro = window.ResizeObserver ? new ResizeObserver(schedule) : null;
 
-  /* A chart is never drawn wider than the space left between its own left
-     edge and the right edge of the screen, so it stays readable without a
-     sideways scroll even if something else on the page is too wide. */
   function width(box) {
     const vw = document.documentElement.clientWidth || 0;
     const x = box.left + (window.scrollX || window.pageXOffset || 0);
@@ -432,8 +426,6 @@
     pending = requestAnimationFrame(function () { pending = 0; draw(); });
   }
 
-  /* The script only executes once per document, so a page swap that does not
-     reload the document is caught here rather than by DOMContentLoaded. */
   new MutationObserver(schedule)
     .observe(document.documentElement, { childList: true, subtree: true });
 
