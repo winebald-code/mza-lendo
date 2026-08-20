@@ -720,15 +720,30 @@
         if (push) history.pushState({ spa: true }, '', landed);
 
         shell.innerHTML = nextMain.innerHTML;
+        /* The rail is never rewritten. Its scrollable element is the inner
+           <nav>, so replacing the aside's innerHTML destroyed that node and
+           reset the scroll to the top — which is exactly what "the sidebar must
+           stay put" rules out. It also discarded the plant selector's state.
+
+           Only two things in the rail depend on which page you are on: which
+           link is highlighted, and the unread count beside Alerts. Both are
+           copied across; every other node is left alone. */
         if (nextRail) {
-          // Replace the rail's inner markup only, so the element keeps its
-          // open/closed state on mobile and its scroll position on desktop.
-          // Keep the element itself: its open/closed state on mobile lives in
-          // a class on the <aside>, and replacing the node would lose it along
-          // with the rail's scroll position.
-          const keepScroll = railEl.scrollTop;
-          railEl.innerHTML = nextRail.innerHTML;
-          railEl.scrollTop = keepScroll;
+          const wanted = new Set();
+          nextRail.querySelectorAll('a.rail-link').forEach((a) => {
+            if (a.classList.contains('is-active')) wanted.add(a.getAttribute('href'));
+          });
+          railEl.querySelectorAll('a.rail-link').forEach((a) => {
+            a.classList.toggle('is-active', wanted.has(a.getAttribute('href')));
+          });
+
+          const nextCount = nextRail.querySelector('a.rail-link .tag-signal');
+          const liveCount = railEl.querySelector('a.rail-link .tag-signal');
+          const alertLink = Array.from(railEl.querySelectorAll('a.rail-link'))
+            .find((a) => /alerts$/.test(a.getAttribute('href') || ''));
+          if (liveCount && !nextCount) liveCount.remove();
+          else if (liveCount && nextCount) liveCount.textContent = nextCount.textContent;
+          else if (!liveCount && nextCount && alertLink) alertLink.appendChild(nextCount.cloneNode(true));
         }
         if (doc.title) document.title = doc.title;
 
