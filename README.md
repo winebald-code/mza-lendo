@@ -1,6 +1,6 @@
 <div align="center">
 
-# Mzalendo
+# Bacaan
 
 **Manufacturing operations and supply intelligence for African workshops.**
 
@@ -18,7 +18,7 @@ Most production software assumes every worker carries a smartphone with a data b
 patience to learn an app. In a Kamukunji metal workshop or a Jua Kali shed, that assumption is
 simply false — and it is the reason almost none of these businesses run production software at all.
 
-Mzalendo inverts it. Workers interact through **USSD on any handset that can make a call**: no app,
+Bacaan inverts it. Workers interact through **USSD on any handset that can make a call**: no app,
 no data, no training. Every entry they make — units completed, stock issued, a machine smoking, a
 near miss — lands in the same database the owner's dashboard reads from.
 
@@ -80,7 +80,7 @@ running application needs it.
 
 ```bash
 # 1. Clone and enter
-git clone <your-repo-url> mzalendo && cd mzalendo
+git clone <your-repo-url> bacaan && cd bacaan
 
 # 2. Python environment
 python3 -m venv .venv
@@ -124,7 +124,7 @@ npm run watch      # rebuilds static/css/app.css as you edit templates
 ```
 
 `static/css/app.css` is generated and git-ignored. It must be built before the app is useful — an
-unstyled Mzalendo is not a pretty sight.
+unstyled Bacaan is not a pretty sight.
 
 ---
 
@@ -187,7 +187,7 @@ menu. To hit the endpoint directly:
 ```bash
 curl -X POST http://127.0.0.1:5000/ussd/callback \
   -d "sessionId=test-1" \
-  -d "serviceCode=*384*7788#" \
+  -d "serviceCode=*384*7477#" \
   -d "phoneNumber=+254711000201" \
   -d "text="
 ```
@@ -218,13 +218,30 @@ Kenyan services already use.
 | `98` | See the next page of a long list |
 | `99` | Stop and close the session |
 
+They are listed one to a line at the foot of each screen. Run together on a single row they read as
+one long string of digits on a small handset; stacked, each is a choice like any other.
+
 Each screen shows the keys it offers along the bottom. The main menu shows only `99 Exit`, because
 there is nowhere to go back to.
 
 On a screen that asks you to type a number, `0` still means back. So you cannot enter 0 as a
 quantity — which is not a useful thing to report anyway.
 
-Workers can also skip the menu entirely and text `HELP`, `TASKS`, `STOCK`, `IN`, `OUT` or `DOWN`.
+### Texting instead of dialling
+
+A worker can text the shortcode instead of opening the menu. Six commands, no arguments needed:
+
+| Text | What happens |
+|---|---|
+| `HELP` | Lists the commands |
+| `TASKS` | Their open runs, with progress |
+| `STOCK` | Everything below its minimum right now |
+| `IN` | Clock in |
+| `OUT` | Clock out |
+| `DOWN <machine>` | Report that machine down and open a fault |
+
+`STOCK <material>` also works and gives one balance. A text from a number that is not registered
+to a worker gets a reply saying so — silence would look like a broken system.
 
 ---
 
@@ -274,7 +291,7 @@ FORCE_HTTPS=1
 ALLOW_PUBLIC_SIGNUP=0
 AT_USERNAME=<your Africa's Talking username>
 AT_API_KEY=<your key>
-AT_USSD_CODE=*384*7788#
+AT_USSD_CODE=*384*7477#
 SMS_ENABLED=1
 ```
 
@@ -294,13 +311,13 @@ Python with no Node in it at all. Suitable for the isolated per-customer instanc
 brief asks for.
 
 ```bash
-docker build -t mzalendo:1.0.0 .
+docker build -t bacaan:1.0.0 .
 
 docker run -d -p 8000:8000 \
   -e SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')" \
   -e FORCE_HTTPS=0 \
-  -v mzalendo-data:/data \
-  --name mzalendo mzalendo:1.0.0
+  -v bacaan-data:/data \
+  --name bacaan bacaan:1.0.0
 ```
 
 Runs as an unprivileged user (uid 10001), stores its database in the `/data` volume, and carries a
@@ -358,7 +375,7 @@ Beyond headers:
 ## Project layout
 
 ```
-mzalendo/
+bacaan/
 ├── app.py                     # the entire application, 32 numbered sections
 ├── requirements.txt           # core — pure wheels, no compiler
 ├── requirements-postgres.txt  # core + psycopg2, for server deployments
@@ -422,6 +439,21 @@ point every screen leaves through. Anything longer is truncated by the telco, wh
 line in half and leaves the worker with an option they cannot read. Call sites trim individual
 labels, but plant names, worker names and material names are all free text, so the guarantee is
 enforced at the boundary: whole options are dropped and the trailing navigation line is preserved.
+
+---
+
+## Notifications
+
+Every operation writes to the notifications feed, whether it came from the dashboard or a handset.
+Office actions are mirrored from the audit trail, so a new operation is covered the moment it is
+audited — there is no second list to keep in step. Floor events arrive through the USSD and SMS
+paths, which have no signed-in user behind them.
+
+The bell polls every twenty seconds, updates its badge, and plays a short two-note chime when the
+count rises. The sound is synthesised in the browser rather than loaded from a file: nothing to
+ship, nothing for the Content-Security-Policy to block. Browsers refuse to start audio before a
+user gesture, so it stays silent until the first click — the badge still updates. There is a mute
+toggle beside the bell, remembered per browser.
 
 ---
 

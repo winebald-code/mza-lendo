@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-#  Mzalendo — PostgreSQL deployment
+#  Bacaan — PostgreSQL deployment
 #
 #  Use this on Railway, in Docker, or anywhere DATABASE_URL points at Postgres:
 #      pip install -r requirements-postgres.txt

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- MZALENDO — Manufacturing Operations & Supply Intelligence Platform
+ BACAAN — Manufacturing Operations & Supply Intelligence Platform
 ===============================================================================
  A mobile-first manufacturing operating system for African SMEs and Jua Kali
  producers. Owners manage the plant from a web dashboard; workers and suppliers
@@ -72,7 +72,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, "instance"))
 os.makedirs(DATA_DIR, exist_ok=True)
 
-APP_NAME = "Mzalendo"
+APP_NAME = "Bacaan"
 APP_TAGLINE = "Manufacturing Operations & Supply Intelligence"
 APP_VERSION = "1.0.0"
 
@@ -81,9 +81,9 @@ def _env_str(key: str, default: str = "") -> str:
     """Environment string with surrounding quotes stripped.
 
     Railway's raw editor (and most .env files) need a value quoted when it
-    contains a # — AT_USSD_CODE="*384*1153#" — because an unquoted # starts a
+    contains a # — AT_USSD_CODE="*384*7477#" — because an unquoted # starts a
     comment. Some parsers strip the quotes, some store them literally. A sender
-    id that reaches Africa's Talking as "MZALENDO" including the quotes is
+    id that reaches Africa's Talking as "BACAAN" including the quotes is
     rejected as unregistered, and the error gives no hint why.
     """
     raw = (os.environ.get(key) or "").strip()
@@ -131,7 +131,7 @@ def _database_uri() -> str:
                 url = "postgresql+psycopg2://" + url[len(prefix):]
                 break
         return url
-    return "sqlite:///" + os.path.join(DATA_DIR, "mzalendo.db")
+    return "sqlite:///" + os.path.join(DATA_DIR, "bacaan.db")
 
 
 class Config:
@@ -141,7 +141,7 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
     # --- session / cookie hardening -----------------------------------------
-    SESSION_COOKIE_NAME = "mzalendo_session"
+    SESSION_COOKIE_NAME = "bacaan_session"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_bool("FORCE_HTTPS", False)
@@ -176,7 +176,7 @@ class Config:
     AT_API_KEY = _env_str("AT_API_KEY", "")
     AT_SENDER_ID = _env_str("AT_SENDER_ID", "")
     AT_SHORTCODE = _env_str("AT_SHORTCODE", "")
-    AT_USSD_CODE = _env_str("AT_USSD_CODE", "*384*1153#")
+    AT_USSD_CODE = _env_str("AT_USSD_CODE", "*384*7477#")
     # AT_LIVE=1 removes the simulation fallback entirely: a message either goes
     # to the gateway or is recorded as failed with the reason.
     AT_LIVE = _env_bool("AT_LIVE", False)
@@ -222,9 +222,9 @@ limiter = Limiter(
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)-7s  mzalendo  %(message)s",
+    format="%(asctime)s  %(levelname)-7s  bacaan  %(message)s",
 )
-log = logging.getLogger("mzalendo")
+log = logging.getLogger("bacaan")
 
 
 # =============================================================================
@@ -351,7 +351,7 @@ def _security_after_request(resp: Response) -> Response:
         resp.headers["Pragma"] = "no-cache"
 
     resp.headers.pop("Server", None)
-    resp.headers["Server"] = "Mzalendo"
+    resp.headers["Server"] = "Bacaan"
     return resp
 
 
@@ -1220,6 +1220,14 @@ def audit(action: str, entity: str = "", entity_id=None, detail: str = ""):
         )
         db.session.add(row)
         db.session.commit()
+
+        spec = NOTIFY_ACTIONS.get(action)
+        if spec and row.factory_id:
+            kind, severity, title, link = spec
+            who = actor if actor != "system" else "the floor"
+            notify_event(row.factory_id, kind, severity, title,
+                         f"{detail[:180]}" + (f" — by {who}" if who else ""),
+                         link, entity_id)
     except Exception as exc:                                   # pragma: no cover
         db.session.rollback()
         log.warning("audit failed: %s", exc)
@@ -1233,6 +1241,13 @@ def system_audit(factory_id, actor, action, entity="", entity_id=None, detail=""
         db.session.commit()
     except Exception:                                          # pragma: no cover
         db.session.rollback()
+
+    spec = FLOOR_ACTIONS.get(action)
+    if spec and factory_id:
+        kind, severity, title, link = spec
+        notify_event(factory_id, kind, severity,
+                     f"{actor} {title}" if actor else title.capitalize(),
+                     detail or "", link, entity_id)
 
 
 # --- authorisation decorators ------------------------------------------------
@@ -1454,7 +1469,7 @@ class AfricasTalking:
                       "no username" if not self.username else "SMS disabled")
             for n in numbers:
                 db.session.add(SmsLog(factory_id=fid, direction="out", to_number=n,
-                                      from_number=self.sender_id or "MZALENDO",
+                                      from_number=self.sender_id or "BACAAN",
                                       message=message, category=category,
                                       status="failed", status_code=0,
                                       error="live mode: " + reason))
@@ -1465,7 +1480,7 @@ class AfricasTalking:
         if not self.live:
             for n in numbers:
                 db.session.add(SmsLog(factory_id=fid, direction="out", to_number=n,
-                                      from_number=self.sender_id or "MZALENDO",
+                                      from_number=self.sender_id or "BACAAN",
                                       message=message, category=category,
                                       status="simulated", status_code=100,
                                       provider_id="sim-" + secrets.token_hex(5)))
@@ -1754,6 +1769,96 @@ def raise_alert(factory_id, kind, severity, title, body="", recommendation="",
     return a
 
 
+# Which audited actions are worth telling an owner about, and how to say it.
+# Wiring notifications through audit() rather than sprinkling calls across
+# forty routes means a new operation is covered the moment it is audited —
+# there is no second list to keep in step.
+NOTIFY_ACTIONS = {
+    # Materials and stock
+    "material_saved":      ("inventory",   "info",   "Material added or updated",   "dash_materials"),
+    "material_deleted":    ("inventory",   "medium", "Material deleted",            "dash_materials"),
+    "stock_move":          ("inventory",   "info",   "Stock movement recorded",     "dash_stock_ledger"),
+    # Suppliers and procurement
+    "supplier_saved":      ("supplier",    "info",   "Supplier added or updated",   "dash_suppliers"),
+    "supplier_deleted":    ("supplier",    "medium", "Supplier deleted",            "dash_suppliers"),
+    "supplier_sms":        ("message",     "info",   "Supplier messaged",           "dash_messages"),
+    "po_saved":            ("procurement", "info",   "Purchase order raised",       "dash_purchase_orders"),
+    "po_status":           ("procurement", "info",   "Purchase order status changed","dash_purchase_orders"),
+    "po_received":         ("procurement", "info",   "Delivery received into stock","dash_purchase_orders"),
+    "po_deleted":          ("procurement", "medium", "Purchase order deleted",      "dash_purchase_orders"),
+    "procurement_auto":    ("procurement", "info",   "Purchase orders drafted from low stock", "dash_purchase_orders"),
+    # Products, orders, customers
+    "product_saved":       ("production",  "info",   "Product added or updated",    "dash_products"),
+    "product_deleted":     ("production",  "medium", "Product deleted",             "dash_products"),
+    "customer_saved":      ("order",       "info",   "Customer added or updated",   "dash_customers"),
+    "customer_deleted":    ("order",       "medium", "Customer deleted",            "dash_customers"),
+    "order_saved":         ("order",       "info",   "Order placed or updated",     "dash_orders"),
+    "order_status":        ("order",       "info",   "Order status changed",        "dash_orders"),
+    "order_planned":       ("production",  "info",   "Order planned into runs",     "dash_runs"),
+    "order_deleted":       ("order",       "medium", "Order deleted",               "dash_orders"),
+    # Production
+    "run_saved":           ("production",  "info",   "Production run created or updated", "dash_runs"),
+    "run_progress":        ("production",  "info",   "Production reported",         "dash_runs"),
+    "run_stage":           ("production",  "info",   "Stage closed or reopened",    "dash_runs"),
+    "run_deleted":         ("production",  "medium", "Production run deleted",      "dash_runs"),
+    # Plant
+    "machine_saved":       ("machine",     "info",   "Machine added or updated",    "dash_machines"),
+    "machine_status":      ("machine",     "medium", "Machine status changed",      "dash_machines"),
+    "machine_serviced":    ("machine",     "info",   "Machine serviced",            "dash_machines"),
+    "machine_deleted":     ("machine",     "medium", "Machine deleted",             "dash_machines"),
+    "ticket_saved":        ("maintenance", "high",   "Fault logged",                "dash_maintenance"),
+    "ticket_resolved":     ("maintenance", "info",   "Fault resolved",              "dash_maintenance"),
+    "ticket_deleted":      ("maintenance", "medium", "Fault ticket deleted",        "dash_maintenance"),
+    # Quality, people, safety
+    "qc_saved":            ("quality",     "info",   "Inspection recorded",         "dash_quality"),
+    "qc_deleted":          ("quality",     "medium", "Inspection deleted",          "dash_quality"),
+    "worker_saved":        ("worker",      "info",   "Worker added or updated",     "dash_workers"),
+    "worker_deleted":      ("worker",      "medium", "Worker removed",              "dash_workers"),
+    "worker_sms":          ("message",     "info",   "Worker messaged",             "dash_messages"),
+    "worker_broadcast":    ("message",     "info",   "Broadcast sent to the floor", "dash_messages"),
+    "attendance":          ("attendance",  "info",   "Attendance recorded",         "dash_attendance"),
+    "safety_saved":        ("safety",      "high",   "Safety incident recorded",    "dash_safety"),
+    "safety_deleted":      ("safety",      "medium", "Safety record deleted",       "dash_safety"),
+    # Administration
+    "user_saved":          ("user",        "medium", "User account created or changed", "dash_users"),
+    "user_deleted":        ("user",        "high",   "User account deleted",        "dash_users"),
+    "user_toggled":        ("user",        "medium", "User enabled or disabled",    "dash_users"),
+    "user_password_reset": ("user",        "medium", "Password reset for a user",   "dash_users"),
+    "user_unlocked":       ("user",        "medium", "User unlocked",               "dash_users"),
+    "settings_saved":      ("settings",    "info",   "Plant settings changed",      "dash_settings"),
+    "sms_sent":            ("message",     "info",   "Message sent",                "dash_messages"),
+    "export":              ("settings",    "info",   "Data exported",               "dash_reports"),
+    "signup":              ("user",        "info",   "New plant created",           "dash_users"),
+}
+
+
+# Floor-originated events. These arrive through system_audit() rather than
+# audit(), because a USSD hop has no signed-in user behind it.
+FLOOR_ACTIONS = {
+    "ussd_production": ("production",  "info", "reported production",                "dash_runs"),
+    "ussd_stock":      ("inventory",   "info", "reported a stock movement",          "dash_stock_ledger"),
+    "ussd_fault":      ("maintenance", "high", "reported a machine fault",           "dash_maintenance"),
+    "ussd_safety":     ("safety",      "high", "reported a safety incident",         "dash_safety"),
+    "ussd_clock_in":   ("attendance",  "info", "clocked in",                         "dash_attendance"),
+    "ussd_clock_out":  ("attendance",  "info", "clocked out",                        "dash_attendance"),
+}
+
+
+def notify_event(factory_id, kind, severity, title, body="", link="",
+                 entity_id=None, dedupe_hours=0):
+    """Record something that happened, for the notifications feed.
+
+    Distinct from raise_alert() only in intent: alerts are the Pulse engine
+    complaining, events are the plant going about its business. They share a
+    table so the bell shows one honest count.
+    """
+    if not factory_id:
+        return None
+    return raise_alert(factory_id, kind, severity, title, body,
+                       recommendation="", entity_type=link, entity_id=entity_id,
+                       dedupe_hours=dedupe_hours)
+
+
 def check_material_level(material: Material, factory: Factory, silent=False):
     """Called after every stock movement — the low-stock SMS trigger."""
     if material.stock_state in ("low", "out") and not silent:
@@ -1771,7 +1876,7 @@ def check_material_level(material: Material, factory: Factory, silent=False):
         phones = factory_managers_phones(factory.id)
         if phones:
             notify(factory, phones,
-                   f"Mzalendo: {material.name} {state}. Current: {material.quantity:g} "
+                   f"Bacaan: {material.name} {state}. Current: {material.quantity:g} "
                    f"{material.unit}. Minimum: {material.min_stock:g} {material.unit}.",
                    "stock_alert")
 
@@ -2726,7 +2831,7 @@ def po_status(po_id):
         lines = "; ".join(f"{i.material.name} x{i.quantity:g}{i.material.unit}"
                           for i in item.items[:4] if i.material)
         notify(fac, [item.supplier.phone],
-               f"Mzalendo: {fac.name} has placed purchase order {item.number}. "
+               f"Bacaan: {fac.name} has placed purchase order {item.number}. "
                f"{lines}. Expected {item.expected_date or 'as soon as possible'}.",
                "purchase_order")
         item.supplier.orders_placed = (item.supplier.orders_placed or 0) + 1
@@ -3051,7 +3156,7 @@ def order_form(order_id=None):
 
             if was_new and obj.customer and obj.customer.sms_updates and obj.customer.phone:
                 notify(fac, [obj.customer.phone],
-                       f"Mzalendo: {fac.name} has received your order {obj.number}. "
+                       f"Bacaan: {fac.name} has received your order {obj.number}. "
                        f"Total {money(obj.total, fac.currency)}. "
                        f"We will confirm the schedule shortly.", "order")
             audit("order_saved", "order", obj.id, obj.number)
@@ -3120,7 +3225,7 @@ def order_status(order_id):
         }.get(new)
         if friendly:
             notify(fac, [item.customer.phone],
-                   f"Mzalendo: Order {item.number} {friendly}.", "order")
+                   f"Bacaan: Order {item.number} {friendly}.", "order")
     audit("order_status", "order", item.id, f"{old} -> {new}")
     flash(f"Order {item.number} moved to {ORDER_STATUS_LABELS.get(new, new)}.", "ok")
     return redirect(url_for("order_detail", order_id=item.id))
@@ -3248,7 +3353,7 @@ def run_form(run_id=None):
 
             if was_new and obj.worker and obj.worker.phone:
                 notify(fac, [obj.worker.phone],
-                       f"Mzalendo: You are assigned to run {obj.reference} "
+                       f"Bacaan: You are assigned to run {obj.reference} "
                        f"({obj.product.name if obj.product else 'production'}), "
                        f"{obj.quantity:g} units, starting {obj.start_date:%d %b}.", "task")
             audit("run_saved", "production_run", obj.id, obj.reference)
@@ -3469,7 +3574,7 @@ def machine_status(machine_id):
                     "Assign a technician and record the downtime.", "machine", item.id)
         phones = factory_managers_phones(fac.id)
         if phones:
-            notify(fac, phones, f"Mzalendo: Machine {item.name} ({item.code}) is DOWN. "
+            notify(fac, phones, f"Bacaan: Machine {item.name} ({item.code}) is DOWN. "
                                 f"Production on this machine has stopped.", "maintenance")
     audit("machine_status", "machine", item.id, new)
     flash(f"{item.name} marked {new}.", "ok")
@@ -3543,7 +3648,7 @@ def ticket_form(ticket_id=None):
 
             if obj.assignee and obj.assignee.phone and (was_new or f.get("notify") == "on"):
                 notify(fac, [obj.assignee.phone],
-                       f"Mzalendo: Maintenance {obj.reference} assigned to you. "
+                       f"Bacaan: Maintenance {obj.reference} assigned to you. "
                        f"{obj.machine.name if obj.machine else 'Machine'}: {obj.fault_type}. "
                        f"Severity {obj.severity}.", "maintenance")
             audit("ticket_saved", "maintenance_ticket", obj.id, obj.reference)
@@ -3664,7 +3769,7 @@ def qc_form(inspection_id=None):
             phones = factory_managers_phones(fac.id)
             if phones:
                 notify(fac, phones,
-                       f"Mzalendo: Quality check {obj.reference} FAILED"
+                       f"Bacaan: Quality check {obj.reference} FAILED"
                        + (f" for order {obj.order.number}" if obj.order else "")
                        + ". The batch is on hold.", "quality")
         audit("qc_saved", "qc_inspection", obj.id, f"{obj.reference}={obj.status}")
@@ -3759,7 +3864,7 @@ def worker_form(worker_id=None):
 
             if was_new and obj.phone:
                 notify(fac, [obj.phone],
-                       f"Mzalendo: You are registered at {fac.name}. "
+                       f"Bacaan: You are registered at {fac.name}. "
                        f"Dial {fac.ussd_code or app.config['AT_USSD_CODE']} to report "
                        f"production, stock, machine faults and safety incidents."
                        + (f" Your PIN is {pin}." if pin else ""), "worker")
@@ -3798,7 +3903,7 @@ def worker_message(worker_id):
     if not msg:
         flash("Write a message first.", "error")
     else:
-        notify(fac, [item.phone], f"Mzalendo: {msg}", "worker")
+        notify(fac, [item.phone], f"Bacaan: {msg}", "worker")
         flash(f"Message sent to {item.name}.", "ok")
         audit("worker_sms", "worker", item.id, msg[:80])
     return redirect(url_for("worker_detail", worker_id=item.id))
@@ -3839,9 +3944,27 @@ def workers_broadcast():
     if not phones:
         flash("No workers match that filter.", "warn")
         return redirect(url_for("dash_workers"))
-    res = notify(fac, phones, f"Mzalendo: {msg}", "broadcast")
+    res = notify(fac, phones, f"Bacaan: {msg}", "broadcast")
     audit("worker_broadcast", "worker", None, f"{len(phones)} recipients")
-    flash(f"Message queued for {res.get('sent', len(phones))} worker(s).", "ok")
+
+    sent = res.get("sent", 0)
+    rejected = res.get("rejected", 0)
+    if res.get("simulated"):
+        flash(f"Simulation mode: {len(phones)} message(s) written to the log, none sent. "
+              f"Set AT_API_KEY and SMS_ENABLED=1 to send for real.", "warn")
+    elif not res.get("ok"):
+        flash(f"The gateway refused the message: {res.get('reason', 'unknown')}. "
+              f"Nothing was delivered — see Messages for the detail.", "error")
+    elif rejected:
+        why = ", ".join(r for r in res.get("reasons", []) if r) or "no reason given"
+        flash(f"{sent} accepted, {rejected} rejected ({why}). On the Africa's Talking "
+              f"sandbox only numbers added to the simulator can receive.", "warn")
+    else:
+        flash(f"{sent} message(s) accepted by the gateway. Delivery is confirmed by the "
+              f"delivery report, not by this screen.", "ok")
+
+    notify_event(fac.id, "message", "info", f"Broadcast to {len(phones)} worker(s)",
+                 msg[:180], "dash_messages", None)
     return redirect(url_for("dash_workers"))
 
 
@@ -3955,7 +4078,7 @@ def safety_form(incident_id=None):
                 phones = factory_managers_phones(fac.id)
                 if phones:
                     notify(fac, phones,
-                           f"Mzalendo: {obj.severity.upper()} safety incident at "
+                           f"Bacaan: {obj.severity.upper()} safety incident at "
                            f"{obj.location or fac.name}. {obj.kind}. Attend immediately.",
                            "safety")
             audit("safety_saved", "safety_incident", obj.id, obj.reference)
@@ -4159,7 +4282,7 @@ def export_csv(dataset):
     return Response(
         buf.getvalue(), mimetype="text/csv",
         headers={"Content-Disposition":
-                 f'attachment; filename="mzalendo-{dataset}-{stamp}.csv"',
+                 f'attachment; filename="bacaan-{dataset}-{stamp}.csv"',
                  "X-Content-Type-Options": "nosniff"})
 
 
@@ -4426,7 +4549,7 @@ def settings_test_sms():
     if not to:
         flash("Enter a number to test with.", "error")
         return redirect(url_for("dash_settings") + "#telco")
-    res = notify(fac, [to], f"Mzalendo: test message from {fac.name}. "
+    res = notify(fac, [to], f"Bacaan: test message from {fac.name}. "
                             f"Your gateway is wired correctly.", "test")
     if res.get("simulated"):
         flash("Gateway is in simulation mode — the message was logged, not sent. "
@@ -4604,13 +4727,15 @@ USSD_HOME = "00"       # main menu, from any depth
 USSD_MORE = "98"       # next page of a long list
 USSD_EXIT = "99"       # end the session
 
+# One key per line. Run together on a single row they read as one long string
+# of digits on a small screen; stacked, each is a choice like any other.
 USSD_FOOTER_ROOT = "99 Exit"
-USSD_FOOTER_DEEP = "0 Back  00 Menu  99 Exit"
-USSD_FOOTER_PAGED = "98 More  0 Back  00 Menu  99 Exit"
+USSD_FOOTER_DEEP = "0 Back\n00 Main Menu\n99 Exit"
+USSD_FOOTER_PAGED = "98 More\n0 Back\n00 Main Menu\n99 Exit"
 # On a screen that asks for a number, 0 is taken as Back rather than as the
 # quantity zero. Reporting zero of something is not a useful entry, and a
 # worker who sees the footer is not surprised by it.
-USSD_FOOTER_ENTRY = "0 Back  00 Menu  99 Exit"
+USSD_FOOTER_ENTRY = "0 Back\n00 Main Menu\n99 Exit"
 
 
 def ussd_navigate(tokens):
@@ -4773,6 +4898,9 @@ def ussd_track(session_id, phone, service_code, network_code, text, worker,
 # enforced here, at the one point every screen leaves through.
 USSD_MAX_CHARS = 182
 
+# A navigation line: one of the reserved keys followed by its label.
+USSD_NAV_LINE = re.compile(r"^\s*(?:0|00|98|99)\s+\S")
+
 
 def ussd_fit(body: str) -> str:
     """Trim a screen to one payload by dropping whole options, never mid-line."""
@@ -4781,19 +4909,25 @@ def ussd_fit(body: str) -> str:
     lines = body.split("\n")
     if len(lines) < 3:
         return body[:USSD_MAX_CHARS].rstrip()
-    head, tail = lines[0], lines[-1]
-    # Always keep the last line. It is either a numbered option or the
-    # navigation footer, and dropping either strands the reader with no way on.
-    keep_tail = True
-    middle = lines[1:-1] if keep_tail else lines[1:]
-    used = len(head) + (len(tail) + 1 if keep_tail else 0)
+
+    # Peel the navigation block off the end and protect it as a unit. Trimming
+    # part of it away would leave the reader looking at "99 Exit" with no way
+    # back, which is worse than showing one option fewer.
+    tail = []
+    while lines and USSD_NAV_LINE.match(lines[-1]):
+        tail.insert(0, lines.pop())
+    if not lines:
+        return body[:USSD_MAX_CHARS].rstrip()
+
+    head, middle = lines[0], lines[1:]
+    used = len(head) + sum(len(t) + 1 for t in tail)
     kept = []
     for line in middle:
         if used + len(line) + 1 > USSD_MAX_CHARS:
             break
         kept.append(line)
         used += len(line) + 1
-    return "\n".join([head] + kept + ([tail] if keep_tail else []))
+    return "\n".join([head] + kept + tail)
 
 
 def ussd_response(body: str, session, outcome=""):
@@ -4841,7 +4975,7 @@ def ussd_callback():
                    "completed", "unregistered")
         return ussd_response(
             "END " + ussd_clean(
-                "This number is not registered on Mzalendo. "
+                "This number is not registered on Bacaan. "
                 "Ask your supervisor to add you to the plant, then dial again."),
             None)
 
@@ -4856,7 +4990,7 @@ def ussd_callback():
     if not tokens or tokens == [""]:
         first = worker.name.split()[0] if worker.name else "there"
         return ussd_response("CON " + ussd_clean(ussd_lines(
-            f"MZALENDO - {ussd_short(fac.name, 24)}",
+            f"BACAAN - {ussd_short(fac.name, 24)}",
             f"Habari {ussd_short(first, 14)}",
             "1. My tasks",
             "2. Report production",
@@ -4943,7 +5077,7 @@ def ussd_callback():
                         "production_run", chosen.id, dedupe_hours=0)
             phones = factory_managers_phones(fac.id)
             if phones:
-                notify(fac, phones, f"Mzalendo: Run {chosen.reference} "
+                notify(fac, phones, f"Bacaan: Run {chosen.reference} "
                                     f"({chosen.product.name if chosen.product else ''}) "
                                     f"is complete. Book quality check.", "production")
         return ussd_response("END " + ussd_clean(ussd_lines(
@@ -5054,7 +5188,7 @@ def ussd_callback():
         phones = factory_managers_phones(fac.id)
         if phones:
             notify(fac, phones,
-                   f"Mzalendo: {chosen.name} ({chosen.code}) reported {fault.lower()} "
+                   f"Bacaan: {chosen.name} ({chosen.code}) reported {fault.lower()} "
                    f"by {worker.name}. Severity {severity}. Ticket {ticket.reference}.",
                    "maintenance")
         system_audit(fac.id, worker.name, "ussd_fault", "maintenance_ticket",
@@ -5108,7 +5242,7 @@ def ussd_callback():
         phones = factory_managers_phones(fac.id)
         if phones:
             notify(fac, phones,
-                   f"Mzalendo: SAFETY - {kind} reported by {worker.name} at "
+                   f"Bacaan: SAFETY - {kind} reported by {worker.name} at "
                    f"{worker.station or fac.name}. Severity {severity}. "
                    f"Reference {incident.reference}.", "safety")
         system_audit(fac.id, worker.name, "ussd_safety", "safety_incident",
@@ -5219,9 +5353,8 @@ def ussd_events():
 #  SECTION 27 — SMS CALLBACKS
 # =============================================================================
 
-SMS_HELP = ("Mzalendo commands: STOCK <material> to check a balance, "
-            "IN <material> <qty>, OUT <material> <qty>, DOWN <machine code>, "
-            "TASKS for your jobs.")
+SMS_HELP = ("Bacaan: TASKS your jobs. STOCK what is low. IN clock in. "
+            "OUT clock out. DOWN <machine> report a fault. HELP this list.")
 
 
 @app.route("/webhooks/sms/delivery", methods=["GET", "POST"])
@@ -5298,6 +5431,16 @@ def sms_incoming():
     db.session.commit()
 
     if not worker or not fac:
+        target = Factory.query.filter_by(is_active=True).order_by(Factory.id).first()
+        if target:
+            notify(target, [frm],
+                   "Bacaan: this number is not registered to a worker. Ask your "
+                   "supervisor to add it under Workers, then try again.", "command")
+            notify_event(target.id, "message", "medium",
+                         "Text from an unregistered number",
+                         f"{frm} texted \"{text[:60]}\". Add the number under Workers "
+                         f"if this is one of your team.", "dash_workers", None,
+                         dedupe_hours=1)
         return Response("OK", mimetype="text/plain")
 
     parts = text.split()
@@ -5306,37 +5449,73 @@ def sms_incoming():
 
     if cmd in ("HELP", "MENU", "?"):
         reply = SMS_HELP
+
     elif cmd == "TASKS":
         runs = ProductionRun.query.filter(
             ProductionRun.factory_id == fac.id, ProductionRun.worker_id == worker.id,
             ProductionRun.status.notin_(("done", "cancelled"))).limit(4).all()
-        reply = ("Mzalendo tasks: " + "; ".join(
-            f"{r.reference} {r.product.name if r.product else ''} "
-            f"{r.produced:g}/{r.quantity:g}" for r in runs)) if runs else \
-            "Mzalendo: you have no open tasks."
-    elif cmd == "STOCK" and len(parts) >= 2:
-        term = " ".join(parts[1:])
-        m = Material.query.filter(Material.factory_id == fac.id,
-                                  Material.name.ilike(f"%{term}%")).first()
-        reply = (f"Mzalendo: {m.name} balance {m.quantity:g} {m.unit}, "
-                 f"minimum {m.min_stock:g}." if m
-                 else f"Mzalendo: no material matches '{term}'.")
-    elif cmd in ("IN", "OUT") and len(parts) >= 3:
-        qty = to_float(parts[-1], -1)
-        term = " ".join(parts[1:-1])
-        m = Material.query.filter(Material.factory_id == fac.id,
-                                  Material.name.ilike(f"%{term}%")).first()
-        if m and qty >= 0:
-            move_stock(m, "in" if cmd == "IN" else "out", qty, fac,
-                       reference="SMS", note=f"Texted by {worker.name}",
-                       source="sms", worker_id=worker.id)
-            reply = f"Mzalendo: {m.name} now {m.quantity:g} {m.unit}."
+        reply = ("Bacaan tasks: " + "; ".join(
+            f"{r.reference} {ussd_short(r.product.name, 16) if r.product else ''} "
+            f"{r.produced:g} of {r.quantity:g}" for r in runs)) if runs else \
+            "Bacaan: you have no open tasks."
+
+    elif cmd == "STOCK":
+        if len(parts) >= 2:
+            # Optional extension: STOCK <material> gives one balance.
+            term = " ".join(parts[1:])
+            m = Material.query.filter(Material.factory_id == fac.id,
+                                      Material.name.ilike(f"%{term}%")).first()
+            reply = (f"Bacaan: {m.name} has {m.quantity:g} {m.unit} left, "
+                     f"minimum {m.min_stock:g}." if m
+                     else f"Bacaan: no material matches '{term}'.")
         else:
-            reply = "Mzalendo: could not read that. Use IN <material> <qty>."
-    elif cmd == "DOWN" and len(parts) >= 2:
-        code = parts[1].upper()
-        mc = Machine.query.filter(Machine.factory_id == fac.id,
-                                  func.upper(Machine.code) == code).first()
+            low = [m for m in Material.query.filter_by(factory_id=fac.id, is_active=True).all()
+                   if m.quantity <= m.min_stock]
+            low.sort(key=lambda m: m.quantity - m.min_stock)
+            reply = ("Bacaan below minimum: " + "; ".join(
+                f"{ussd_short(m.name, 16)} {m.quantity:g} {m.unit}" for m in low[:5])) if low \
+                else "Bacaan: every material is above its minimum."
+
+    elif cmd in ("IN", "OUT"):
+        day = _today()
+        rec = Attendance.query.filter_by(factory_id=fac.id, worker_id=worker.id, day=day).first()
+        if cmd == "IN":
+            if rec and rec.check_in:
+                reply = f"Bacaan: you already clocked in at {_to_local(rec.check_in):%H:%M}."
+            else:
+                if not rec:
+                    rec = Attendance(factory_id=fac.id, worker_id=worker.id, day=day, source="sms")
+                    db.session.add(rec)
+                rec.check_in = _now()
+                rec.source = "sms"
+                db.session.commit()
+                notify_event(fac.id, "attendance", "info",
+                             f"{worker.name} clocked in",
+                             f"By SMS at {_to_local(rec.check_in):%H:%M}.",
+                             "dash_attendance", worker.id)
+                reply = f"Bacaan: clocked in at {_to_local(rec.check_in):%H:%M}. Have a safe shift."
+        else:
+            if not rec or not rec.check_in:
+                reply = "Bacaan: you have not clocked in today. Text IN first."
+            elif rec.check_out:
+                reply = f"Bacaan: you already clocked out at {_to_local(rec.check_out):%H:%M}."
+            else:
+                rec.check_out = _now()
+                db.session.commit()
+                notify_event(fac.id, "attendance", "info",
+                             f"{worker.name} clocked out",
+                             f"By SMS at {_to_local(rec.check_out):%H:%M}.",
+                             "dash_attendance", worker.id)
+                reply = f"Bacaan: clocked out at {_to_local(rec.check_out):%H:%M}."
+
+    elif cmd == "DOWN":
+        machines = Machine.query.filter_by(factory_id=fac.id).all()
+        mc = None
+        if len(parts) >= 2:
+            wanted = " ".join(parts[1:]).strip().upper()
+            mc = next((m for m in machines if (m.code or "").upper() == wanted), None)
+            if not mc:
+                mc = next((m for m in machines if wanted in (m.name or "").upper()), None)
         if mc:
             mc.status = "down"
             ticket = MaintenanceTicket(
@@ -5346,15 +5525,19 @@ def sms_incoming():
                 description=f"Reported by SMS from {worker.name}: {text[:180]}")
             db.session.add(ticket)
             db.session.commit()
-            raise_alert(fac.id, "maintenance", "critical", f"{mc.name} reported down by SMS",
-                        text[:200], "Assign a technician.", "maintenance_ticket",
-                        ticket.id, dedupe_hours=0)
+            notify_event(fac.id, "maintenance", "critical",
+                         f"{mc.name} reported down by SMS",
+                         f"{worker.name} texted DOWN. Ticket {ticket.reference}.",
+                         "dash_maintenance", ticket.id, dedupe_hours=0)
             notify(fac, factory_managers_phones(fac.id),
-                   f"Mzalendo: {mc.name} reported DOWN by {worker.name}. "
+                   f"Bacaan: {mc.name} reported DOWN by {worker.name}. "
                    f"Ticket {ticket.reference}.", "maintenance")
-            reply = f"Mzalendo: logged {ticket.reference} for {mc.name}."
+            reply = f"Bacaan: logged {ticket.reference} for {mc.name}."
         else:
-            reply = f"Mzalendo: no machine with code {code}."
+            codes = ", ".join((m.code or m.name) for m in machines[:6])
+            reply = (f"Bacaan: which machine? Text DOWN and the code, e.g. DOWN {codes.split(', ')[0]}."
+                     if machines else "Bacaan: no machines are registered yet.")
+
     else:
         reply = SMS_HELP
 
@@ -5390,9 +5573,13 @@ def api_pulse_history():
 @app.route("/api/alerts")
 @login_required
 def api_alerts():
-    rows = (Alert.query.filter_by(factory_id=current_factory_id(), is_read=False)
+    fid = current_factory_id()
+    total = Alert.query.filter_by(factory_id=fid, is_read=False).count()
+    rows = (Alert.query.filter_by(factory_id=fid, is_read=False)
             .order_by(desc(Alert.created_at)).limit(20).all())
-    return jsonify({"count": len(rows), "items": [{
+    # count is every unread one, not just the page — the badge must not stop
+    # counting at twenty, and the poller compares it to decide whether to chime.
+    return jsonify({"count": total, "items": [{
         "id": a.id, "kind": a.kind, "severity": a.severity, "title": a.title,
         "body": a.body, "recommendation": a.recommendation,
         "created_at": a.created_at.isoformat() + "Z"} for a in rows]})
@@ -5561,39 +5748,39 @@ def seed_demo_plant():
         name="Kamukunji Metalworks", slug="kamukunji-metalworks",
         sector="Metal fabrication", county="Nairobi",
         address="Kamukunji Jua Kali Shed, Off Landhies Road",
-        phone="+254711000100", email="workshop@kamukunji.example",
+        phone="+254732000003", email="workshop@kamukunji.example",
         currency="KES", plan="business", ussd_code=Config.AT_USSD_CODE,
         sms_enabled=False)
     db.session.add(fac)
     db.session.flush()
 
     owner = User(factory_id=fac.id, username="owino", email="owino@kamukunji.example",
-                 full_name="Richard Owino", phone="+254711000100", role="owner")
+                 full_name="Richard Owino", phone="+254732000003", role="owner")
     owner.set_password("Kamukunji@2026!")
     manager = User(factory_id=fac.id, username="wanjiku",
                    email="wanjiku@kamukunji.example", full_name="Grace Wanjiku",
-                   phone="+254711000101", role="manager")
+                   phone="+254732000004", role="manager")
     manager.set_password("Kamukunji@2026!")
     supervisor = User(factory_id=fac.id, username="mutiso",
                       email="mutiso@kamukunji.example", full_name="Daniel Mutiso",
-                      phone="+254711000102", role="supervisor")
+                      phone="+254732000005", role="supervisor")
     supervisor.set_password("Kamukunji@2026!")
     db.session.add_all([owner, manager, supervisor])
 
     suppliers = [
         Supplier(factory_id=fac.id, name="Devki Steel Depot", contact_name="Peter Kimani",
-                 phone="+254720111222", email="sales@devkidepot.example",
+                 phone="+254732000013", email="sales@devkidepot.example",
                  address="Industrial Area, Nairobi",
                  materials_supplied="Mild steel sheet, angle iron, square tube",
                  lead_time_days=4, payment_terms="30 days",
                  orders_placed=18, orders_on_time=16, orders_complete=17, defect_reports=1),
         Supplier(factory_id=fac.id, name="Gikomba Hardware", contact_name="Alice Njeri",
-                 phone="+254733222333", email="alice@gikombahw.example",
+                 phone="+254732000015", email="alice@gikombahw.example",
                  address="Gikomba Market", materials_supplied="Hinges, locks, handles, rivets",
                  lead_time_days=2, payment_terms="On delivery",
                  orders_placed=25, orders_on_time=21, orders_complete=24, defect_reports=2),
         Supplier(factory_id=fac.id, name="Basco Paints Agent", contact_name="Samuel Otieno",
-                 phone="+254701444555", email="orders@bascoagent.example",
+                 phone="+254732000002", email="orders@bascoagent.example",
                  address="Ngara", materials_supplied="Enamel paint, thinner, primer",
                  lead_time_days=7, payment_terms="50 percent deposit",
                  orders_placed=9, orders_on_time=4, orders_complete=7, defect_reports=2),
@@ -5661,22 +5848,22 @@ def seed_demo_plant():
 
     workers = [
         Worker(factory_id=fac.id, employee_no="KM-01", name="Joseph Kamau",
-               phone="+254712000001", trade="Welder", station="Bay 2", shift="day",
+               phone="+254732000007", trade="Welder", station="Bay 2", shift="day",
                daily_rate=1400),
         Worker(factory_id=fac.id, employee_no="KM-02", name="Mary Achieng",
-               phone="+254712000002", trade="Fabricator", station="Bay 1", shift="day",
+               phone="+254732000008", trade="Fabricator", station="Bay 1", shift="day",
                daily_rate=1300),
         Worker(factory_id=fac.id, employee_no="KM-03", name="Peter Kariuki",
-               phone="+254712000003", trade="Painter", station="Bay 4", shift="day",
+               phone="+254732000009", trade="Painter", station="Bay 4", shift="day",
                daily_rate=1200),
         Worker(factory_id=fac.id, employee_no="KM-04", name="Faith Nyambura",
-               phone="+254712000004", trade="Assembler", station="Bay 3", shift="day",
+               phone="+254732000010", trade="Assembler", station="Bay 3", shift="day",
                daily_rate=1150),
         Worker(factory_id=fac.id, employee_no="KM-05", name="Brian Omondi",
-               phone="+254712000005", trade="Machinist", station="Bay 2", shift="night",
+               phone="+254732000011", trade="Machinist", station="Bay 2", shift="night",
                daily_rate=1500),
         Worker(factory_id=fac.id, employee_no="KM-06", name="Esther Wambui",
-               phone="+254712000006", trade="Quality checker", station="Bay 5",
+               phone="+254732000012", trade="Quality checker", station="Bay 5",
                shift="day", daily_rate=1350),
     ]
     for w in workers:
@@ -5715,16 +5902,16 @@ def seed_demo_plant():
 
     customers = [
         Customer(factory_id=fac.id, name="Gladys Njoki", company="Njoki Hardware, Thika",
-                 phone="+254722334455", email="gladys@njokihw.example",
+                 phone="+254732000014", email="gladys@njokihw.example",
                  address="Thika Town"),
         Customer(factory_id=fac.id, name="St Anne's Academy", company="St Anne's Academy",
-                 phone="+254733445566", email="procurement@stannes.example",
+                 phone="+254732000016", email="procurement@stannes.example",
                  address="Kasarani"),
         Customer(factory_id=fac.id, name="Kevin Mwangi", company="Mwangi Contractors",
-                 phone="+254700556677", email="kevin@mwangicon.example",
+                 phone="+254732000001", email="kevin@mwangicon.example",
                  address="Ruiru"),
         Customer(factory_id=fac.id, name="Umoja Retail", company="Umoja Retail Ltd",
-                 phone="+254711667788", email="buying@umojaretail.example",
+                 phone="+254732000006", email="buying@umojaretail.example",
                  address="Embakasi"),
     ]
     db.session.add_all(customers)
@@ -5853,11 +6040,11 @@ def seed_demo_plant():
     db.session.commit()
 
     for phone, text, outcome in [
-        ("+254712000001", "4*3*1*3", "mach_saved"),
-        ("+254712000002", "3*1*1*4", "stock_saved"),
-        ("+254712000003", "5*2*2", "safety_saved"),
-        ("+254712000004", "6*1", "clock_in"),
-        ("+254712000005", "1", "tasks"),
+        ("+254732000007", "4*3*1*3", "mach_saved"),
+        ("+254732000008", "3*1*1*4", "stock_saved"),
+        ("+254732000009", "5*2*2", "safety_saved"),
+        ("+254732000010", "6*1", "clock_in"),
+        ("+254732000011", "1", "tasks"),
     ]:
         w = Worker.query.filter_by(phone=phone).first()
         db.session.add(UssdSession(
@@ -5869,18 +6056,18 @@ def seed_demo_plant():
             ended_at=_now() - timedelta(hours=1)))
 
     for to, msg, cat in [
-        ("+254711000100", "Mzalendo: Aluminium sheet 1.2mm is out of stock. "
+        ("+254732000003", "Bacaan: Aluminium sheet 1.2mm is out of stock. "
                           "Current: 0 sheet. Minimum: 8 sheet.", "stock_alert"),
-        ("+254711000100", "Mzalendo: Arc welder C (WLD-C) reported not starting by "
+        ("+254732000003", "Bacaan: Arc welder C (WLD-C) reported not starting by "
                           "Joseph Kamau. Severity critical. Ticket MNT-0001.", "maintenance"),
-        ("+254722334455", "Mzalendo: Order ORD-0005 is complete. Thank you for your "
+        ("+254732000014", "Bacaan: Order ORD-0005 is complete. Thank you for your "
                           "business.", "order"),
-        ("+254733445566", "Mzalendo: Order ORD-0001 has entered production.", "order"),
-        ("+254712000001", "Mzalendo: You are assigned to run RUN-0001 (Metal cabinet "
+        ("+254732000016", "Bacaan: Order ORD-0001 has entered production.", "order"),
+        ("+254732000007", "Bacaan: You are assigned to run RUN-0001 (Metal cabinet "
                           "4 door), 12 units, starting today.", "task"),
     ]:
         db.session.add(SmsLog(factory_id=fac.id, direction="out", to_number=to,
-                              from_number="MZALENDO", message=msg, category=cat,
+                              from_number="BACAAN", message=msg, category=cat,
                               status="simulated", status_code=101,
                               created_at=_now() - timedelta(hours=secrets.randbelow(30) + 1)))
     db.session.commit()
@@ -6137,7 +6324,7 @@ def cli_db_copy(reset):
     if dest_uri.startswith("sqlite"):
         print("  DATABASE_URL still points at SQLite. Nothing to migrate to.")
         return
-    src_uri = "sqlite:///" + os.path.join(DATA_DIR, "mzalendo.db")
+    src_uri = "sqlite:///" + os.path.join(DATA_DIR, "bacaan.db")
     print(f"  from   {src_uri}")
     print(f"  to     {_safe_uri(dest_uri)}")
 
@@ -6213,7 +6400,7 @@ def cli_sms_test(phone):
     with app.app_context():
         fac = Factory.query.filter_by(is_active=True).first()
         at = AfricasTalking(fac)
-        res = at.send(phone, "Mzalendo test message. If you can read this, the "
+        res = at.send(phone, "Bacaan test message. If you can read this, the "
                              "gateway is wired up correctly.", category="test")
         print(f"  result   {res}")
         row = SmsLog.query.order_by(SmsLog.id.desc()).first()

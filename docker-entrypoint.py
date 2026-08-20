@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Container entrypoint for Mzalendo.
+Container entrypoint for Bacaan.
 
 Two jobs, in order:
 
@@ -21,7 +21,7 @@ import os
 import pwd
 import sys
 
-APP_USER = os.environ.get("APP_USER", "mzalendo")
+APP_USER = os.environ.get("APP_USER", "bacaan")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 
 

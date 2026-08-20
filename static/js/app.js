@@ -1,5 +1,5 @@
 /* ===========================================================================
-   Mzalendo — interface behaviour
+   Bacaan — interface behaviour
    No framework, no build step. Every handler is delegated where practical so
    markup rendered later still works.
    =========================================================================== */
@@ -379,6 +379,104 @@
       p.hidden = p.getAttribute('data-panel') !== name;
     });
   });
+
+  /* ── Notification bell ────────────────────────────────────────────────
+     Polls the unread count and chimes when it rises. The sound is synthesised
+     with WebAudio rather than loaded from a file: no asset to ship, nothing
+     for the Content-Security-Policy to block, and no request on every page.
+     Browsers refuse to start audio before a user gesture, so the context is
+     created on the first interaction and the chime simply does not play until
+     then — the badge still updates. */
+  var bell = document.querySelector('[data-bell]');
+  if (bell) {
+    var badge = bell.querySelector('[data-bell-badge]');
+    var live = bell.querySelector('[data-bell-live]');
+    var muteBtn = document.querySelector('[data-bell-mute]');
+    var known = parseInt(bell.getAttribute('data-count') || '0', 10);
+    var audioCtx = null;
+    var muted = false;
+    try { muted = localStorage.getItem('bacaan.mute') === '1'; } catch (e) { muted = false; }
+
+    function paintMute() {
+      if (!muteBtn) return;
+      muteBtn.setAttribute('aria-pressed', String(muted));
+      muteBtn.title = muted ? 'Unmute notification sound' : 'Mute notification sound';
+      var use = muteBtn.querySelector('use');
+      if (use) use.setAttribute('href', muted ? '#i-volume-off' : '#i-volume');
+    }
+    paintMute();
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', function () {
+        muted = !muted;
+        try { localStorage.setItem('bacaan.mute', muted ? '1' : '0'); } catch (e) {}
+        paintMute();
+        if (!muted) chime();
+      });
+    }
+
+    ['pointerdown', 'keydown'].forEach(function (evt) {
+      addEventListener(evt, function start() {
+        if (!audioCtx) {
+          var Ctx = window.AudioContext || window.webkitAudioContext;
+          if (Ctx) audioCtx = new Ctx();
+        }
+        removeEventListener(evt, start);
+      }, { once: true });
+    });
+
+    function chime() {
+      if (muted || !audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      // Two short notes, a fifth apart. Short and quiet: this fires on a
+      // factory floor dashboard that may be open all day.
+      [[880, 0], [1320, 0.11]].forEach(function (pair) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = pair[0];
+        var t = audioCtx.currentTime + pair[1];
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.13, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.22);
+      });
+    }
+
+    function paint(count) {
+      if (!badge) return;
+      badge.textContent = count < 100 ? String(count) : '99+';
+      badge.classList.toggle('hidden', count === 0);
+    }
+
+    function poll() {
+      fetch('/api/alerts', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d) return;
+          var n = d.count || 0;
+          if (n > known) {
+            chime();
+            var newest = (d.items && d.items[0] && d.items[0].title) || 'New notification';
+            if (live) live.textContent = newest;
+            bell.animate(
+              [{ transform: 'rotate(0)' }, { transform: 'rotate(-12deg)' },
+               { transform: 'rotate(10deg)' }, { transform: 'rotate(0)' }],
+              { duration: 420, easing: 'ease-in-out' });
+          }
+          known = n;
+          paint(n);
+        })
+        .catch(function () { /* offline or logged out — try again next tick */ });
+    }
+
+    setInterval(poll, 20000);
+    // Coming back to the tab is the moment a missed notification matters most.
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) poll();
+    });
+  }
 
   /* ── USSD handset simulator ───────────────────────────────────────────── */
   const sim = $('[data-ussd-sim]');

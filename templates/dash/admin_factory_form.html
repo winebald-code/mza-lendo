@@ -30,7 +30,7 @@
         {{ select('plan', 'Plan', [('starter','Starter'),('business','Business'),('enterprise','Enterprise')],
                   item.plan if item else 'starter', errors) }}
         {{ field('ussd_code', 'USSD code', item.ussd_code if item else '', 'text', errors,
-                 'The shortcode issued for this plant', False, '*384*7788#') }}
+                 'The shortcode issued for this plant', False, '*384*7477#') }}
       </div>
     </section>
   </div>

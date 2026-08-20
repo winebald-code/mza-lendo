@@ -1,4 +1,4 @@
-/** Mzalendo — Tailwind configuration.
+/** Bacaan — Tailwind configuration.
  *  Token source of truth: the AXIOM design system (Fog ground, Signal orange,
  *  Space Grotesk display + Inter body, 24px capsule controls, 16px surfaces).
  */

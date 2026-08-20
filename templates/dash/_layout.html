@@ -27,7 +27,7 @@
   <div class="flex items-center gap-2.5 h-[62px] px-4 border-b border-white/[0.07] shrink-0">
     <a href="{{ url_for('dash_overview') }}" class="flex items-center gap-2.5 no-tap">
       {% include "partials/logo.html" %}
-      <span class="font-display font-bold text-[15px] tracking-[-0.02em] text-white">Mzalendo</span>
+      <span class="font-display font-bold text-[15px] tracking-[-0.02em] text-white">Bacaan</span>
     </a>
     <button type="button" class="btn btn-icon btn-on-dark ml-auto lg:hidden" data-rail-close aria-label="Close menu">
       {{ icon('x') }}
@@ -133,12 +133,19 @@
       </div>
 
       <div class="ml-auto flex items-center gap-2">
-        <a href="{{ url_for('dash_alerts') }}" class="btn btn-secondary btn-icon relative" aria-label="Alerts">
+        <a href="{{ url_for('dash_alerts') }}" class="btn btn-secondary btn-icon relative"
+           aria-label="Notifications" data-bell data-count="{{ unread_alerts }}">
           {{ icon('bell') }}
-          {% if unread_alerts %}
-            <span class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-signal-500 text-ink font-mono text-[9.5px] font-bold grid place-items-center">{{ unread_alerts if unread_alerts < 100 else '99+' }}</span>
-          {% endif %}
+          <span data-bell-badge
+                class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-signal-500 text-ink font-mono text-[9.5px] font-bold grid place-items-center{% if not unread_alerts %} hidden{% endif %}"
+                >{{ unread_alerts if unread_alerts < 100 else '99+' }}</span>
+          <span class="sr-only" data-bell-live aria-live="polite"></span>
         </a>
+        <button type="button" data-bell-mute
+                class="btn btn-secondary btn-icon" aria-pressed="false"
+                title="Mute notification sound" aria-label="Mute notification sound">
+          {{ icon('volume') }}
+        </button>
 
         <div class="relative" data-dropdown>
           <button type="button" class="flex items-center gap-2 h-[38px] pl-1 pr-2.5 rounded-control border border-divider bg-surface hover:border-ink transition-colors" data-dropdown-trigger aria-expanded="false" aria-haspopup="menu">

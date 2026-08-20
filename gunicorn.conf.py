@@ -1,5 +1,5 @@
 """
-Gunicorn configuration for Mzalendo.
+Gunicorn configuration for Bacaan.
 
 The port is read here, in Python, rather than interpolated into a start command
 as $PORT. That is deliberate: a platform may run the start command directly
@@ -70,6 +70,6 @@ max_requests_jitter = 50 if max_requests else 0
 
 def on_starting(server):
     server.log.info(
-        "Mzalendo starting on %s with %d worker(s), %d thread(s)",
+        "Bacaan starting on %s with %d worker(s), %d thread(s)",
         bind, workers, threads,
     )

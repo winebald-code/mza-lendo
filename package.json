@@ -1,8 +1,8 @@
 {
-  "name": "mzalendo",
+  "name": "bacaan",
   "version": "1.0.0",
   "private": true,
-  "description": "Stylesheet build for the Mzalendo manufacturing platform",
+  "description": "Stylesheet build for the Bacaan manufacturing platform",
   "scripts": {
     "build": "tailwindcss -i static/css/input.css -o static/css/app.css --minify",
     "watch": "tailwindcss -i static/css/input.css -o static/css/app.css --watch"

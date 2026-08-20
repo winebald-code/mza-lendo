@@ -1,5 +1,5 @@
 /* ===========================================================================
-   Mzalendo — charts
+   Bacaan — charts
    Small hand-drawn SVG renderers. No chart library: the shapes here are simple
    and a dependency would cost more than it returns.
    =========================================================================== */
