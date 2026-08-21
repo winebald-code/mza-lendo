@@ -15,31 +15,10 @@
   {# ══════════ The handset ══════════ #}
   <div class="mx-auto xl:mx-0 xl:sticky xl:top-[78px]">
     {% call handset(size='lg', code=ussd_code, live=true) %}
-
-      {# The JS rewrites the pre's class on every paint, so the pre carries no
-         layout of its own — the scroll box around it does. #}
-      <div class="hs-out">
-        <pre class="term" data-sim-screen>Ready.
+      {# The JS rewrites this pre's class on every paint, so its layout and
+         colour live in handset.css, where the repaint cannot reach them. #}
+      <pre class="term" data-sim-screen>Ready.
 Enter a worker number and press Dial.</pre>
-      </div>
-
-      <div class="hs-reply">
-        <input type="text" class="hs-input" data-sim-input placeholder="Reply…" aria-label="Menu reply"
-               autocomplete="off" inputmode="numeric" enterkeyhint="send">
-        <button type="button" class="hs-btn hs-btn--go" data-sim-send>Send</button>
-      </div>
-
-      <div class="hs-keys">
-        {% for k in ['1','2','3','4','5','6','7','8','9','*','0','#'] %}
-        <button type="button" class="hs-key" data-sim-key="{{ k }}" aria-label="Key {{ k }}">{{ k }}</button>
-        {% endfor %}
-      </div>
-
-      <div class="hs-call">
-        <button type="button" class="hs-btn hs-btn--go" data-sim-dial>{{ icon('phone','ico') }} Dial</button>
-        <button type="button" class="hs-btn hs-btn--end" data-sim-end>End</button>
-      </div>
-
     {% endcall %}
 
     <p class="hs-cap" data-sim-hint>Enter a registered worker number and press Dial.</p>

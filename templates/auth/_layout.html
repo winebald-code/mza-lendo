@@ -13,6 +13,7 @@
 </head>
 <body class="bg-fog">
 {% from "partials/icons.html" import icon, sprite %}
+{% from "partials/handset.html" import handset_sms with context %}
 {{ sprite() }}
 
 <div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
@@ -27,7 +28,8 @@
       <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
     </a>
 
-    <div class="relative max-w-[460px]">
+    <div class="relative flex items-center gap-12 xl:gap-16">
+    <div class="max-w-[460px]">
       <p class="kicker text-signal-500 mb-5">{{ auth_kicker|default('Manufacturing operations') }}</p>
       <h2 class="font-display text-[34px] xl:text-[40px] font-bold leading-[1.08] tracking-[-0.03em] m-0">
         {{ auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.') }}
@@ -50,6 +52,12 @@
           <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">Under 30s</dd>
         </div>
       </dl>
+    </div>
+
+      {# What the floor gets back. Shown only where there is room for it. #}
+      <div class="hs-aside shrink-0">
+        {% call handset_sms(size='sm', sender='BACAAN') %}Aluminium sheet 1.2mm is out of stock. Current: 0 sheet. Minimum: 8 sheet. To opt out of this free sms send STOP BACAAN to 20880{% endcall %}
+      </div>
     </div>
 
     <p class="relative font-mono text-[11px] text-slate-500 m-0">

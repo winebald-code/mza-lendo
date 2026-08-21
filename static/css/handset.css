@@ -1,28 +1,43 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   Handset frame
+   Handset
    ─────────────────────────────────────────────────────────────────────────
-   A real phone shell (static/img/handset.png, 444x916) with the USSD screen
-   painted into the glass. Used by templates/partials/handset.html.
+   A phone shell (static/img/handset.png, 444x916) with a real screen painted
+   onto the glass. Two screens are built here:
 
-   Written as plain CSS on purpose. It does NOT go through the Tailwind
-   build, so the frame keeps working whether or not app.css is recompiled.
+     .hs--ussd   the dialler with the USSD dialogue over it, drawn to match
+                 what the simulator actually renders — dimmed dialler behind a
+                 white dialogue, near-black message type, orange CANCEL/SEND.
+     .hs--sms    the messages thread, for an inbound alert.
 
-   Everything inside the glass is sized in cqw — 1cqw is one percent of the
-   frame width — so the whole handset scales as one object. Change --hs-w
-   and the screen, the type and the keypad all follow.
+   Plain CSS on purpose: it does not go through the Tailwind build, so the
+   frame keeps working whether or not app.css is recompiled, and the same
+   rules can be pasted into a standalone document.
 
-   The display rectangle in the source image is x 21..418, y 27..887 with a
-   30px corner radius. Those numbers are where the percentages below come
-   from; if the image is ever replaced, re-measure and update them here.
+   Two nested containers do the sizing. .hs is an inline-size container, so
+   the frame geometry is a percentage of the frame. .hs-screen is a size
+   container, so everything on the glass is a percentage of the SCREEN — 1cqw
+   inside the screen is one percent of the display width, not of the frame.
+   Change --hs-w and the whole handset scales as one object.
+
+   The display in the shell art is x 21..418, y 27..887 of a 444x916 frame
+   with a 30px corner radius. Every percentage on .hs-screen comes from those
+   numbers; if the art is replaced, re-measure and update them.
    ══════════════════════════════════════════════════════════════════════════ */
 
 .hs {
   --hs-w: 300px;
-  --hs-screen: #000;
-  --hs-line: rgba(255, 106, 0, 0.2);
-  --hs-dim: rgba(255, 106, 0, 0.7);
-  --hs-key: #0f1216;
-  --hs-key-edge: #1c222a;
+
+  /* Screen palette, read off the simulator screens themselves. */
+  --hs-glass: #000;         /* the phone screen             */
+  --hs-fg: #e8eaed;         /* type on the dark dialler     */
+  --hs-mute: #9aa0a6;       /* keypad letters, home bar     */
+  --hs-digit: #8ab4f8;      /* keypad digits                */
+  --hs-call: #1e8e3e;       /* call button                  */
+  --hs-card: #fff;          /* the USSD dialogue            */
+  --hs-ink: #202124;        /* type inside the dialogue     */
+  --hs-rule: #c7cdd4;       /* the rule above the actions   */
+  --hs-act: #ff6a00;        /* CANCEL / SEND                */
+  --hs-off: #bdc1c6;        /* a disabled action            */
 
   container-type: inline-size;
   position: relative;
@@ -52,146 +67,279 @@
 }
 
 .hs-screen {
+  container-type: size;
   position: absolute;
   left: 4.72973%;
   top: 2.94760%;
   width: 89.63964%;
   height: 93.99563%;
-  border-radius: 6.75676cqw;
-  background: var(--hs-screen);
+  border-radius: 6.75676cqw;   /* resolves against .hs — 30 of 444 */
+  background: var(--hs-glass);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
+
+.hs--sms .hs-screen { background: var(--hs-card); }
+
+.hs-screen svg { display: block; }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */
 .hs-status {
-  flex-shrink: 0;
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 4;
+  height: 7.5cqw;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2cqw;
-  padding: 2.4cqw 3.6cqw 2cqw;
-  border-bottom: 1px solid var(--hs-line);
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 2.7cqw;
-  letter-spacing: 0.1em;
-  color: var(--hs-dim);
+  padding: 0 4.5cqw;
+  font-size: 3.4cqw;
+  line-height: 1;
+  color: var(--hs-fg);
   white-space: nowrap;
 }
 
-.hs-status > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hs--sms .hs-status { color: var(--hs-ink); }
 
-/* ── Screen body ────────────────────────────────────────────────────────── */
-.hs-body {
+.hs-status > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hs-meters { display: flex; align-items: center; gap: 1.6cqw; }
+.hs-meters svg { width: 3.4cqw; height: 3.4cqw; fill: currentColor; }
+
+/* ══ THE DIALLER ═══════════════════════════════════════════════════════════ */
+.hs-dialer {
+  position: absolute;
+  inset: 7.5cqw 0 0 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--hs-fg);
+}
+
+.hs-dialed {
+  margin: auto 0 0;
+  padding: 5cqw 4cqw;
+  text-align: center;
+  font-size: 7.4cqw;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hs-pad { display: grid; grid-template-columns: repeat(3, 1fr); }
+
+.hs-key {
+  height: 16cqw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4cqw;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  font-family: inherit;
+  transition: background-color 0.12s ease;
+}
+
+button.hs-key { cursor: pointer; }
+button.hs-key:hover { background: rgba(255, 255, 255, 0.07); }
+button.hs-key:active { background: rgba(255, 255, 255, 0.14); }
+button.hs-key:focus-visible { outline: 2px solid var(--hs-act); outline-offset: -2px; }
+
+.hs-key b { font-size: 8.4cqw; font-weight: 400; line-height: 1; color: var(--hs-digit); }
+.hs-key i { font-size: 2.9cqw; font-style: normal; letter-spacing: 0.14em; color: var(--hs-mute); }
+.hs-key--sym b { color: var(--hs-fg); }
+
+.hs-fab {
+  width: 17cqw;
+  height: 17cqw;
+  margin: 3.5cqw auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--hs-call);
+  display: grid;
+  place-items: center;
+  transition: opacity 0.15s ease;
+}
+
+button.hs-fab { cursor: pointer; }
+button.hs-fab:disabled { opacity: 0.4; cursor: not-allowed; }
+button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 2px; }
+.hs-fab svg { width: 7.6cqw; height: 7.6cqw; fill: #fff; }
+
+.hs-nav {
+  height: 9cqw;
+  margin-top: 3cqw;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  place-items: center;
+}
+
+.hs-nav svg { width: 5cqw; height: 5cqw; fill: var(--hs-mute); }
+
+/* ── The dim behind the dialogue ────────────────────────────────────────── */
+.hs-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.55);
+  /* The keypad underneath stays clickable — it is the reply pad once a
+     session is open, which is what the JS expects. */
+  pointer-events: none;
+}
+
+/* ── The USSD dialogue ──────────────────────────────────────────────────── */
+.hs-dialog {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 86%;
+  max-height: 76%;
+  display: flex;
+  flex-direction: column;
+  padding: 5.5cqw 5.5cqw 4cqw;
+  border-radius: 3.4cqw;
+  background: var(--hs-card);
+  box-shadow: 0 6cqw 18cqw rgba(0, 0, 0, 0.45);
+}
+
+.hs-msg { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+/* The simulator rewrites the pre's className on every exchange, so the pre
+   carries no layout and no colour of its own — both live here, where the
+   repaint cannot reach them. Two classes outrank the Tailwind colour utility
+   the repaint applies. */
+.hs .term {
+  margin: 0;
+  /* Fully specified rather than leaning on app.css, so the component drops
+     into a standalone document unchanged. */
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 4.3cqw;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: var(--hs-ink);
+}
+
+.hs-field {
+  flex-shrink: 0;
+  width: 100%;
+  height: 9cqw;
+  margin-top: 4.5cqw;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 0 -1px 0 #dadce0;
+  color: var(--hs-ink);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 4.3cqw;
+  transition: box-shadow 0.15s ease;
+}
+
+.hs-field::placeholder { color: var(--hs-off); }
+.hs-field:focus { outline: none; box-shadow: inset 0 -2px 0 var(--hs-act); }
+.hs-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hs-actions {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6cqw;
+  margin-top: 4.5cqw;
+  padding-top: 3.4cqw;
+  border-top: 1px solid var(--hs-rule);
+}
+
+.hs-act {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 3.9cqw;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--hs-act);
+  transition: opacity 0.15s ease;
+}
+
+button.hs-act { cursor: pointer; }
+button.hs-act:hover { opacity: 0.75; }
+button.hs-act:disabled { color: var(--hs-off); cursor: not-allowed; opacity: 1; }
+button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 3px; }
+
+/* ══ THE MESSAGES THREAD ═══════════════════════════════════════════════════ */
+.hs-sms {
+  position: absolute;
+  inset: 7.5cqw 0 0 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--hs-ink);
+}
+
+.hs-sms-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4.5cqw;
+  padding: 3.5cqw 5cqw;
+  font-size: 5.2cqw;
+  line-height: 1.2;
+}
+
+.hs-sms-head svg { width: 5.6cqw; height: 5.6cqw; fill: var(--hs-ink); flex-shrink: 0; }
+
+.hs-thread {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 2.6cqw;
-  padding: 3cqw 3.6cqw 3.6cqw;
+  justify-content: flex-end;
+  gap: 2cqw;
+  padding: 4cqw 4.5cqw;
 }
 
-/* A still screen — the marketing pages — is only a menu, so it sits in the
-   middle of the glass the way a real USSD prompt does, rather than clinging to
-   the status bar with two thirds of the screen empty below it. The simulator
-   has a reply row and a keypad under the output, so it never matches this and
-   stays top-anchored. Browsers without :has() fall back to top-anchored, which
-   is merely plainer, not broken. */
-.hs-body:has(> .hs-out:only-child) { justify-content: center; }
+.hs-line { display: flex; align-items: flex-end; gap: 2.5cqw; }
 
-.hs-out {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* The simulator rewrites the pre's className on every exchange, so the pre
-   itself carries no layout — only .term and a colour class survive. Sizing
-   lives here, where the repaint cannot reach it. */
-.hs .term {
-  font-size: 3.8cqw;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.hs .ico { width: 3.6cqw; height: 3.6cqw; stroke-width: 1.9; }
-
-/* ── Reply row ──────────────────────────────────────────────────────────── */
-.hs-reply { display: flex; gap: 2cqw; flex-shrink: 0; }
-
-.hs-input {
-  flex: 1;
-  min-width: 0;
-  height: 9.4cqw;
-  padding: 0 3cqw;
-  border: 1px solid var(--hs-key-edge);
-  border-radius: 2.8cqw;
-  background: var(--hs-key);
-  color: #fff;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 3.7cqw;
-  transition: border-color 0.15s ease;
-}
-
-.hs-input::placeholder { color: #5c6570; }
-.hs-input:focus { outline: none; border-color: #ff6a00; }
-.hs-input:disabled { opacity: 0.45; cursor: not-allowed; }
-
-/* ── Buttons and keypad ─────────────────────────────────────────────────── */
-.hs-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.4cqw;
-  height: 9.4cqw;
-  padding: 0 3.4cqw;
-  border: 1px solid transparent;
-  border-radius: 2.8cqw;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 3.5cqw;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.hs-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.hs-btn:focus-visible { outline: 2px solid #ff6a00; outline-offset: 2px; }
-
-.hs-btn--go { background: #ff6a00; border-color: #ff6a00; color: #07090b; }
-.hs-btn--go:not(:disabled):hover { background: #ff7a24; border-color: #ff7a24; }
-
-.hs-btn--end { background: transparent; border-color: rgba(214, 40, 40, 0.45); color: #ff6b6b; }
-.hs-btn--end:not(:disabled):hover { background: #d62828; border-color: #d62828; color: #fff; }
-
-.hs-keys {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.8cqw;
+.hs-avatar {
   flex-shrink: 0;
+  width: 9cqw;
+  height: 9cqw;
+  border-radius: 50%;
+  background: #7b4fd8;
+  display: grid;
+  place-items: center;
 }
 
-.hs-key {
-  height: 9.6cqw;
-  border: 1px solid var(--hs-key-edge);
-  border-radius: 2.6cqw;
-  background: var(--hs-key);
-  color: #fff;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+.hs-avatar svg { width: 5.4cqw; height: 5.4cqw; fill: #fff; }
+
+.hs-bubble {
+  max-width: 80%;
+  padding: 3.4cqw 4cqw;
+  border-radius: 4.6cqw;
+  background: #edf0f4;
   font-size: 4.1cqw;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  line-height: 1.5;
 }
 
-.hs-key:hover { background: var(--hs-key-edge); }
-.hs-key:active { background: #ff6a00; color: #07090b; }
-.hs-key:focus-visible { outline: 2px solid #ff6a00; outline-offset: 2px; }
+.hs-sms-nav {
+  flex-shrink: 0;
+  height: 10cqw;
+  border-top: 1px solid #e4e7eb;
+  display: grid;
+  place-items: center;
+}
 
-.hs-call { display: grid; grid-template-columns: 1fr 1fr; gap: 2cqw; flex-shrink: 0; }
+.hs-sms-nav svg { width: 5cqw; height: 5cqw; fill: #5f6368; }
 
 /* ── Caption under the frame ────────────────────────────────────────────── */
 .hs-cap {
@@ -204,12 +352,20 @@
   color: #8b939e;
 }
 
-/* On a narrow viewport the frame gets the width it needs rather than the
+/* ── Placement helper ───────────────────────────────────────────────────── */
+/* The auth panel shares its row with a 460px column of copy, so the handset
+   only appears once the panel is genuinely wide enough to hold both without
+   squeezing the text. The compiled Tailwind carries no 2xl utilities, so the
+   gate lives here rather than in a class on the element. */
+.hs-aside { display: none; }
+@media (min-width: 1560px) { .hs-aside { display: block; } }
+
+/* On a narrow viewport the frame takes the width it needs rather than the
    width the desktop layout asked for. */
 @media (max-width: 480px) {
   .hs { --hs-w: 76vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hs-btn, .hs-key, .hs-input { transition: none; }
+  .hs-key, .hs-fab, .hs-act, .hs-field { transition: none; }
 }
