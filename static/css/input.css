@@ -29,6 +29,11 @@
   a { @apply text-slate-600 no-underline transition-colors; }
   a:hover { @apply text-signal-500; }
   :focus-visible { @apply outline-none ring-2 ring-signal-500 ring-offset-2 ring-offset-fog rounded-[6px]; }
+  /* The in-place navigator focuses the page heading so a screen reader
+     announces the new page. It is not a control, so it must not paint a focus
+     ring — the ring appeared around the title the moment a key was pressed,
+     because that is when the browser switches focus-visible on. */
+  h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible { @apply outline-none ring-0 ring-offset-0; }
   ::selection { @apply bg-signal-200 text-ink; }
   table { border-collapse: collapse; }
   input[type="number"]::-webkit-outer-spin-button,

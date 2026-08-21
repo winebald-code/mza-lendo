@@ -89,6 +89,12 @@
 
 .hs-screen svg { display: block; }
 
+/* The app-wide focus ring is a box-shadow drawn around the element's box, which
+   on a round key paints a rectangle. Every control on the glass supplies its
+   own indicator instead, so the shared ring is cancelled here. The reply field
+   is an input and keeps its own underline, so it is left alone. */
+.hs button:focus-visible { box-shadow: none; }
+
 /* ── Status bar ─────────────────────────────────────────────────────────── */
 .hs-status {
   position: absolute;
@@ -135,14 +141,22 @@
   white-space: nowrap;
 }
 
+/* An empty dialler used to ghost the code at full size, which read as though
+   the number had already been entered. It is now unmistakably a prompt: small,
+   spaced, monospaced, and it says what to do. */
 .hs-dialed:empty::before {
-  content: attr(data-sim-code);
-  color: #5f6368;
+  content: "Dial " attr(data-sim-code);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 3.4cqw;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b7280;
 }
 
 .hs-pad { display: grid; grid-template-columns: repeat(3, 1fr); }
 
 .hs-key {
+  position: relative;
   height: 16cqw;
   display: flex;
   flex-direction: column;
@@ -152,18 +166,32 @@
   padding: 0;
   border: 0;
   background: none;
-  border-radius: 50%;
   font-family: inherit;
+}
+
+/* A grid cell is twice as wide as it is tall, so a border-radius on the cell
+   itself gave a stretched oval. The highlight is its own centred circle. */
+button.hs-key { cursor: pointer; }
+button.hs-key::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13.6cqw;
+  height: 13.6cqw;
+  margin: -6.8cqw 0 0 -6.8cqw;
+  border-radius: 50%;
+  background: transparent;
   transition: background-color 0.12s ease;
 }
 
-button.hs-key { cursor: pointer; }
-button.hs-key:hover { background: rgba(255, 255, 255, 0.07); }
-button.hs-key:active { background: rgba(255, 255, 255, 0.14); }
-button.hs-key:focus-visible { outline: 2px solid var(--hs-act); outline-offset: -2px; }
+button.hs-key:hover::before { background: rgba(255, 255, 255, 0.08); }
+button.hs-key:active::before { background: rgba(255, 255, 255, 0.17); }
+button.hs-key:focus-visible { outline: none; }
+button.hs-key:focus-visible::before { background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 2px var(--hs-act); }
 
-.hs-key b { font-size: 8.4cqw; font-weight: 400; line-height: 1; color: var(--hs-digit); }
-.hs-key i { font-size: 2.9cqw; font-style: normal; letter-spacing: 0.14em; color: var(--hs-mute); }
+.hs-key b { position: relative; font-size: 8.4cqw; font-weight: 400; line-height: 1; color: var(--hs-digit); }
+.hs-key i { position: relative; font-size: 2.9cqw; font-style: normal; letter-spacing: 0.14em; color: var(--hs-mute); }
 .hs-key--sym b { color: var(--hs-fg); }
 
 .hs-call-row {
