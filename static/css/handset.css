@@ -90,10 +90,11 @@
 .hs-screen svg { display: block; }
 
 /* The app-wide focus ring is a box-shadow drawn around the element's box, which
-   on a round key paints a rectangle. Every control on the glass supplies its
-   own indicator instead, so the shared ring is cancelled here. The reply field
-   is an input and keeps its own underline, so it is left alone. */
-.hs button:focus-visible { box-shadow: none; }
+   on a round key paints a rectangle. Every control on the glass shows focus its
+   own way — the keys by filling their circle, the reply field by colouring the
+   line beneath it — so the shared ring is cancelled here. */
+.hs button:focus-visible,
+.hs input:focus-visible { box-shadow: none; }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */
 .hs-status {
@@ -330,7 +331,8 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   border: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: inset 0 -1px 0 #dadce0;
+  /* No rule of its own. The line above the actions sits directly beneath this
+     field and serves as its underline — one line, not two. */
   color: var(--hs-ink);
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   font-size: 4.3cqw;
@@ -338,17 +340,21 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 }
 
 .hs-field::placeholder { color: var(--hs-off); }
-.hs-field:focus { outline: none; box-shadow: inset 0 -2px 0 var(--hs-act); }
+.hs-field:focus { outline: none; }
 .hs-field:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Focus colours the shared line instead, so the field still shows it is live. */
+.hs-field:focus + .hs-actions { border-top-color: var(--hs-act); }
 
 .hs-actions {
   flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 6cqw;
-  margin-top: 4.5cqw;
+  margin-top: 2.4cqw;
   padding-top: 3.4cqw;
   border-top: 1px solid var(--hs-rule);
+  transition: border-color 0.15s ease;
 }
 
 .hs-act {
