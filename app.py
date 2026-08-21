@@ -2278,10 +2278,35 @@ def signup():
 @login_required
 def logout():
     audit("logout", "user", current_user.id)
+
+    # Order matters here, and it used to be the wrong way round.
+    #
+    # logout_user() cannot delete the remember cookie itself — there is no
+    # response object yet — so it leaves session["_remember"] = "clear" behind
+    # for Flask-Login's after_request hook to act on. Calling session.clear()
+    # afterwards wiped that instruction before the hook could read it, the
+    # 14-day remember_token survived sign-out, and the very next request
+    # re-authenticated from the cookie. Since /login redirects an authenticated
+    # user to the dashboard, "keep me signed in" turned sign-out into a no-op:
+    # you signed out, went to sign in, and landed straight back in the plant.
+    #
+    # Clearing first and logging out second leaves the marker as the last thing
+    # written to the session, so it reaches the hook intact.
     session.clear()
     logout_user()
+
     flash("Signed out. The plant keeps running.", "info")
-    return redirect(url_for("home"))
+    resp = redirect(url_for("home"))
+
+    # Belt and braces. The hook above is the mechanism that should do this, but
+    # a token good for fourteen days must not be able to outlive the session
+    # that authorised it because of a future refactor upstream or here.
+    resp.delete_cookie(
+        app.config.get("REMEMBER_COOKIE_NAME", "remember_token"),
+        path=app.config.get("REMEMBER_COOKIE_PATH", "/"),
+        domain=app.config.get("REMEMBER_COOKIE_DOMAIN"),
+    )
+    return resp
 
 
 @app.route("/account/password", methods=["GET", "POST"])

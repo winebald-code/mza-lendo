@@ -5,55 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block title %}{{ auth_title|default('Sign in') }} — {{ APP_NAME }}{% endblock %}</title>
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#F2F4F6">
+<meta name="theme-color" content="#07090B">
 <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 <link rel="stylesheet" href="{{ asset('css/handset.css') }}">
 </head>
-<body class="bg-fog">
+<body class="hs-stage">
 {% from "partials/icons.html" import icon, sprite %}
-{% from "partials/handset.html" import handset_panel with context %}
+{% from "partials/handset.html" import deck_say, deck_form with context %}
 {{ sprite() }}
 
-<div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
+{# ── Two handsets, one page. Same frame, same size, one on each half; the
+     black behind them is the only other thing on the screen. ───────────── #}
+<div class="hs-pair">
 
-  <section class="hidden lg:flex items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden sticky top-0 h-screen">
-    <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
+  {# ── Left: the argument ──────────────────────────────────────────────── #}
+  {% call deck_say(
+       sender=auth_sms_sender|default('BACAAN'),
+       kicker=auth_kicker|default('Manufacturing operations'),
+       headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
+       body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
 
-    <div class="relative">
-      {% call handset_panel(
-           sender=auth_sms_sender|default('BACAAN'),
-           kicker=auth_kicker|default('Manufacturing operations'),
-           headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
-           body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
-    </div>
-  </section>
-
-  <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14 min-h-screen">
-    <div class="w-full max-w-[400px] mx-auto">
-      <a href="/" class="lg:hidden flex items-center gap-2.5 mb-9 w-fit">
-        {% include "partials/logo.html" %}
-        <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-      </a>
-
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="grid gap-2 mb-6">
-            {% for category, message in messages %}
-              {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
-              <div class="alert alert-{{ map.get(category,'info') }}">
-                <span class="shrink-0 mt-[1px]">{{ icon('info' if map.get(category,'info') == 'info' else ('check' if map.get(category) == 'ok' else 'alert'), 'ico ico-sm') }}</span>
-                <p class="m-0">{{ message }}</p>
-              </div>
-            {% endfor %}
+  {# ── Right: the form ─────────────────────────────────────────────────── #}
+  {% call deck_form() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
+          <div class="alert alert-{{ map.get(category,'info') }}">
+            <span class="shrink-0 mt-[1px]">{{ icon('info' if map.get(category,'info') == 'info' else ('check' if map.get(category) == 'ok' else 'alert'), 'ico ico-sm') }}</span>
+            <p class="m-0">{{ message }}</p>
           </div>
-        {% endif %}
-      {% endwith %}
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-      {% block content %}{% endblock %}
-    </div>
-  </section>
+    {% block content %}{% endblock %}
+  {% endcall %}
+
 </div>
 
 <script nonce="{{ csp_nonce }}" src="{{ asset('js/app.js') }}" defer></script>

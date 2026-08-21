@@ -453,38 +453,170 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   line-height: 1.45;
   color: #8b939e;
 }
+/* ══ THE AUTH DECK — TWO HANDSETS, ONE PAGE ════════════════════════════════
+   Sign-in, sign-up and change-password put two identical phones on a black
+   page: the left one carries the argument, the right one carries the form.
+   Nothing else is drawn. No cards, no columns, no second background — the page
+   is black and the only lit surfaces are the two screens.
 
-/* ══ THE AUTH PANEL SCREEN ═════════════════════════════════════════════════
-   Sized by height rather than width, because it stands in a full-height column
-   and the height is the constraint. Everything inside is in cqw, so the type
-   grows with the frame instead of shrinking away from it. */
-.hs--panel {
-  --hs-w: auto;
-  width: auto;
-  max-width: 100%;
-  height: min(86vh, 800px);
+   The two frames are the same object by construction, not by coincidence: both
+   read --hs-w from the same expression below, so there is no way for one to
+   drift from the other. The shell art is back, because the frame is a fixed
+   444x916 portrait again and the render is better than anything drawn in CSS.
+
+   Everything on both screens is sized in cqw — a share of the SCREEN width —
+   so the two phones scale as one. The form is the reason the numbers are also
+   clamped: it is built from the app's own .input, .btn and .field, which are
+   specified in pixels, and the clamps let the container-relative sizes land on
+   those pixel values at a normal window while still following the phone up and
+   down. Below the ceiling and above the floor, the form you see is the form the
+   rest of the app uses.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The page. This is the only background in the auth layout. */
+.hs-stage {
+  min-height: 100vh;
+  overflow: hidden;
+  background: #07090b;
 }
 
-.hs-panel {
+.hs-pair {
+  --hs-gx: clamp(12px, 1.6vw, 34px);
+  --hs-gy: clamp(12px, 2.2vh, 34px);
+  --hs-gap: clamp(14px, 2.4vw, 56px);
+
+  container-type: size;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  gap: var(--hs-gap);
+  padding: var(--hs-gy) var(--hs-gx);
+}
+
+/* One phone, as tall as the page allows, unless its half is too narrow to hold
+   a phone that tall — in which case the half sets the size instead. Both frames
+   evaluate this identically, so they are always the same size. */
+.hs--deck {
+  --hs-slot: calc((100cqw - var(--hs-gap)) / 2);
+  --hs-w: min(var(--hs-slot), calc(100cqh * 444 / 916));
+}
+
+.hs--deck .hs-screen { background: var(--hs-card); }
+
+/* ── The chrome both screens share ──────────────────────────────────────── */
+/* Status bar, body, home bar, in flow. The middle band takes what is left and
+   scrolls on its own if it has to — which the sign-up form does, since it is
+   longer than any phone screen. Pinning the bars instead of placing them would
+   mean the two screens could disagree about where the glass begins and ends. */
+.hs-deck .hidden { display: none; }
+
+.hs-deck {
   position: absolute;
-  inset: 7.5cqw 0 10cqw 0;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  padding: 5cqw 6cqw 0;
   color: var(--hs-ink);
 }
 
-.hs-panel-mark { display: flex; align-items: center; gap: 2.6cqw; }
-.hs-panel-mark svg { width: 9cqw; height: 9cqw; }
-.hs-panel-mark span {
+.hs--deck .hs-status {
+  position: static;
+  flex-shrink: 0;
+  height: 7.5cqw;
+  color: var(--hs-ink);
+}
+
+.hs-deck-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c7cdd4 transparent;
+}
+
+.hs-deck-main::-webkit-scrollbar { width: 1.3cqw; }
+.hs-deck-main::-webkit-scrollbar-track { background: transparent; }
+.hs-deck-main::-webkit-scrollbar-thumb { background: #c7cdd4; border-radius: 99px; }
+
+/* Sign-up is longer than any phone screen, so it runs under the home bar. The
+   fade says the form continues rather than letting it look truncated. It is on
+   the form screen only — opposite, the message sits at the very bottom of the
+   glass and must not be washed out — and it costs nothing on a short form,
+   where that strip of glass is empty anyway. */
+.hs-form-phone .hs-deck::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10cqw;
+  height: 7cqw;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--hs-card), rgba(255, 255, 255, 0));
+}
+
+.hs--deck .hs-sms-nav {
+  position: static;
+  flex-shrink: 0;
+  height: 10cqw;
+}
+
+/* The mark, on both screens, and the way back to the public site from both. */
+.hs-mark {
+  display: flex;
+  align-items: center;
+  gap: 2.6cqw;
+  width: -moz-fit-content;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hs-mark svg { width: 9cqw; height: 9cqw; flex-shrink: 0; }
+
+.hs-mark span {
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   font-weight: 700;
   font-size: 6cqw;
   letter-spacing: -0.02em;
 }
 
+/* No hover state on the mark, on any device: it is a link home and nothing
+   else. These two rules exist to defeat a:hover in app.css, which is more
+   specific than .hs-mark and would otherwise tint the wordmark orange. The
+   focus ring is left alone — that is a keyboard affordance, not a hover. */
+a.hs-mark:hover,
+a.hs-mark:focus,
+a.hs-mark:active { color: inherit; }
+
+a.hs-mark:hover span,
+a.hs-mark:focus span,
+a.hs-mark:active span { color: inherit; }
+
+a.hs-mark:focus-visible { border-radius: 2cqw; }
+
+/* ══ SCREEN ONE — THE ARGUMENT ═════════════════════════════════════════════ */
+.hs-say {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 5cqw 6cqw 0;
+}
+
+/* The slack sits above and below the claim rather than pooling into one gap
+   over the message, so the screen stays composed at any height. */
+.hs-say-body {
+  margin-block: auto;
+  padding-block: 3cqw;
+}
+
 .hs-panel-kicker {
-  margin: 7cqw 0 0;
+  margin: 0;
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   font-size: 3.1cqw;
   font-weight: 600;
@@ -511,7 +643,8 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 
 .hs-panel-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, max-content);
+  justify-content: space-between;
   gap: 3cqw;
   margin: 6cqw 0 0;
   padding-top: 5cqw;
@@ -535,18 +668,7 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   letter-spacing: -0.02em;
 }
 
-/* The panel's own layers are absolute, so the home bar has to be placed rather
-   than left to the end of a flow it is not part of. */
-.hs--panel .hs-sms-nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10cqw;
-}
-
-/* The message sits at the foot of the screen, where a thread would. */
-.hs-panel-thread { margin-top: auto; padding-bottom: 4cqw; }
+.hs-panel-thread { padding-bottom: 4cqw; }
 
 .hs-panel-from {
   display: flex;
@@ -558,16 +680,191 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 }
 
 .hs-panel-from svg { width: 4.6cqw; height: 4.6cqw; fill: var(--hs-ink); flex-shrink: 0; }
-.hs-panel .hs-bubble { font-size: 3.8cqw; }
+.hs-say .hs-bubble { font-size: 3.8cqw; }
 
-/* ── Placement helper ───────────────────────────────────────────────────── */
-/* The auth panel shares its row with a 460px column of copy, so the handset
-   only appears once the panel is genuinely wide enough to hold both without
-   squeezing the text. The compiled Tailwind carries no 2xl utilities, so the
-   gate lives here rather than in a class on the element. */
-.hs-aside { display: none; }
-@media (min-width: 1560px) { .hs-aside { display: block; } }
+/* ══ SCREEN TWO — THE FORM ═════════════════════════════════════════════════
+   The markup is the app's own form, untouched. Only its scale is restated
+   here, in cqw, so it grows and shrinks with the handset exactly as the
+   argument opposite does. Element selectors inside .hs-form outrank the
+   single-class pixel utilities they override. */
+.hs-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 5cqw 6cqw 6cqw;
+  font-size: 3.6cqw;
+}
 
+.hs-form-head { flex-shrink: 0; }
+/* The auto margins already centre a short form, so this padding only ever adds
+   height to a form that is too tall — and change-password was overflowing by a
+   dozen pixels, enough to raise a scrollbar on a screen that otherwise fits.
+   Kept small for the case where a form ends flush against the home bar. */
+.hs-form-body { margin-block: auto; padding-block: 1.5cqw; }
+
+.hs-form h1 {
+  margin: 5.5cqw 0 0;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: max(20px, 7.4cqw);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.hs-form h1 + p {
+  margin: 1.8cqw 0 6cqw;
+  font-size: max(11px, 3.6cqw);
+  line-height: 1.5;
+}
+
+.hs-form p { font-size: max(10.5px, 3.4cqw); line-height: 1.5; }
+.hs-form .hint, .hs-form .err { font-size: max(9.5px, 3cqw); }
+
+.hs-form .field { margin-bottom: 3.2cqw; gap: 1.4cqw; }
+
+.hs-form .field > label,
+.hs-form .kicker,
+.hs-form .flabel {
+  font-size: max(8.5px, 2.7cqw);
+  letter-spacing: 0.1em;
+}
+
+.hs-form .kicker { margin-bottom: 1cqw; }
+.hs-form form > .kicker:not(:first-child) { margin-top: 4.5cqw; }
+
+.hs-form .input,
+.hs-form .select,
+.hs-form .textarea {
+  min-height: max(34px, 11.6cqw);
+  padding: 1.8cqw 4.4cqw;
+  border-radius: 6cqw;
+  font-size: max(11.5px, 3.8cqw);
+}
+
+.hs-form .input.pr-11 { padding-right: 11cqw; }
+
+.hs-form .btn {
+  min-height: max(34px, 12cqw);
+  gap: 2cqw;
+  padding-inline: 5cqw;
+  border-radius: 6cqw;
+  font-size: max(11.5px, 3.8cqw);
+}
+
+.hs-form .btn .ico { width: 1em; height: 1em; }
+
+/* The reveal eye is positioned against the field, so it scales with it too. */
+.hs-form .btn-icon {
+  width: 9cqw !important;
+  height: 9cqw !important;
+  min-height: 0;
+  right: 1.6cqw;
+  padding-inline: 0;
+}
+
+.hs-form .btn-block { margin-top: 4cqw; }
+.hs-form .btn-block + .btn-block { margin-top: 2cqw; }
+
+.hs-form .check { gap: 2.4cqw; margin-top: 2.6cqw; }
+
+.hs-form .check > input[type="checkbox"] {
+  width: 4.6cqw;
+  height: 4.6cqw;
+  min-width: 4.6cqw;
+  border-radius: 1.4cqw;
+}
+
+.hs-form .check > span { font-size: max(10.5px, 3.4cqw); }
+
+/* The rule and the note under the form. */
+.hs-form form + div,
+.hs-form form + p {
+  margin-top: 6cqw;
+  padding-top: 5cqw;
+}
+
+.hs-form form + div > p + p { margin-top: 2.4cqw; }
+
+.hs-form a:not(.hs-mark) {
+  color: var(--hs-ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: #d7dce2;
+  text-underline-offset: 2px;
+}
+
+.hs-form a:not(.hs-mark):hover { color: #db5a00; }
+.hs-form .btn { text-decoration: none; }
+
+/* Password strength meter and its checklist. */
+.hs-form #pw-meter { gap: 1cqw; margin-top: 2.4cqw; }
+.hs-form #pw-meter > span { height: 1.1cqw; }
+.hs-form #pw-meter + ul { margin-top: 2.4cqw; gap: 1cqw 3cqw; }
+.hs-form #pw-meter + ul li { gap: 1.4cqw; font-size: max(9px, 2.9cqw); }
+.hs-form .dot { width: 1.7cqw; height: 1.7cqw; }
+
+.hs-form .alert {
+  gap: 2.4cqw;
+  margin-bottom: 4cqw;
+  padding: 2.6cqw 3.6cqw;
+  border-radius: 4cqw;
+  font-size: max(10.5px, 3.3cqw);
+}
+
+.hs-form .alert .ico { width: 1.1em; height: 1.1em; }
+
+
+/* Sign-up puts sector/county and username/phone side by side. That is right on
+   a wide phone and cramped on a narrow one — at a 250px glass the placeholders
+   were being cut mid-word — so the pair collapses to one field per row below
+   the width where both still read. */
+@container (max-width: 320px) {
+  .hs-form form > div.grid { grid-template-columns: 1fr; }
+}
+/* ── One phone per page below the split ─────────────────────────────────────
+   Two phones side by side stop working long before a tablet. Under 1024px the
+   argument screen steps aside and the form fills the window: same screen, same
+   type scale, no frame — because a phone drawn on a phone is a joke that only
+   lands once. */
+@media (max-width: 1023px) {
+  .hs-pair {
+    grid-template-columns: 1fr;
+    place-items: stretch;
+    gap: 0;
+    padding: 0;
+  }
+
+  .hs-say-phone { display: none; }
+
+  .hs--deck {
+    --hs-w: 100cqw;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .hs--deck .hs-shell { display: none; }
+
+  .hs--deck .hs-screen {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  /* The chrome is a mockup device's, not this device's. */
+  .hs--deck .hs-status,
+  .hs--deck .hs-sms-nav { display: none; }
+
+  .hs-form {
+    padding: 7vw 6vw 10vw;
+    font-size: 14px;
+  }
+
+  .hs-form h1 { font-size: 28px; margin-top: 0; }
+  .hs-form h1 + p { font-size: 13.5px; }
+}
 /* On a narrow viewport the frame takes the width it needs rather than the
    width the desktop layout asked for. */
 @media (max-width: 480px) {
