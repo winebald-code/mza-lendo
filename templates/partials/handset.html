@@ -148,15 +148,15 @@
     <div class="hs-status"><span>{{ carrier }}</span>{{ _meters() }}</div>
 
     <div class="hs-panel">
-      <a href="{{ url_for('home') }}" class="hs-panel-mark" aria-label="Bacaan homepage">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <rect width="32" height="32" rx="9" fill="#07090B"/>
-          <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
-          <path d="M10 9h7l3 3-3 3h-7" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
-          <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
-        </svg>
-        <span>Bacaan</span>
-      </a>
+      <a href="{{ url_for('home') }}" class="hs-panel-mark !text-[#07090B] hover:!text-[#07090B] focus:!text-[#07090B]" aria-label="Bacaan homepage">
+  <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <rect width="32" height="32" rx="9" fill="#07090B"/>
+    <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
+    <path d="M10 9h7l3 3-3 3h-7" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
+    <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
+  </svg>
+  <span class="!text-[#07090B] hover:!text-[#07090B]">Bacaan</span>
+</a>
 
       <p class="hs-panel-kicker">{{ kicker }}</p>
       <h2 class="hs-panel-head">{{ headline }}</h2>
