@@ -1,70 +1,52 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{% block title %}{{ auth_title|default('Sign in') }} — {{ APP_NAME }}{% endblock %}</title>
-<meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#F2F4F6">
-<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="{{ asset('css/app.css') }}">
-<link rel="stylesheet" href="{{ asset('css/handset.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>500 — Server Error — {{ APP_NAME|default('Bacaan') }}</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#F2F4F6">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/handset.css') }}">
 </head>
-<body class="bg-fog font-sans antialiased">
+<body class="bg-fog h-full font-sans antialiased text-slate-900">
 {% from "partials/icons.html" import icon, sprite %}
-{% from "partials/handset.html" import handset_panel with context %}
 {{ sprite() }}
 
-<div class="relative w-full">
-
-  {# ── Left: Fixed handset panel ───────────────────────────────────────── #}
-  <section class="hidden lg:flex lg:fixed lg:top-0 lg:bottom-0 lg:left-0 lg:w-1/2 items-center justify-center bg-slate-900 text-white p-10 xl:p-14 overflow-hidden z-10">
-    <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
-
-    <div class="relative w-full max-w-lg">
-      <div class="mb-8">
-        <a href="{{ url_for('public.index') }}" class="inline-flex items-center gap-2.5 focus:outline-none group">
-          {% include "partials/logo.html" %}
-          <span class="font-display font-bold text-xl tracking-[-0.02em] text-white group-hover:opacity-80 transition-opacity">Bacaan</span>
+<div class="min-h-screen flex flex-col items-center justify-center px-5 py-12 text-center">
+    <div class="w-full max-w-md mx-auto flex flex-col items-center">
+        <!-- Logo Header -->
+        <a href="{{ url_for('public.index') }}" class="inline-flex items-center gap-2.5 mb-8 focus:outline-none group">
+            {% include "partials/logo.html" %}
+            <span class="font-display font-bold text-xl tracking-[-0.02em] text-slate-900 group-hover:opacity-80 transition-opacity">Bacaan</span>
         </a>
-      </div>
 
-      {% call handset_panel(
-            sender=auth_sms_sender|default('BACAAN'),
-            kicker=auth_kicker|default('Manufacturing operations'),
-            headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
-            body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
+        <!-- Large 500 Graphic -->
+        <div class="font-display font-black text-8xl sm:text-9xl tracking-tighter text-slate-200 select-none mb-2">
+            500
+        </div>
+
+        <!-- Error Content -->
+        <h1 class="font-display font-bold text-3xl sm:text-4xl text-slate-900 tracking-tight mb-3">
+            The line stopped
+        </h1>
+        <p class="text-slate-600 text-base sm:text-lg leading-relaxed mb-8 max-w-sm">
+            Something failed on our side. The fault has been logged and nothing you entered was lost.
+        </p>
+
+        <!-- Actions -->
+        <div class="flex flex-row gap-3 items-center justify-center">
+            <a href="{{ url_for('public.index') }}" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-signal-500 font-medium text-white hover:bg-signal-600 transition-colors focus:outline-none focus:ring-2 focus:ring-signal-500/50">
+                {{ icon('arrow-left', 'ico ico-sm') }}
+                Back to the homepage
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
+                Sign in
+            </a>
+        </div>
     </div>
-  </section>
-
-  {# ── Right: Scrollable form section ──────────────────────────────────── #}
-  <section class="w-full lg:w-1/2 lg:ml-[50%] min-h-screen flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14 bg-fog">
-    <div class="w-full max-w-[400px] mx-auto">
-      <div class="lg:hidden flex items-center gap-2.5 mb-9">
-        <a href="{{ url_for('public.index') }}" class="inline-flex items-center gap-2.5 focus:outline-none">
-          {% include "partials/logo.html" %}
-          <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-        </a>
-      </div>
-
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="grid gap-2 mb-6">
-            {% for category, message in messages %}
-              {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
-              <div class="alert alert-{{ map.get(category,'info') }}">
-                <span class="shrink-0 mt-[1px]">{{ icon('info' if map.get(category,'info') == 'info' else ('check' if map.get(category) == 'ok' else 'alert'), 'ico ico-sm') }}</span>
-                <p class="m-0">{{ message }}</p>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
-
-      {% block content %}{% endblock %}
-    </div>
-  </section>
 </div>
 
 <script nonce="{{ csp_nonce }}" src="{{ asset('js/app.js') }}" defer></script>
