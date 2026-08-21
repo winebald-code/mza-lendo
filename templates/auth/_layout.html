@@ -23,10 +23,12 @@
     <div class="absolute inset-0 hatch opacity-[0.06]" aria-hidden="true"></div>
     <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
 
-    <a href="{{ url_for('home') }}" class="relative flex items-center gap-2.5 w-fit">
+    {# The wordmark is a mark here, not a way out. Sign-in and sign-up are the
+       only two pages that should hold you, so it is not a link. #}
+    <div class="relative flex items-center gap-2.5 w-fit">
       {% include "partials/logo.html" %}
       <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-    </a>
+    </div>
 
     <div class="relative flex items-center gap-12 xl:gap-16">
     <div class="max-w-[460px]">
@@ -68,10 +70,10 @@
   {# ── Right: the form ─────────────────────────────────────────────────── #}
   <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
     <div class="w-full max-w-[400px] mx-auto">
-      <a href="{{ url_for('home') }}" class="lg:hidden flex items-center gap-2.5 mb-9">
+      <div class="lg:hidden flex items-center gap-2.5 mb-9">
         {% include "partials/logo.html" %}
         <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-      </a>
+      </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
