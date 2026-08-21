@@ -34,9 +34,10 @@
   {# ── Right: the form ─────────────────────────────────────────────────── #}
   <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
     <div class="w-full max-w-[400px] mx-auto">
-      <div class="lg:hidden flex items-center gap-2.5 mb-9">
+      <div <a href="{{ url_for('home') }}" class="lg:hidden flex items-center gap-2.5 mb-9">
         {% include "partials/logo.html" %}
         <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
+      </a>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
