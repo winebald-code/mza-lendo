@@ -145,7 +145,7 @@
    small phone beside it. It is all one screen now: the mark, the claim, what it
    runs on, and the message the floor receives — because that is the product.
    ═══════════════════════════════════════════════════════════════════════════ #}
-{% macro handset_panel(carrier='WINEBALD', sender='BACAAN', kicker='', headline='', body='') -%}
+{% macro handset_panel(carrier='WINEBALD', sender='BACAAN', kicker='', headline='', body='', home_url='/') -%}
 <div class="hs hs--panel hs--sms">
   <img class="hs-shell" src="{{ asset('img/handset.png') }}" alt="" aria-hidden="true"
        width="444" height="916" draggable="false">
@@ -154,7 +154,7 @@
     <div class="hs-status"><span>{{ carrier }}</span>{{ _meters() }}</div>
 
     <div class="hs-panel">
-      <div class="hs-panel-mark">
+      <a class="hs-panel-mark" href="{{ home_url }}">
         <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <rect width="32" height="32" rx="9" fill="#07090B"/>
           <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
@@ -162,7 +162,7 @@
           <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
         </svg>
         <span>Bacaan</span>
-      </div>
+      </a>
 
       <p class="hs-panel-kicker">{{ kicker }}</p>
       <h2 class="hs-panel-head">{{ headline }}</h2>

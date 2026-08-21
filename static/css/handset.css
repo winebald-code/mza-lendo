@@ -94,7 +94,9 @@
    own way — the keys by filling their circle, the reply field by colouring the
    line beneath it — so the shared ring is cancelled here. */
 .hs button:focus-visible,
-.hs input:focus-visible { box-shadow: none; }
+.hs input:focus-visible,
+.hs a:focus-visible { box-shadow: none; }
+.hs a:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 3px; border-radius: 2cqw; }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */
 .hs-status {
@@ -458,12 +460,22 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
    Sized by height rather than width, because it stands in a full-height column
    and the height is the constraint. Everything inside is in cqw, so the type
    grows with the frame instead of shrinking away from it. */
+/* The phone is the panel: it stands the full height of the column and the
+   column is only as wide as the phone, so there is no dark margin around it. */
 .hs--panel {
+  /* An inline-size container has no intrinsic width, so leaving the width to
+     the aspect ratio collapses the grid track to nothing. Both sides are stated
+     from one height instead: the phone stands the full viewport unless that
+     would make it wider than its share of the page. */
+  --panel-h: min(100vh, calc(46vw * 916 / 444));
   --hs-w: auto;
-  width: auto;
-  max-width: 100%;
-  height: min(86vh, 800px);
+  height: var(--panel-h);
+  width: calc(var(--panel-h) * 444 / 916);
+  max-width: none;
+  margin: 0;
 }
+
+.hs--panel .hs-shell { filter: none; }
 
 .hs-panel {
   position: absolute;
@@ -474,7 +486,16 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   color: var(--hs-ink);
 }
 
-.hs-panel-mark { display: flex; align-items: center; gap: 2.6cqw; }
+.hs-panel-mark {
+  display: flex;
+  align-items: center;
+  gap: 2.6cqw;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hs-panel-mark:hover { opacity: 0.75; }
 .hs-panel-mark svg { width: 9cqw; height: 9cqw; }
 .hs-panel-mark span {
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
