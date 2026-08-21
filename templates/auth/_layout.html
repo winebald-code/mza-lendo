@@ -13,58 +13,22 @@
 </head>
 <body class="bg-fog">
 {% from "partials/icons.html" import icon, sprite %}
-{% from "partials/handset.html" import handset_sms with context %}
+{% from "partials/handset.html" import handset_panel with context %}
 {{ sprite() }}
 
 <div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
 
-  {# ── Left: the argument ──────────────────────────────────────────────── #}
-  <section class="hidden lg:flex flex-col justify-between bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
-    <div class="absolute inset-0 hatch opacity-[0.06]" aria-hidden="true"></div>
+  {# ── Left: the argument, on one screen ───────────────────────────────── #}
+  <section class="hidden lg:flex items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
     <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
 
-    {# The wordmark is a mark here, not a way out. Sign-in and sign-up are the
-       only two pages that should hold you, so it is not a link. #}
-    <div class="relative flex items-center gap-2.5 w-fit">
-      {% include "partials/logo.html" %}
-      <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
+    <div class="relative">
+      {% call handset_panel(
+           sender=auth_sms_sender|default('BACAAN'),
+           kicker=auth_kicker|default('Manufacturing operations'),
+           headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
+           body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
     </div>
-
-    <div class="relative flex items-center gap-12 xl:gap-16">
-    <div class="max-w-[460px]">
-      <p class="kicker text-signal-500 mb-5">{{ auth_kicker|default('Manufacturing operations') }}</p>
-      <h2 class="font-display text-[34px] xl:text-[40px] font-bold leading-[1.08] tracking-[-0.03em] m-0">
-        {{ auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.') }}
-      </h2>
-      <p class="text-[14.5px] text-slate-300 mt-5 leading-relaxed">
-        {{ auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.') }}
-      </p>
-
-      <dl class="grid grid-cols-3 gap-5 mt-10 pt-8 border-t border-white/10">
-        <div>
-          <dt class="label text-slate-500 m-0">Works on</dt>
-          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">Any handset</dd>
-        </div>
-        <div>
-          <dt class="label text-slate-500 m-0">Needs</dt>
-          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">No data</dd>
-        </div>
-        <div>
-          <dt class="label text-slate-500 m-0">Sessions</dt>
-          <dd class="font-display text-[19px] font-semibold mt-1.5 m-0">Under 30s</dd>
-        </div>
-      </dl>
-    </div>
-
-      {# What the floor gets back. Shown only where there is room for it. #}
-      <div class="hs-aside shrink-0">
-        {% call handset_sms(size='sm', sender=auth_sms_sender|default('BACAAN')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
-      </div>
-    </div>
-
-    <p class="relative font-mono text-[11px] text-slate-500 m-0">
-      Telco layer powered by Africa's Talking · Nairobi
-    </p>
   </section>
 
   {# ── Right: the form ─────────────────────────────────────────────────── #}
