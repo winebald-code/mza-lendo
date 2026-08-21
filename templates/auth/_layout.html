@@ -19,7 +19,7 @@
 <div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
 
   {# ── Left: the argument, on one screen ───────────────────────────────── #}
-  <section class="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-[calc(100%-540px)] items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
+  <section class="hidden lg:flex items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
     <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
 
     <div class="relative">
@@ -32,12 +32,12 @@
   </section>
 
   {# ── Right: the form ─────────────────────────────────────────────────── #}
-  <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14 lg:ml-[calc(100%-540px)]">
+  <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
     <div class="w-full max-w-[400px] mx-auto">
-      <a href="{{ url_for('home') }}" class="lg:hidden flex items-center gap-2.5 mb-9">
+      <div class="lg:hidden flex items-center gap-2.5 mb-9">
         {% include "partials/logo.html" %}
         <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-      </a>
+      </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
