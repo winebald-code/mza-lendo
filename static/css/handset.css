@@ -141,34 +141,6 @@
   white-space: nowrap;
 }
 
-/* An empty dialler used to ghost the code at full size, which read as though
-   the number had already been entered. It is now unmistakably a prompt: small,
-   spaced, monospaced, and it says what to do. */
-.hs-dialed:empty::before {
-  content: "Dial " attr(data-sim-code);
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 3.4cqw;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.hs-pad { display: grid; grid-template-columns: repeat(3, 1fr); }
-
-.hs-key {
-  position: relative;
-  height: 16cqw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4cqw;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: inherit;
-}
-
 /* A grid cell is twice as wide as it is tall, so a border-radius on the cell
    itself gave a stretched oval. The highlight is its own centred circle. */
 button.hs-key { cursor: pointer; }
