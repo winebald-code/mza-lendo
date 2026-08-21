@@ -31,7 +31,7 @@
 </span>
 {%- endmacro -%}
 
-{% macro handset(size='md', carrier='SAFARICOM', code='', live=false) -%}
+{% macro handset(size='md', carrier='WINEBALD', code='', live=false) -%}
 {% set keys = [('1',''),('2','ABC'),('3','DEF'),('4','GHI'),('5','JKL'),('6','MNO'),
                ('7','PQRS'),('8','TUV'),('9','WXYZ'),('*',''),('0','+'),('#','')] %}
 <div class="hs hs--{{ size }} hs--ussd">
@@ -100,7 +100,7 @@
 {# ═══════════════════════════════════════════════════════════════════════════
    handset_sms — an inbound alert, as the worker sees it.
    ═══════════════════════════════════════════════════════════════════════════ #}
-{% macro handset_sms(size='md', carrier='SAFARICOM', sender='BACAAN') -%}
+{% macro handset_sms(size='md', carrier='WINEBALD', sender='BACAAN') -%}
 <div class="hs hs--{{ size }} hs--sms">
   <img class="hs-shell" src="{{ asset('img/handset.png') }}" alt="" aria-hidden="true"
        width="444" height="916" draggable="false">
