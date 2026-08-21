@@ -2278,8 +2278,8 @@ def signup():
 @login_required
 def logout():
     audit("logout", "user", current_user.id)
-    logout_user()
     session.clear()
+    logout_user()
     flash("Signed out. The plant keeps running.", "info")
     return redirect(url_for("home"))
 
