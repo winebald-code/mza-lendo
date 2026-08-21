@@ -5,8 +5,7 @@
     {% for category, message in messages %}
       {% set map = {'ok':'ok','error':'bad','warn':'warn','info':'info','message':'info'} %}
       {% set tone = map.get(category, 'info') %}
-      <div class="flash card shadow-s2 border-l-[3px] flex items-start gap-3 p-4 animate-riseIn
-        {% if tone=='ok' %}border-l-ok{% elif tone=='bad' %}border-l-bad{% elif tone=='warn' %}border-l-warn{% else %}border-l-signal-500{% endif %}">
+      <div class="flash card shadow-s2 flex items-start gap-3 p-4 animate-riseIn">
         <span class="mt-[1px] shrink-0
           {% if tone=='ok' %}text-ok{% elif tone=='bad' %}text-bad{% elif tone=='warn' %}text-warn{% else %}text-signal-600{% endif %}">
           {% if tone=='ok' %}{{ icon('check') }}{% elif tone=='bad' %}{{ icon('alert') }}{% elif tone=='warn' %}{{ icon('alert') }}{% else %}{{ icon('info') }}{% endif %}
