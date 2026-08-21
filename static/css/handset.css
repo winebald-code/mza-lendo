@@ -145,7 +145,6 @@
    the number had already been entered. It is now unmistakably a prompt: small,
    spaced, monospaced, and it says what to do. */
 .hs-dialed:empty::before {
-  content: "Dial " attr(data-sim-code);
   font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   font-size: 3.4cqw;
   letter-spacing: 0.18em;
