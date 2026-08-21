@@ -16,14 +16,13 @@
 {% from "partials/handset.html" import handset_panel with context %}
 {{ sprite() }}
 
-<div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
+<div class="min-h-screen grid lg:grid-cols-[auto_minmax(0,1fr)]">
 
   {# ── Left: the argument, on one screen ───────────────────────────────── #}
-  <section class="hidden lg:flex items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
-    <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
-
-    <div class="relative">
+  <section class="hidden lg:block bg-slate-900 text-white relative overflow-hidden">
+    <div class="sticky top-0">
       {% call handset_panel(
+           home_url=url_for('home'),
            sender=auth_sms_sender|default('BACAAN'),
            kicker=auth_kicker|default('Manufacturing operations'),
            headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
@@ -34,10 +33,10 @@
   {# ── Right: the form ─────────────────────────────────────────────────── #}
   <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
     <div class="w-full max-w-[400px] mx-auto">
-      <div class="lg:hidden flex items-center gap-2.5 mb-9">
+      <a href="{{ url_for('home') }}" class="lg:hidden flex items-center gap-2.5 mb-9">
         {% include "partials/logo.html" %}
         <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
-      </div>
+      </a>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
