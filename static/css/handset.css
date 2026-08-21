@@ -275,9 +275,6 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 .hs--live.is-ended .hs-field,
 .hs--live.is-ended .hs-act--live { display: none; }
 .hs--live.is-ended .hs-act--done { display: inline-block; }
-/* A closed session shows one button and no field, so the rule has nothing left
-   to divide. */
-.hs--live.is-ended .hs-actions { border-top: 0; padding-top: 1cqw; }
 
 /* ── The dim behind the dialogue ────────────────────────────────────────── */
 .hs-scrim {
@@ -453,112 +450,6 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   line-height: 1.45;
   color: #8b939e;
 }
-
-/* ══ THE AUTH PANEL SCREEN ═════════════════════════════════════════════════
-   Sized by height rather than width, because it stands in a full-height column
-   and the height is the constraint. Everything inside is in cqw, so the type
-   grows with the frame instead of shrinking away from it. */
-.hs--panel {
-  --hs-w: auto;
-  width: auto;
-  max-width: 100%;
-  height: min(86vh, 800px);
-}
-
-.hs-panel {
-  position: absolute;
-  inset: 7.5cqw 0 10cqw 0;
-  display: flex;
-  flex-direction: column;
-  padding: 5cqw 6cqw 0;
-  color: var(--hs-ink);
-}
-
-.hs-panel-mark { display: flex; align-items: center; gap: 2.6cqw; }
-.hs-panel-mark svg { width: 9cqw; height: 9cqw; }
-.hs-panel-mark span {
-  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 6cqw;
-  letter-spacing: -0.02em;
-}
-
-.hs-panel-kicker {
-  margin: 7cqw 0 0;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 3.1cqw;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #db5a00;
-}
-
-.hs-panel-head {
-  margin: 3.4cqw 0 0;
-  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 7.4cqw;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-}
-
-.hs-panel-body {
-  margin: 4cqw 0 0;
-  font-size: 4.1cqw;
-  line-height: 1.6;
-  color: #3a4250;
-}
-
-.hs-panel-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3cqw;
-  margin: 6cqw 0 0;
-  padding-top: 5cqw;
-  border-top: 1px solid #e4e7eb;
-}
-
-.hs-panel-stats dt {
-  margin: 0;
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 2.7cqw;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: #8b939e;
-}
-
-.hs-panel-stats dd {
-  margin: 1.6cqw 0 0;
-  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 4.4cqw;
-  letter-spacing: -0.02em;
-}
-
-/* The panel's own layers are absolute, so the home bar has to be placed rather
-   than left to the end of a flow it is not part of. */
-.hs--panel .hs-sms-nav {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10cqw;
-}
-
-/* The message sits at the foot of the screen, where a thread would. */
-.hs-panel-thread { margin-top: auto; padding-bottom: 4cqw; }
-
-.hs-panel-from {
-  display: flex;
-  align-items: center;
-  gap: 3cqw;
-  padding-bottom: 3.4cqw;
-  font-size: 4.2cqw;
-  color: var(--hs-ink);
-}
-
-.hs-panel-from svg { width: 4.6cqw; height: 4.6cqw; fill: var(--hs-ink); flex-shrink: 0; }
-.hs-panel .hs-bubble { font-size: 3.8cqw; }
 
 /* ── Placement helper ───────────────────────────────────────────────────── */
 /* The auth panel shares its row with a 460px column of copy, so the handset
