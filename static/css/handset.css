@@ -59,10 +59,22 @@
 
 /* The homepage hero, where the phone is the argument and had far more column
    than it was using. Fluid rather than a fourth fixed step, so it fills the
-   column it is given: the floor is what the 1024px layout can take, the ceiling
-   is the point past which a mockup starts upstaging the copy beside it.
-   max-width above still clamps it if the column is narrower than the floor. */
-.hs--hero { --hs-w: clamp(300px, 30vw, 420px); }
+   column it is given.
+
+   Width is derived from the WINDOW HEIGHT as well as its width, because the
+   hero is meant to land inside the fold and this frame is 916/444 — a little
+   more width costs twice as much height. A phone sized on width alone was
+   860px tall on a 980px laptop screen and pushed its own section past the
+   bottom of the window. The height term keeps it as large as the fold allows
+   and no larger. The 194px is measured, not guessed: 69px of header including
+   its border, 40+40 of section padding, a 29px caption with a 12px margin, and
+   the section's own bottom border, plus three to spare. The floor wins on a
+   very short window, where fitting the fold would mean a phone too small to
+   read the menu on — legibility beats the fold at that point. */
+.hs--hero {
+  --hs-w: clamp(260px, min(30vw, calc((100vh - 194px) * 444 / 916)), 420px);
+  --hs-w: clamp(260px, min(30vw, calc((100svh - 194px) * 444 / 916)), 420px);
+}
 
 /* The shell sits under the glass so the screen stays interactive. */
 .hs-shell {

@@ -58,6 +58,64 @@
    Components
    ───────────────────────────────────────────────────────────── */
 @layer components {
+  /* ── THE HERO, IN TWO GROUNDS ────────────────────────────────────────────
+     The homepage hero ships light or dark. Everything that differs between the
+     two lives here, keyed off one class on the section, so switching grounds is
+     a single word in index.html and never a hunt through markup for colours.
+
+     The dark ground exists because the thing the section is showing is a lit
+     phone screen; on fog the handset reads as a picture pasted onto a page.
+     The light ground is the original, kept whole for anyone who wants the
+     marketing site to stay one colour throughout. */
+  /* 71px, not 68: the header is 68 plus its own 1px bottom border, and this
+     section adds another below itself, and subpixel rounding on 100svh can add a
+     fraction more. Two stray pixels are enough to put the
+     whole hero one scroll-notch past the fold. */
+  .hero--dark  { @apply bg-ink text-white; border-bottom: 1px solid rgba(255,255,255,0.10); }
+  .hero--light { @apply bg-fog text-ink border-b border-divider; }
+
+  .hero-rules { background-size: 56px 56px; }
+  .hero--dark .hero-rules {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  }
+  .hero--light .hero-rules {
+    background-image:
+      linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
+  }
+
+  .hero--dark .hero-bloom  { @apply bg-signal-500/[0.13]; }
+  .hero--light .hero-bloom { @apply bg-signal-500/[0.07]; }
+
+  /* h1 sets its own colour in the base layer, so the title must be told; it
+     will not inherit white from the section. */
+  .hero--dark .hero-title,
+  .hero--dark .hero-figure  { @apply text-white; }
+  .hero--light .hero-title,
+  .hero--light .hero-figure { @apply text-ink; }
+
+  /* signal-600 is a dark orange that goes muddy on black; two stops up holds. */
+  .hero--dark .hero-accent  { @apply text-signal-400; }
+  .hero--light .hero-accent { @apply text-signal-600; }
+
+  .hero--dark .hero-lede  { @apply text-slate-400; }
+  .hero--light .hero-lede { @apply text-slate-500; }
+
+  .hero--dark .hero-rule  { border-color: rgba(255,255,255,0.10); }
+  .hero--light .hero-rule { @apply border-divider; }
+
+  /* A solid white button beside a solid orange one is two shouts, so on the
+     dark ground the second action is an outline instead. */
+  .hero--dark .hero-btn2        { @apply text-white; border-color: rgba(255,255,255,0.25); background-color: rgba(255,255,255,0.06); }
+  .hero--dark .hero-btn2:hover  { border-color: rgba(255,255,255,0.40); background-color: rgba(255,255,255,0.12); }
+  .hero--light .hero-btn2       { @apply border-divider bg-surface text-ink; }
+  .hero--light .hero-btn2:hover { @apply border-slate-400; }
+
+  .hero--dark .hs-cap  { color: #8B939E; }
+  .hero--light .hs-cap { color: #5C6570; }
+
 
   /* Typographic utilities ------------------------------------ */
   .kicker { @apply font-mono text-[11px] font-semibold uppercase tracking-kicker text-signal-600; }
@@ -267,15 +325,6 @@
     background-image:
       linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
-    background-size: 56px 56px;
-  }
-  /* The same ruling for a dark ground. Inverted rather than reused: the ink
-     lines above are invisible on near-black, and the hero needs the texture to
-     keep a large flat panel from reading as a void. */
-  .grid-lines-dark {
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
     background-size: 56px 56px;
   }
   .hatch {
