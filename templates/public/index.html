@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from "partials/icons.html" import icon %}
+{% from "partials/handset.html" import handset with context %}
 
 {# ══════════════ HERO ══════════════ #}
 <section class="relative overflow-hidden border-b border-divider">
@@ -105,14 +106,11 @@
           </div>
         </div>
 
-        {# Handset card #}
-        <div class="rounded-panel bg-slate-900 p-5 shadow-s2 border border-slate-700">
-          <div class="flex items-center justify-between mb-3">
-            <p class="kicker text-slate-500 m-0">On the floor</p>
-            <span class="font-mono text-[10px] text-signal-500">{{ ussd_code }}</span>
-          </div>
-          <div class="rounded-[10px] bg-[#0a1a0f] border border-slate-950 p-3.5">
-            <pre class="term m-0 whitespace-pre-wrap">BACAAN - Your Plant
+        {# Handset #}
+        <div class="pt-2">
+          {% call handset(size='sm', code=ussd_code) %}
+            <div class="hs-out">
+              <pre class="term">BACAAN - Your Plant
 Habari Peter
 1. My tasks
 2. Report production
@@ -122,10 +120,9 @@ Habari Peter
 6. Clock in or out
 7. Stock check
 99 Exit</pre>
-          </div>
-          <p class="text-[11.5px] text-slate-400 mt-3 m-0 leading-snug">
-            No app to install. No bundle to buy. Works on the cheapest phone in the workshop.
-          </p>
+            </div>
+          {% endcall %}
+          <p class="hs-cap">No app to install. No bundle to buy.<br>Works on the cheapest phone in the workshop.</p>
         </div>
       </div>
     </div>

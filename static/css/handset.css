@@ -1,0 +1,215 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Handset frame
+   ─────────────────────────────────────────────────────────────────────────
+   A real phone shell (static/img/handset.png, 444x916) with the USSD screen
+   painted into the glass. Used by templates/partials/handset.html.
+
+   Written as plain CSS on purpose. It does NOT go through the Tailwind
+   build, so the frame keeps working whether or not app.css is recompiled.
+
+   Everything inside the glass is sized in cqw — 1cqw is one percent of the
+   frame width — so the whole handset scales as one object. Change --hs-w
+   and the screen, the type and the keypad all follow.
+
+   The display rectangle in the source image is x 21..418, y 27..887 with a
+   30px corner radius. Those numbers are where the percentages below come
+   from; if the image is ever replaced, re-measure and update them here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.hs {
+  --hs-w: 300px;
+  --hs-screen: #000;
+  --hs-line: rgba(255, 106, 0, 0.2);
+  --hs-dim: rgba(255, 106, 0, 0.7);
+  --hs-key: #0f1216;
+  --hs-key-edge: #1c222a;
+
+  container-type: inline-size;
+  position: relative;
+  width: min(var(--hs-w), 100%);
+  aspect-ratio: 444 / 916;
+  margin-inline: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hs--sm { --hs-w: 250px; }
+.hs--md { --hs-w: 290px; }
+.hs--lg { --hs-w: 330px; }
+
+/* The shell sits under the glass so the screen stays interactive. */
+.hs-shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Follows the alpha channel, so the shadow takes the shape of the body
+     instead of a rectangle behind it. */
+  filter: drop-shadow(0 18px 34px rgba(7, 9, 11, 0.18));
+}
+
+.hs-screen {
+  position: absolute;
+  left: 4.72973%;
+  top: 2.94760%;
+  width: 89.63964%;
+  height: 93.99563%;
+  border-radius: 6.75676cqw;
+  background: var(--hs-screen);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+.hs-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+  padding: 2.4cqw 3.6cqw 2cqw;
+  border-bottom: 1px solid var(--hs-line);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 2.7cqw;
+  letter-spacing: 0.1em;
+  color: var(--hs-dim);
+  white-space: nowrap;
+}
+
+.hs-status > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Screen body ────────────────────────────────────────────────────────── */
+.hs-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.6cqw;
+  padding: 3cqw 3.6cqw 3.6cqw;
+}
+
+/* A still screen — the marketing pages — is only a menu, so it sits in the
+   middle of the glass the way a real USSD prompt does, rather than clinging to
+   the status bar with two thirds of the screen empty below it. The simulator
+   has a reply row and a keypad under the output, so it never matches this and
+   stays top-anchored. Browsers without :has() fall back to top-anchored, which
+   is merely plainer, not broken. */
+.hs-body:has(> .hs-out:only-child) { justify-content: center; }
+
+.hs-out {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The simulator rewrites the pre's className on every exchange, so the pre
+   itself carries no layout — only .term and a colour class survive. Sizing
+   lives here, where the repaint cannot reach it. */
+.hs .term {
+  font-size: 3.8cqw;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.hs .ico { width: 3.6cqw; height: 3.6cqw; stroke-width: 1.9; }
+
+/* ── Reply row ──────────────────────────────────────────────────────────── */
+.hs-reply { display: flex; gap: 2cqw; flex-shrink: 0; }
+
+.hs-input {
+  flex: 1;
+  min-width: 0;
+  height: 9.4cqw;
+  padding: 0 3cqw;
+  border: 1px solid var(--hs-key-edge);
+  border-radius: 2.8cqw;
+  background: var(--hs-key);
+  color: #fff;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 3.7cqw;
+  transition: border-color 0.15s ease;
+}
+
+.hs-input::placeholder { color: #5c6570; }
+.hs-input:focus { outline: none; border-color: #ff6a00; }
+.hs-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Buttons and keypad ─────────────────────────────────────────────────── */
+.hs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4cqw;
+  height: 9.4cqw;
+  padding: 0 3.4cqw;
+  border: 1px solid transparent;
+  border-radius: 2.8cqw;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 3.5cqw;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.hs-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.hs-btn:focus-visible { outline: 2px solid #ff6a00; outline-offset: 2px; }
+
+.hs-btn--go { background: #ff6a00; border-color: #ff6a00; color: #07090b; }
+.hs-btn--go:not(:disabled):hover { background: #ff7a24; border-color: #ff7a24; }
+
+.hs-btn--end { background: transparent; border-color: rgba(214, 40, 40, 0.45); color: #ff6b6b; }
+.hs-btn--end:not(:disabled):hover { background: #d62828; border-color: #d62828; color: #fff; }
+
+.hs-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.8cqw;
+  flex-shrink: 0;
+}
+
+.hs-key {
+  height: 9.6cqw;
+  border: 1px solid var(--hs-key-edge);
+  border-radius: 2.6cqw;
+  background: var(--hs-key);
+  color: #fff;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 4.1cqw;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.hs-key:hover { background: var(--hs-key-edge); }
+.hs-key:active { background: #ff6a00; color: #07090b; }
+.hs-key:focus-visible { outline: 2px solid #ff6a00; outline-offset: 2px; }
+
+.hs-call { display: grid; grid-template-columns: 1fr 1fr; gap: 2cqw; flex-shrink: 0; }
+
+/* ── Caption under the frame ────────────────────────────────────────────── */
+.hs-cap {
+  max-width: min(var(--hs-w), 100%);
+  margin: 0.75rem auto 0;
+  text-align: center;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+  color: #8b939e;
+}
+
+/* On a narrow viewport the frame gets the width it needs rather than the
+   width the desktop layout asked for. */
+@media (max-width: 480px) {
+  .hs { --hs-w: 76vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-btn, .hs-key, .hs-input { transition: none; }
+}

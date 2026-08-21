@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from "partials/icons.html" import icon %}
+{% from "partials/handset.html" import handset with context %}
 
 <section class="border-b border-divider relative overflow-hidden">
   <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
@@ -166,20 +167,18 @@
         </p>
       </div>
 
-      <div class="rounded-panel bg-slate-900 p-4 shadow-s2 border border-slate-700 mx-auto lg:mx-0 w-full max-w-[300px]">
-        <div class="rounded-[10px] bg-[#0a1a0f] border border-slate-950 p-3.5 min-h-[200px]">
-          <div class="flex items-center justify-between pb-2 mb-2 border-b border-signal-500/20">
-            <span class="font-mono text-[9px] text-signal-500/70 tracking-widest">SAFARICOM</span>
-            <span class="font-mono text-[9px] text-signal-500/70">{{ ussd_code }}</span>
-          </div>
-          <pre class="term m-0 whitespace-pre-wrap">REPORT PRODUCTION
+      <div class="mx-auto lg:mx-0 w-full max-w-[300px]">
+        {% call handset(size='md', code=ussd_code) %}
+          <div class="hs-out">
+            <pre class="term">REPORT PRODUCTION
 1. RUN-0003 Swing gate 3
 2. RUN-0001 Steel cabine
 3. RUN-0002 Storage box
 4. RUN-0005 Wheelbarrow
 0 Back 00 Menu 99 Exit</pre>
-        </div>
-        <p class="font-mono text-[10px] text-slate-500 mt-3 text-center m-0">Telco layer by Africa's Talking</p>
+          </div>
+        {% endcall %}
+        <p class="hs-cap">Telco layer by Africa's Talking</p>
       </div>
     </div>
   </div>

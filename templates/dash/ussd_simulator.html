@@ -8,55 +8,41 @@
 {% endblock %}
 
 {% block content %}
+{% from "partials/handset.html" import handset with context %}
 <div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start" data-ussd-sim
      data-sim-endpoint="{{ url_for('ussd_simulate') }}" data-sim-csrf="{{ csrf_token() }}">
 
   {# ══════════ The handset ══════════ #}
-  <div class="mx-auto xl:mx-0">
-    <div class="w-[330px] rounded-[26px] bg-slate-900 p-4 shadow-s3 border border-slate-700">
+  <div class="mx-auto xl:mx-0 xl:sticky xl:top-[78px]">
+    {% call handset(size='lg', code=ussd_code, live=true) %}
 
-      {# earpiece #}
-      <div class="flex items-center justify-center gap-2 pb-3">
-        <span class="w-[38px] h-[4px] rounded-full bg-slate-700"></span>
-      </div>
-
-      {# screen #}
-      <div class="rounded-[12px] bg-[#0a1a0f] border-2 border-slate-950 p-3.5 min-h-[218px] flex flex-col">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-signal-500/20">
-          <span class="font-mono text-[9px] text-signal-500/70 tracking-widest">SAFARICOM</span>
-          <span class="font-mono text-[9px] text-signal-500/70" data-sim-code>{{ ussd_code }}</span>
-        </div>
-        <pre class="term flex-1 whitespace-pre-wrap break-words m-0" data-sim-screen>Ready.
+      {# The JS rewrites the pre's class on every paint, so the pre carries no
+         layout of its own — the scroll box around it does. #}
+      <div class="hs-out">
+        <pre class="term" data-sim-screen>Ready.
 Enter a worker number and press Dial.</pre>
       </div>
 
-      {# input row #}
-      <div class="mt-3 flex gap-2">
-        <input type="text" class="input h-[38px] min-h-0 py-0 bg-slate-800 border-slate-600 text-white font-mono text-[13px] rounded-[10px]"
-               data-sim-input placeholder="Reply…" aria-label="Menu reply" autocomplete="off"
-               inputmode="numeric" enterkeyhint="send">
-        <button type="button" class="btn btn-primary !h-[38px] shrink-0" data-sim-send>Send</button>
+      <div class="hs-reply">
+        <input type="text" class="hs-input" data-sim-input placeholder="Reply…" aria-label="Menu reply"
+               autocomplete="off" inputmode="numeric" enterkeyhint="send">
+        <button type="button" class="hs-btn hs-btn--go" data-sim-send>Send</button>
       </div>
 
-      {# keypad #}
-      <div class="hidden sm:grid grid-cols-3 gap-1.5 mt-3">
+      <div class="hs-keys">
         {% for k in ['1','2','3','4','5','6','7','8','9','*','0','#'] %}
-        <button type="button" data-sim-key="{{ k }}"
-                class="h-[36px] rounded-[9px] bg-slate-800 border border-slate-700 text-white font-mono text-[14px]
-                       hover:bg-slate-700 active:bg-signal-500 active:text-ink transition-colors">{{ k }}</button>
+        <button type="button" class="hs-key" data-sim-key="{{ k }}" aria-label="Key {{ k }}">{{ k }}</button>
         {% endfor %}
       </div>
 
-      {# call controls #}
-      <div class="grid grid-cols-2 gap-2 mt-3">
-        <button type="button" class="btn btn-primary !h-[38px]" data-sim-dial>{{ icon('phone','ico ico-sm') }} Dial</button>
-        <button type="button" class="btn btn-danger !h-[38px] !text-bad !border-bad/40" data-sim-end>End</button>
+      <div class="hs-call">
+        <button type="button" class="hs-btn hs-btn--go" data-sim-dial>{{ icon('phone','ico') }} Dial</button>
+        <button type="button" class="hs-btn hs-btn--end" data-sim-end>End</button>
       </div>
-    </div>
 
-    <p class="text-center font-mono text-[10px] text-slate-400 mt-3 m-0" data-sim-hint>
-      Enter a registered worker number and press Dial.
-    </p>
+    {% endcall %}
+
+    <p class="hs-cap" data-sim-hint>Enter a registered worker number and press Dial.</p>
   </div>
 
   {# ══════════ Controls and explanation ══════════ #}

@@ -1,0 +1,33 @@
+{# ═══════════════════════════════════════════════════════════════════════════
+   Handset frame
+
+   One phone shell for every place the floor menu is shown, so the marketing
+   pages and the simulator cannot drift apart. Styling lives in
+   static/css/handset.css.
+
+   Usage:
+     {% from "partials/handset.html" import handset %}
+     {% call handset(size='lg', code=ussd_code, live=true) %}
+       ...whatever goes on the glass...
+     {% endcall %}
+
+   size   sm | md | lg   — 250px, 290px, 330px wide, everything inside scales
+   code   the service code shown in the status bar
+   live   true on the simulator only; tags the code so the JS can read it
+   ═══════════════════════════════════════════════════════════════════════════ #}
+
+{% macro handset(size='md', carrier='SAFARICOM', code='', live=false) -%}
+<div class="hs hs--{{ size }}">
+  <img class="hs-shell" src="{{ asset('img/handset.png') }}" alt="" aria-hidden="true"
+       width="444" height="916" draggable="false">
+  <div class="hs-screen">
+    <div class="hs-status">
+      <span>{{ carrier }}</span>
+      <span {% if live %}data-sim-code{% endif %}>{{ code }}</span>
+    </div>
+    <div class="hs-body">
+      {{ caller() }}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
