@@ -215,7 +215,7 @@
   .tbl .r { @apply text-right num; }
 
   /* Alerts ----------------------------------------------------- */
-  .alert { @apply flex items-start gap-3 px-4 py-3 rounded-surface border-l-[3px] text-[13px]; }
+  .alert { @apply flex items-start gap-3 px-4 py-3 rounded-surface text-[13px]; }
   .alert-ok { @apply bg-ok/[0.07] border-ok text-ok; }
   .alert-warn { @apply bg-warn/[0.07] border-warn text-warn; }
   .alert-bad { @apply bg-bad/[0.07] border-bad text-bad; }

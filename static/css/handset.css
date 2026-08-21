@@ -130,7 +130,8 @@
 
 .hs-dialed {
   margin: auto 0 0;
-  padding: 5cqw 4cqw;
+  min-height: 7.4cqw;
+  padding: 4cqw 4cqw;
   text-align: center;
   font-size: 7.4cqw;
   line-height: 1.1;
@@ -141,57 +142,70 @@
   white-space: nowrap;
 }
 
-/* An empty dialler used to ghost the code at full size, which read as though
-   the number had already been entered. It is now unmistakably a prompt: small,
-   spaced, monospaced, and it says what to do. */
-.hs-dialed:empty::before {
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  font-size: 3.4cqw;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
 .hs-pad { display: grid; grid-template-columns: repeat(3, 1fr); }
 
 .hs-key {
-  position: relative;
-  height: 16cqw;
+  height: 17cqw;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4cqw;
   padding: 0;
   border: 0;
   background: none;
   font-family: inherit;
 }
 
-/* A grid cell is twice as wide as it is tall, so a border-radius on the cell
-   itself gave a stretched oval. The highlight is its own centred circle. */
-button.hs-key { cursor: pointer; }
-button.hs-key::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 13.6cqw;
-  height: 13.6cqw;
-  margin: -6.8cqw 0 0 -6.8cqw;
+/* The highlight is the digit's own box, not the cell's. A cell is twice as wide
+   as it is tall, so a radius on the cell gave a stretched oval; and the letter
+   row is empty on 1, * and #, which shifted those digits off centre. Fixing the
+   size of both rows makes every key identical: the same circle, the same
+   distance from the glyph on all four sides. */
+.hs-key b {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 13cqw;
+  height: 13cqw;
+  /* A digit's ink sits half a pixel above the middle of its line box, because
+     the box reserves descender space the digit never uses. Half of this padding
+     moves the glyph down by exactly that much, so the ring is the same distance
+     from the number top and bottom. Measured, not guessed. */
+  padding-top: 0.34cqw;
   border-radius: 50%;
+  font-size: 8.4cqw;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--hs-digit);
   background: transparent;
   transition: background-color 0.12s ease;
 }
 
-button.hs-key:hover::before { background: rgba(255, 255, 255, 0.08); }
-button.hs-key:active::before { background: rgba(255, 255, 255, 0.17); }
-button.hs-key:focus-visible { outline: none; }
-button.hs-key:focus-visible::before { background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 2px var(--hs-act); }
+.hs-key i {
+  height: 3.2cqw;
+  line-height: 3.2cqw;
+  font-size: 2.9cqw;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  color: var(--hs-mute);
+}
 
-.hs-key b { position: relative; font-size: 8.4cqw; font-weight: 400; line-height: 1; color: var(--hs-digit); }
-.hs-key i { position: relative; font-size: 2.9cqw; font-style: normal; letter-spacing: 0.14em; color: var(--hs-mute); }
+button.hs-key { cursor: pointer; }
+button.hs-key:hover b { background: rgba(255, 255, 255, 0.08); }
+button.hs-key:active b { background: rgba(255, 255, 255, 0.17); }
+
+/* No accent ring here. Reaching a key from the keyboard used to paint an orange
+   circle on whichever key was last touched, which read as a pressed state that
+   had not been pressed. The neutral fill is indicator enough. */
+button.hs-key:focus { outline: none; }
+button.hs-key:focus-visible { outline: none; }
+button.hs-key:focus-visible b { background: rgba(255, 255, 255, 0.12); }
+
 .hs-key--sym b { color: var(--hs-fg); }
+
+/* The asterisk's ink sits near the top of its em box — it is drawn as a raised
+   glyph — so it takes a larger share of the padding to land in the middle. */
+.hs-key--star b { padding-top: 2.37cqw; }
 
 .hs-call-row {
   display: grid;
@@ -446,5 +460,5 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hs-key, .hs-fab, .hs-act, .hs-field { transition: none; }
+  .hs-key b, .hs-fab, .hs-act, .hs-field { transition: none; }
 }

@@ -48,13 +48,14 @@
       <div class="hs-pad">
         {% for digit, letters in keys %}
           {% set sym = digit in ['*', '#'] %}
+          {% set star = digit == '*' %}
           {% if live %}
-          <button type="button" class="hs-key{% if sym %} hs-key--sym{% endif %}"
+          <button type="button" class="hs-key{% if sym %} hs-key--sym{% endif %}{% if star %} hs-key--star{% endif %}"
                   data-sim-key="{{ digit }}" aria-label="Key {{ digit }}">
             <b>{{ digit }}</b><i>{{ letters }}</i>
           </button>
           {% else %}
-          <span class="hs-key{% if sym %} hs-key--sym{% endif %}"><b>{{ digit }}</b><i>{{ letters }}</i></span>
+          <span class="hs-key{% if sym %} hs-key--sym{% endif %}{% if star %} hs-key--star{% endif %}"><b>{{ digit }}</b><i>{{ letters }}</i></span>
           {% endif %}
         {% endfor %}
       </div>
