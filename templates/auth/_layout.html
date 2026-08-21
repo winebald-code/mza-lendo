@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -11,32 +11,41 @@
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 <link rel="stylesheet" href="{{ asset('css/handset.css') }}">
 </head>
-<body class="bg-fog">
+<body class="bg-fog h-full font-sans antialiased">
 {% from "partials/icons.html" import icon, sprite %}
 {% from "partials/handset.html" import handset_panel with context %}
 {{ sprite() }}
 
-<div class="min-h-screen grid lg:grid-cols-[1fr_minmax(0,540px)]">
+<div class="min-h-screen flex flex-col lg:flex-row">
 
-  {# ── Left: the argument, on one screen ───────────────────────────────── #}
-  <section class="hidden lg:flex items-center justify-center bg-slate-900 text-white p-10 xl:p-14 relative overflow-hidden">
+  {# ── Left: the argument (Fixed handset panel) ────────────────────────── #}
+  <section class="hidden lg:flex lg:w-1/2 lg:fixed lg:inset-y-0 lg:left-0 items-center justify-center bg-slate-900 text-white p-10 xl:p-14 overflow-hidden z-10">
     <div class="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-signal-500/10 blur-3xl" aria-hidden="true"></div>
 
-    <div class="relative">
+    <div class="relative w-full max-w-lg">
+      <div class="mb-8">
+        <a href="{{ url_for('public.index') }}" class="inline-flex items-center gap-2.5 focus:outline-none group">
+          {% include "partials/logo.html" %}
+          <span class="font-display font-bold text-xl tracking-[-0.02em] text-white group-hover:opacity-80 transition-opacity">Bacaan</span>
+        </a>
+      </div>
+
       {% call handset_panel(
-           sender=auth_sms_sender|default('BACAAN'),
-           kicker=auth_kicker|default('Manufacturing operations'),
-           headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
-           body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
+            sender=auth_sms_sender|default('BACAAN'),
+            kicker=auth_kicker|default('Manufacturing operations'),
+            headline=auth_headline|default('The floor reports on a feature phone. You read the plant on one screen.'),
+            body=auth_body|default('Workers dial a USSD code to log production, flag a machine or clock in. Every entry lands here as inventory, schedule and a single health score.')) %}{{ auth_sms|default('Aluminium sheet 1.2mm is below its minimum. 0 sheet left, you need 8. Reply 3 to order from Kariuki Hardware.') }}{% endcall %}
     </div>
   </section>
 
-  {# ── Right: the form ─────────────────────────────────────────────────── #}
-  <section class="flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14">
+  {# ── Right: the form (Scrollable panel) ──────────────────────────────── #}
+  <section class="flex-1 flex flex-col justify-center px-5 sm:px-10 py-10 lg:py-14 lg:w-1/2 lg:ml-auto min-h-screen overflow-y-auto">
     <div class="w-full max-w-[400px] mx-auto">
       <div class="lg:hidden flex items-center gap-2.5 mb-9">
-        {% include "partials/logo.html" %}
-        <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
+        <a href="{{ url_for('public.index') }}" class="inline-flex items-center gap-2.5 focus:outline-none">
+          {% include "partials/logo.html" %}
+          <span class="font-display font-bold text-[17px] tracking-[-0.02em]">Bacaan</span>
+        </a>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
