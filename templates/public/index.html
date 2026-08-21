@@ -7,19 +7,30 @@
 {% from "partials/handset.html" import handset with context %}
 
 {# ══════════════ HERO ══════════════ #}
-<section class="relative overflow-hidden border-b border-divider">
-  <div class="absolute inset-0 grid-lines opacity-60" aria-hidden="true"></div>
-  <div class="absolute -right-40 -top-40 w-[560px] h-[560px] rounded-full bg-signal-500/[0.07] blur-3xl" aria-hidden="true"></div>
+{# Dark, because what this section is showing is a lit phone screen. On the fog
+   ground the handset read as a picture pasted onto a page; against the same
+   black as its own glass it belongs to the section, and it is the same black
+   the sign-in pages use, so the product has one surface throughout.
+
+   The column split is [1fr_auto] rather than a ratio: the handset track takes
+   exactly the width of the phone and the argument keeps everything else, so
+   enlarging the phone widens nothing and steals no measure from the copy. #}
+<section class="relative overflow-hidden bg-ink text-white border-b border-white/10">
+  <div class="absolute inset-0 grid-lines-dark opacity-70" aria-hidden="true"></div>
+  <div class="absolute -right-40 -top-40 w-[560px] h-[560px] rounded-full bg-signal-500/[0.13] blur-3xl" aria-hidden="true"></div>
 
   <div class="relative max-w-shell mx-auto px-5 sm:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
-    <div class="grid lg:grid-cols-[1.05fr_1fr] gap-14 xl:gap-20 items-center">
+    <div class="grid lg:grid-cols-[1fr_auto] gap-14 xl:gap-20 items-center">
 
-      <div>
-        <h1 class="font-display text-[38px] sm:text-[52px] xl:text-[60px] font-bold leading-[1.03] tracking-[-0.035em] m-0">
+      <div class="min-w-0">
+        {# text-white is not redundant: the base layer sets h1 { color: ink }, which
+           beats colour inherited from the section and left the headline black on
+           black. #}
+        <h1 class="font-display text-[38px] sm:text-[52px] xl:text-[60px] font-bold leading-[1.03] tracking-[-0.035em] m-0 text-white">
           The floor reports on a feature phone.<br>
-          <span class="text-signal-600">You read the whole plant</span> on one screen.
+          <span class="text-signal-400">You read the whole plant</span> on one screen.
         </h1>
-        <p class="lede mt-7 max-w-[54ch]">
+        <p class="text-[17px] leading-[1.6] text-slate-400 mt-7 max-w-[54ch]">
           Most workshop software assumes everyone has a smartphone, a data bundle and the patience
           to learn an app. Bacaan assumes the opposite. Workers dial a USSD code from whatever
           handset they already own. What they enter becomes your inventory, your schedule and one
@@ -30,86 +41,96 @@
           <a href="{{ cta_url }}" class="btn btn-primary">
             {{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}
           </a>
-          <a href="{{ url_for('platform') }}" class="btn btn-secondary">
+          <a href="{{ url_for('platform') }}" class="btn border-white/25 bg-white/[0.06] text-white hover:bg-white/[0.12] hover:border-white/40">
             {{ icon('layers','ico ico-sm') }} See how it works
           </a>
         </div>
 
-        <dl class="grid grid-cols-3 gap-6 mt-12 pt-9 border-t border-divider max-w-[460px]">
+        {# 460px was sized for the old narrower column and broke "Any handset" over
+           two lines; the copy column is wider now, so the figures get the room to
+           each sit on one. #}
+        <dl class="grid grid-cols-3 gap-6 mt-12 pt-9 border-t border-white/10 max-w-[520px]">
           <div>
             <dt class="label m-0">Needs</dt>
-            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">No data</dd>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0 text-white">No data</dd>
           </div>
           <div>
             <dt class="label m-0">Runs on</dt>
-            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">Any handset</dd>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0 text-white">Any handset</dd>
           </div>
           <div>
             <dt class="label m-0">Session</dt>
-            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0">Under 30s</dd>
+            <dd class="font-display text-[21px] font-bold tracking-[-0.02em] mt-1.5 m-0 text-white">Under 30s</dd>
           </div>
         </dl>
-      </div>
 
-      {# The two halves, side by side #}
-      <div class="grid gap-4">
-        {# Pulse card #}
-        <div class="card shadow-s2 overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-divider bg-fog/50">
-            <p class="kicker m-0">Manufacturing Pulse</p>
-            <span class="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
-              <span class="dot bg-ok animate-blink"></span> live
-            </span>
-          </div>
-          <div class="p-5 flex items-center gap-6">
-            {# Compact 44-tick gauge, statically rendered #}
-            <div class="relative w-[118px] h-[118px] shrink-0">
-              <svg viewBox="0 0 200 200" class="w-full h-full -rotate-[135deg]" aria-label="Overall plant health 72 percent">
-                {% set lit = 32 %}
-                {% for i in range(44) %}
-                  <rect x="97" y="8" width="6" height="{{ 20 if i < lit else 13 }}" rx="1.5"
-                        fill="{{ '#D97706' if i < lit else '#D7DCE2' }}"
-                        transform="rotate({{ i * 270 / 43 }} 100 100)"
-                        {% if i < lit %}opacity="{{ 0.45 + 0.55 * i / 44 }}"{% endif %} />
-                {% endfor %}
-              </svg>
-              <div class="absolute inset-0 grid place-items-center text-center">
-                <div>
-                  <p class="font-display text-[30px] font-bold leading-none tracking-[-0.04em] text-warn m-0">72<span class="text-[0.42em] align-top">%</span></p>
-                  <p class="label mt-1.5 m-0">Health</p>
-                </div>
-              </div>
+        {# The pulse card was stacked above the handset, which is what made the
+           right column 1218px tall against 725px of copy and left the headline
+           floating in the middle of it. It belongs on this side anyway: the
+           headline promises a floor that reports on a phone and an owner who
+           reads one screen, and now the two artefacts sit on the side of the
+           split that each sentence describes. It stays a bright surface — a lit
+           screen against the dark is the whole point. #}
+        <div class="mt-11 max-w-[560px]">
+          {# Pulse card #}
+          <div class="card shadow-s2 overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-divider bg-fog/50">
+              <p class="kicker m-0">Manufacturing Pulse</p>
+              <span class="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
+                <span class="dot bg-ok animate-blink"></span> live
+              </span>
             </div>
-
-            <div class="grid gap-2.5 flex-1 min-w-0">
-              {% for name, v, tone in [('Production', 78, 'ok'), ('Inventory', 54, 'warn'),
-                                       ('Orders', 81, 'ok'), ('Maintenance', 46, 'bad'), ('Suppliers', 88, 'ok')] %}
-              <div>
-                <div class="flex items-baseline justify-between gap-2 mb-1">
-                  <span class="text-[11.5px] text-slate-600">{{ name }}</span>
-                  <span class="num text-[11px] font-semibold {% if tone=='ok' %}text-ok{% elif tone=='warn' %}text-warn{% else %}text-bad{% endif %}">{{ v }}</span>
-                </div>
-                <div class="flex items-stretch gap-[2px] h-[6px]">
-                  {% for i in range(20) %}
-                    <span class="flex-1 rounded-[1px] {% if i < (v / 5)|int %}{% if tone=='ok' %}bg-ok{% elif tone=='warn' %}bg-warn{% else %}bg-bad{% endif %}{% else %}bg-divider{% endif %}"></span>
+            <div class="p-5 flex items-center gap-6">
+              {# Compact 44-tick gauge, statically rendered #}
+              <div class="relative w-[118px] h-[118px] shrink-0">
+                <svg viewBox="0 0 200 200" class="w-full h-full -rotate-[135deg]" aria-label="Overall plant health 72 percent">
+                  {% set lit = 32 %}
+                  {% for i in range(44) %}
+                    <rect x="97" y="8" width="6" height="{{ 20 if i < lit else 13 }}" rx="1.5"
+                          fill="{{ '#D97706' if i < lit else '#D7DCE2' }}"
+                          transform="rotate({{ i * 270 / 43 }} 100 100)"
+                          {% if i < lit %}opacity="{{ 0.45 + 0.55 * i / 44 }}"{% endif %} />
                   {% endfor %}
+                </svg>
+                <div class="absolute inset-0 grid place-items-center text-center">
+                  <div>
+                    <p class="font-display text-[30px] font-bold leading-none tracking-[-0.04em] text-warn m-0">72<span class="text-[0.42em] align-top">%</span></p>
+                    <p class="label mt-1.5 m-0">Health</p>
+                  </div>
                 </div>
               </div>
-              {% endfor %}
+
+              <div class="grid gap-2.5 flex-1 min-w-0">
+                {% for name, v, tone in [('Production', 78, 'ok'), ('Inventory', 54, 'warn'),
+                                         ('Orders', 81, 'ok'), ('Maintenance', 46, 'bad'), ('Suppliers', 88, 'ok')] %}
+                <div>
+                  <div class="flex items-baseline justify-between gap-2 mb-1">
+                    <span class="text-[11.5px] text-slate-600">{{ name }}</span>
+                    <span class="num text-[11px] font-semibold {% if tone=='ok' %}text-ok{% elif tone=='warn' %}text-warn{% else %}text-bad{% endif %}">{{ v }}</span>
+                  </div>
+                  <div class="flex items-stretch gap-[2px] h-[6px]">
+                    {% for i in range(20) %}
+                      <span class="flex-1 rounded-[1px] {% if i < (v / 5)|int %}{% if tone=='ok' %}bg-ok{% elif tone=='warn' %}bg-warn{% else %}bg-bad{% endif %}{% else %}bg-divider{% endif %}"></span>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
             </div>
-          </div>
-          <div class="px-5 py-3.5 border-t border-divider bg-fog/40">
-            <p class="text-[12px] text-slate-600 m-0 leading-snug">
-              <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Why</span>
-              Welding bay C is down and two runs depend on it. Aluminium sheet is at zero.
-            </p>
+            <div class="px-5 py-3.5 border-t border-divider bg-fog/40">
+              <p class="text-[12px] text-slate-600 m-0 leading-snug">
+                <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Why</span>
+                Welding bay C is down and two runs depend on it. Aluminium sheet is at zero.
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        {# Handset #}
-        <div class="pt-2">
-          {% call handset(size='hero', code=ussd_code) %}
-            <pre class="term">BACAAN - Your Plant
+      {# ── What the floor uses. Alone in its track, so its height is its own. ── #}
+      <div class="justify-self-center lg:justify-self-end">
+        {% call handset(size='hero', code=ussd_code) %}
+          <pre class="term">BACAAN - Your Plant
 Habari Peter
 1. My tasks
 2. Report production
@@ -119,9 +140,8 @@ Habari Peter
 6. Clock in or out
 7. Stock check
 99 Exit</pre>
-          {% endcall %}
-          <p class="hs-cap">No app to install. No bundle to buy.<br>Works on the cheapest phone in the workshop.</p>
-        </div>
+        {% endcall %}
+        <p class="hs-cap">No app to install. No bundle to buy.<br>Works on the cheapest phone in the workshop.</p>
       </div>
     </div>
   </div>
