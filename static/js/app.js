@@ -512,18 +512,55 @@
     if (sim && !sim.dataset.simReady) { sim.dataset.simReady = '1'; initSimulator(sim); }
   });
 
+  /* ── The handset simulator ────────────────────────────────────────────
+     Behaves like the phone it is drawn as. Nothing happens until a code is
+     dialled: the keypad and the physical keyboard both type into the dialled
+     line, the call button opens a session only if what was dialled matches the
+     service code, and from then on the same keys type the reply. The network
+     half is unchanged — the same form post to the same callback. */
   function initSimulator(root) {
+    const hs = $('.hs', root);
     const screen = $('[data-sim-screen]', root);
     const input = $('[data-sim-input]', root);
     const phoneField = $('[data-sim-phone]', root);
     const dialBtn = $('[data-sim-dial]', root);
+    const backBtn = $('[data-sim-back]', root);
     const sendBtn = $('[data-sim-send]', root);
     const endBtn = $('[data-sim-end]', root);
+    const okBtn = $('[data-sim-ok]', root);
     const hint = $('[data-sim-hint]', root);
     const codeEl = $('[data-sim-code]', root);
+    const SERVICE = ((codeEl && codeEl.getAttribute('data-sim-code')) || '').trim();
+
     let sessionId = null;
     let history = [];
     let busy = false;
+    let mode = 'dial';               // dial · session · ended
+
+    /* ── State ─────────────────────────────────────────────────────────── */
+    function setMode(next) {
+      mode = next;
+      if (hs) {
+        hs.classList.toggle('is-session', next === 'session');
+        hs.classList.toggle('is-ended', next === 'ended');
+      }
+      const open = next === 'session';
+      input.disabled = !open;
+      sendBtn.disabled = !open;
+      endBtn.disabled = !open;
+      if (dialBtn) dialBtn.disabled = next !== 'dial';
+      phoneField.disabled = next !== 'dial';
+      if (hint) {
+        hint.textContent =
+          next === 'session' ? 'Session open. Reply with a menu number, then press Send.'
+          : next === 'ended' ? 'Session closed. Press OK, then dial again.'
+          : 'Dial ' + (SERVICE || 'the code') + ' on the keypad, then press call.';
+      }
+      if (open) input.focus();
+    }
+
+    function dialled() { return codeEl ? codeEl.textContent.trim() : ''; }
+    function setDialled(v) { if (codeEl) codeEl.textContent = v; }
 
     function paint(text, kind) {
       screen.textContent = text;
@@ -532,9 +569,7 @@
     }
 
     // On a phone the on-screen keyboard covers the lower half of the viewport,
-    // so the handset screen ends up above the fold exactly when the reply
-    // lands. Bring it back into view after every exchange and when the field
-    // takes focus.
+    // so the handset ends up above the fold exactly when the reply lands.
     function revealScreen() {
       if (window.innerWidth >= 640) return;
       window.requestAnimationFrame(function () {
@@ -548,25 +583,102 @@
       });
     }
 
-    function setLive(live) {
-      input.disabled = !live;
-      sendBtn.disabled = !live;
-      endBtn.disabled = !live;
-      dialBtn.disabled = live;
-      phoneField.disabled = live;
-      if (hint) {
-        hint.textContent = live
-          ? 'Session open. Reply with a menu number, then press Send.'
-          : 'Enter a registered worker number and press Dial.';
-      }
+    /* ── Keys. One path for the on-screen pad and the real keyboard. ────── */
+    function press(ch) {
+      if (mode === 'dial') setDialled(dialled() + ch);
+      else if (mode === 'session') { input.value += ch; input.focus(); }
     }
 
+    function rub() {
+      if (mode === 'dial') setDialled(dialled().slice(0, -1));
+      else if (mode === 'session') { input.value = input.value.slice(0, -1); input.focus(); }
+    }
+
+    $$('[data-sim-key]', root).forEach(function (k) {
+      k.addEventListener('click', function () { press(k.getAttribute('data-sim-key')); });
+    });
+    if (backBtn) backBtn.addEventListener('click', rub);
+
+    // A real keyboard drives the same handset — unless the caret is in a field,
+    // where the browser's own handling is what the person expects.
+    document.addEventListener('keydown', function (e) {
+      if (!root.isConnected) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+                            el.tagName === 'SELECT' || el.isContentEditable);
+      if (typing) return;
+      if (/^[0-9*#]$/.test(e.key)) { e.preventDefault(); press(e.key); }
+      else if (e.key === 'Backspace') { e.preventDefault(); rub(); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (mode === 'dial') call();
+        else if (mode === 'session') sendBtn.click();
+        else if (okBtn) okBtn.click();
+      }
+    });
+
+    /* ── The call button ───────────────────────────────────────────────── */
+    function call() {
+      if (mode !== 'dial') return;
+      const typed = dialled();
+      if (!typed) return;
+      if (!phoneField.value.trim()) { phoneField.focus(); return; }
+      if (SERVICE && typed !== SERVICE) {
+        setMode('ended');
+        paint('Connection problem or invalid MMI code.', 'end');
+        return;
+      }
+      sessionId = 'sim-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      history = [];
+      setMode('session');
+      post('');
+    }
+
+    if (dialBtn) dialBtn.addEventListener('click', call);
+
+    sendBtn.addEventListener('click', function () {
+      const v = input.value.trim();
+      if (!v) return;
+      history.push(v);
+      post(history.join('*'));
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); }
+    });
+
+    endBtn.addEventListener('click', function () {
+      sessionId = null; history = [];
+      setMode('ended');
+      paint('Session ended.', 'end');
+    });
+
+    if (okBtn) okBtn.addEventListener('click', function () {
+      setMode('dial');
+      paint('', 'end');
+      input.value = '';
+    });
+
+    /* ── The worker chips. Here rather than in a page script, because a page
+       script is not re-run when the rail swaps the content in place. ────── */
+    $$('[data-sim-worker]', root).forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        if (phoneField.disabled) return;
+        phoneField.value = chip.getAttribute('data-sim-worker');
+        phoneField.focus();
+        $$('[data-sim-worker]', root).forEach(function (c) { c.classList.remove('is-on'); });
+        chip.classList.add('is-on');
+      });
+    });
+
+    /* ── The network half ──────────────────────────────────────────────── */
     function post(textValue) {
       if (busy) return;
       busy = true;
       const body = new URLSearchParams({
         sessionId: sessionId,
-        serviceCode: codeEl ? codeEl.textContent.trim() : '',
+        serviceCode: SERVICE,
         phoneNumber: phoneField.value.trim(),
         networkCode: '63902',
         text: textValue,
@@ -588,9 +700,9 @@
           const ended = raw.startsWith('END');
           const shown = raw.replace(/^(CON|END)\s*/, '');
           paint(shown, ended ? 'end' : 'con');
-          if (ended) { sessionId = null; history = []; setLive(false); }
+          if (ended) { sessionId = null; history = []; setMode('ended'); }
           input.value = '';
-          input.focus();
+          if (!ended) input.focus();
         })
         .catch((err) => {
           // Say which failure it was. "Network error" for everything sends
@@ -602,46 +714,14 @@
             : 'Could not reach the dashboard. Check your connection.';
           paint(why, 'end');
           sessionId = null; history = [];
-          setLive(false);
+          setMode('ended');
         })
         .finally(() => { busy = false; });
     }
 
-    dialBtn.addEventListener('click', () => {
-      if (!phoneField.value.trim()) { phoneField.focus(); return; }
-      sessionId = 'sim-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-      history = [];
-      setLive(true);
-      post('');
-    });
-
-    sendBtn.addEventListener('click', () => {
-      const v = input.value.trim();
-      if (!v) return;
-      history.push(v);
-      post(history.join('*'));
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); }
-    });
-
-    endBtn.addEventListener('click', () => {
-      sessionId = null; history = [];
-      paint('Session ended.', 'end');
-      setLive(false);
-    });
-
-    $$('[data-sim-key]', root).forEach((k) => {
-      k.addEventListener('click', () => {
-        if (input.disabled) return;
-        input.value += k.getAttribute('data-sim-key');
-        input.focus();
-      });
-    });
-
-    setLive(false);
-    paint('Ready.\nEnter a worker number and press Dial.', 'end');
+    setMode('dial');
+    setDialled('');
+    paint('', 'end');
   }
 
   /* ── Filter forms submit on change ────────────────────────────────────── */
@@ -809,5 +889,14 @@
     });
   } else {
     reveals.forEach((el) => { el.style.opacity = '1'; });
+  }
+
+  /* Everything in PAGE_INIT was only being run by the in-place navigator, so a
+     first load or a refresh left those components dead — the handset simulator
+     among them. Run the same pass once for the document we were served. */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { rescan(document); });
+  } else {
+    rescan(document);
   }
 })();

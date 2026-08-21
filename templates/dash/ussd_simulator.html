@@ -126,14 +126,3 @@ Enter a worker number and press Dial.</pre>
   </div>
 </div>
 {% endblock %}
-
-{% block scripts %}
-<script nonce="{{ csp_nonce }}">
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-sim-worker]');
-    if (!btn) return;
-    var field = document.querySelector('[data-sim-phone]');
-    if (field && !field.disabled) field.value = btn.getAttribute('data-sim-worker');
-  });
-</script>
-{% endblock %}
