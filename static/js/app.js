@@ -868,28 +868,13 @@
     addEventListener('popstate', () => { go(location.href, false); });
   }
 
-  /* ── Reveal on scroll (public pages only, respects reduced motion) ────── */
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const reveals = $$('[data-reveal-on-scroll]');
-  if (reveals.length && !reduce && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.style.transition = 'opacity 600ms ease, transform 600ms cubic-bezier(.2,.7,.3,1)';
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'none';
-          io.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px' });
-    reveals.forEach((el) => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(14px)';
-      io.observe(el);
-    });
-  } else {
-    reveals.forEach((el) => { el.style.opacity = '1'; });
-  }
+  /* Public pages used to fade their sections in as they scrolled into view,
+     which meant content sat at zero opacity until the observer fired. Nothing
+     is withheld now — the page arrives complete. */
+  $$('[data-reveal-on-scroll]').forEach(function (el) {
+    el.style.opacity = '1';
+    el.style.transform = 'none';
+  });
 
   /* Everything in PAGE_INIT was only being run by the in-place navigator, so a
      first load or a refresh left those components dead — the handset simulator
