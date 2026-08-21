@@ -41,7 +41,6 @@
 
     <div class="hs-status"><span>{{ carrier }}</span>{{ _meters() }}</div>
 
-    {# ── The dialler. Inert on a marketing page, live on the simulator. ── #}
     <div class="hs-dialer"{% if not live %} aria-hidden="true"{% endif %}>
       {% if live %}<p class="hs-dialed" data-sim-dialed data-sim-code="{{ code }}"></p>{% else %}<p class="hs-dialed">{{ code }}</p>{% endif %}
 
@@ -64,10 +63,10 @@
       <div class="hs-call-row">
         <span></span>
         <button type="button" class="hs-fab" data-sim-dial aria-label="Call">
-        <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 0 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1z"/></svg>
         </button>
         <button type="button" class="hs-back" data-sim-back aria-label="Delete">
-          <svg viewBox="0 0 24 24"><path d="M22 5H8.7a1 1 0 0 0-.75.34l-5.3 6a1 1 0 0 0 0 1.32l5.3 6a1 1 0 0 0 .75.34H22a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1m-3.3 10.3-1.4 1.4L14 13.4l-3.3 3.3-1.4-1.4 3.3-3.3-3.3-3.3 1.4-1.4 3.3 3.3 3.3-3.3 1.4 1.4-3.3 3.3z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M22 5H8.7a1 1 0 0 0-.75.34l-5.3 6a1 1 0 0 0 0 1.32l5.3 6a1 1 0 0 0 .75.34H22a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1m-3.3 10.3-1.4 1.4L14 13.4l-3.3 3.3-1.4-1.4 1.4-1.4 3.3 3.3 3.3-3.3 1.4 1.4-3.3 3.3z"/></svg>
         </button>
       </div>
       {% else %}
@@ -81,7 +80,6 @@
 
     <div class="hs-scrim" aria-hidden="true"></div>
 
-    {# ── The dialogue the network puts on top ── #}
     <div class="hs-dialog">
       <div class="hs-msg">
         {{ caller() }}
@@ -140,10 +138,6 @@
 
 {# ═══════════════════════════════════════════════════════════════════════════
    handset_panel — the whole auth argument, on one screen.
-
-   The sign-in and sign-up pages used to put the case on a dark panel with a
-   small phone beside it. It is all one screen now: the mark, the claim, what it
-   runs on, and the message the floor receives — because that is the product.
    ═══════════════════════════════════════════════════════════════════════════ #}
 {% macro handset_panel(carrier='WINEBALD', sender='BACAAN', kicker='', headline='', body='') -%}
 <div class="hs hs--panel hs--sms">
@@ -154,7 +148,7 @@
     <div class="hs-status"><span>{{ carrier }}</span>{{ _meters() }}</div>
 
     <div class="hs-panel">
-      <div class="hs-panel-mark">
+      <a href="{{ url_for('home') }}" class="hs-panel-mark" aria-label="Bacaan homepage">
         <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <rect width="32" height="32" rx="9" fill="#07090B"/>
           <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
@@ -162,7 +156,7 @@
           <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
         </svg>
         <span>Bacaan</span>
-      </div>
+      </a>
 
       <p class="hs-panel-kicker">{{ kicker }}</p>
       <h2 class="hs-panel-head">{{ headline }}</h2>
