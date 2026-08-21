@@ -57,6 +57,13 @@
 .hs--md { --hs-w: 290px; }
 .hs--lg { --hs-w: 330px; }
 
+/* The homepage hero, where the phone is the argument and had far more column
+   than it was using. Fluid rather than a fourth fixed step, so it fills the
+   column it is given: the floor is what the 1024px layout can take, the ceiling
+   is the point past which a mockup starts upstaging the copy beside it.
+   max-width above still clamps it if the column is narrower than the floor. */
+.hs--hero { --hs-w: clamp(300px, 30vw, 420px); }
+
 /* The shell sits under the glass so the screen stays interactive. */
 .hs-shell {
   position: absolute;
@@ -308,6 +315,20 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 }
 
 .hs-msg { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+/* ...but only in the simulator, where the network's reply can be any length.
+   Everywhere else the dialogue is authored, fixed, and meant to be read whole,
+   so a scrollbar over it is a defect. The homepage menu was sitting at exactly
+   its content height with no slack — one font metric away from a scrollbar
+   appearing over the nine lines it exists to show. Off the simulator the
+   message sizes to its text: min-height:auto stops the flex parent compressing
+   it, and the dialogue grows to fit instead of capping and scrolling. */
+.hs:not(.hs--live) .hs-msg {
+  min-height: auto;
+  overflow-y: visible;
+}
+
+.hs:not(.hs--live) .hs-dialog { max-height: 92%; }
 
 /* The simulator rewrites the pre's className on every exchange, so the pre
    carries no layout and no colour of its own — both live here, where the
