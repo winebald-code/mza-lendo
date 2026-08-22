@@ -146,7 +146,15 @@
 
     const yt = attr(host, 'data-y-label', 'Units');
     const xt = attr(host, 'data-x-label', 'Date');
-    const key = W >= 560;
+    /* The legend used to need 560px, which no phone gives it — the chart card
+       is about 316px wide on a handset, so the key simply vanished and the two
+       series went unlabelled exactly where they are hardest to tell apart.
+       legendRow right-aligns and its width is computable, so the gate is now
+       whether it actually fits rather than a guess. */
+    const keyItems = [{ c: INK, k: 'Earlier' }, { c: SIGNAL, k: 'Latest' }];
+    let keyW = -12;
+    keyItems.forEach((it) => { keyW += 26 + tw(it.k, FS); });
+    const key = W - (yt ? 44 : 32) - 6 >= keyW;
     const padL = yt ? 44 : 32, padR = 6, padT = key ? 26 : 16, padB = xt ? 34 : 22;
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
@@ -208,7 +216,7 @@
     });
 
     axisTitles(svg, W, H, { left: padL, top: padT, w: plotW, h: plotH }, xt, yt);
-    if (key) legendRow(svg, [{ c: INK, k: 'Earlier' }, { c: SIGNAL, k: 'Latest' }], W - padR, 11);
+    if (key) legendRow(svg, keyItems, W - padR, 11);
   }
 
   /* ── Sparkline / trend line ───────────────────────────────────────────── */

@@ -47,6 +47,7 @@
    form, the labels, the hints and the alerts paint exactly as they do on the
    light theme, and nothing in the markup has to know which theme is running.
    This is the whole reason the palette is variables rather than classes. */
+@media (min-width: 1024px) {
 [data-theme="dark"] .hs-screen {
   --c-fog: 242 244 246;
   --c-surface: 255 255 255;
@@ -62,6 +63,7 @@
   --c-warn: 217 119 6;
   --c-bad: 214 40 40;
   color-scheme: light;
+}
 }
 
 [data-theme="dark"] .hs {
@@ -656,7 +658,10 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   inset: 0;
   display: flex;
   flex-direction: column;
-  color: var(--hs-ink);
+  /* --c-ink, not --hs-ink: inside a device the island pins this to the light
+     value, and on a phone — where the frame is gone and the screen is the page —
+     it follows the document theme instead. One declaration, both cases. */
+  color: rgb(var(--c-ink));
 }
 
 .hs--deck .hs-status {
@@ -924,7 +929,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 .hs-form form + div > p + p { margin-top: 2.4cqw; }
 
 .hs-form a:not(.hs-mark) {
-  color: var(--hs-ink);
+  color: rgb(var(--c-ink));
   font-weight: 500;
   text-decoration: underline;
   text-decoration-color: #d7dce2;
@@ -1005,7 +1010,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   font-size: max(21px, 7.4cqw);
   line-height: 1.12;
   letter-spacing: -0.03em;
-  color: var(--hs-ink);
+  color: rgb(var(--c-ink));
 }
 
 .hs-legal-updated {
@@ -1014,7 +1019,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   font-size: max(9.5px, 2.7cqw);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8b939e;
+  color: rgb(var(--c-slate-400));
 }
 
 .hs-legal-body { margin-top: 5cqw; }
@@ -1025,7 +1030,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   font-weight: 700;
   font-size: max(14px, 4.3cqw);
   letter-spacing: -0.02em;
-  color: var(--hs-ink);
+  color: rgb(var(--c-ink));
 }
 
 .hs-legal-body h2:first-child { margin-top: 0; }
@@ -1035,7 +1040,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   margin: 2.6cqw 0 0;
   font-size: max(12px, 3.5cqw);
   line-height: 1.62;
-  color: #3a4250;
+  color: rgb(var(--c-slate-600));
 }
 
 /* The base layer strips list markers site-wide, which is right for navigation
@@ -1047,23 +1052,18 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   list-style: disc;
 }
 
-.hs-legal-body li::marker { color: #8b939e; }
+.hs-legal-body li::marker { color: rgb(var(--c-slate-400)); }
 
 .hs-legal-body li { margin-top: 1.4cqw; }
 
 .hs-legal-body a {
-  color: var(--hs-ink);
+  color: rgb(var(--c-ink));
   text-decoration: underline;
-  text-decoration-color: #d7dce2;
+  text-decoration-color: rgb(var(--c-divider));
   text-underline-offset: 2px;
 }
 
 .hs-legal-body a:hover { color: #db5a00; }
-
-/* On the dark ground the screen is white, so the document keeps its own dark
-   type — only the greys lift a little to sit right on the inverted dialler. */
-[data-theme="dark"] .hs-legal-body p,
-[data-theme="dark"] .hs-legal-body li { color: #3a4250; }
 
 /* ── One phone per page below the split ─────────────────────────────────────
    Two phones side by side stop working long before a tablet. Under 1024px the
@@ -1095,7 +1095,12 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
     width: 100%;
     height: 100%;
     border-radius: 0;
+    /* Not --hs-card: that is the white of a device's glass, and there is no
+       device here. The screen is the page and takes the page's ground. */
+    background: rgb(var(--c-surface));
   }
+
+  [data-theme="dark"] .hs--deck .hs-screen { background: #000; }
 
   /* The chrome is a mockup device's, not this device's. */
   .hs--deck .hs-status,
