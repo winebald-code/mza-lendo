@@ -428,6 +428,15 @@
   }
 
   function render(host) {
+    /* Observe FIRST, before any bail. This line used to sit below the size
+       check, which meant a host measured at zero width was returned on without
+       ever being observed — and nothing then existed to redraw it when it got
+       its real width. That is why charts came up blank after in-place
+       navigation and only appeared on a hard refresh: the mutation that swapped
+       the page in fired a draw before layout, every host measured zero, and the
+       one mechanism that could have recovered them was never attached. */
+    if (ro && !host.__ro) { host.__ro = 1; ro.observe(host); }
+
     const box = host.getBoundingClientRect();
     const W = width(box);
     const H = Math.round(box.height);
@@ -444,8 +453,6 @@
                 (document.documentElement.dataset.theme || '');
     if (host.__sig === sig && host.firstChild) return;
     host.__sig = sig;
-
-    if (ro && !host.__ro) { host.__ro = 1; ro.observe(host); }
 
     if (host.hasAttribute('data-bars')) bars(host, W, H || 150);
     else if (host.hasAttribute('data-line')) line(host, W, H || 180);
@@ -484,6 +491,10 @@
   window.addEventListener('popstate', schedule);
   document.addEventListener('DOMContentLoaded', schedule);
 
+  /* Two names on purpose. app.js's rescan() has always called BacaanCharts();
+     charts.js only ever defined __bcnCharts, so that call silently did nothing
+     and the navigator had no way to redraw. Both point at draw now. */
   window.__bcnCharts = { draw: draw };
+  window.BacaanCharts = draw;
   draw();
 })();

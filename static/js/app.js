@@ -46,7 +46,15 @@
   function rescan(root) {
     applyDataStyles(root || document);
     PAGE_INIT.forEach((fn) => { try { fn(root || document); } catch (e) { /* keep going */ } });
-    if (window.BacaanCharts) window.BacaanCharts();
+    /* Draw now, then once more on the next frame. The first pass covers a
+       swap that is already laid out; the second catches the case where it is
+       not, because a chart measured before layout has no size to draw into. */
+    const redraw = window.BacaanCharts ||
+                   (window.__bcnCharts && window.__bcnCharts.draw);
+    if (redraw) {
+      redraw();
+      requestAnimationFrame(function () { redraw(); });
+    }
   }
   window.Bacaan = window.Bacaan || {};
   window.Bacaan.rescan = rescan;

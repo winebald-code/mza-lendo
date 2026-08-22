@@ -215,6 +215,15 @@
 </div>
 
 <script nonce="{{ csp_nonce }}" src="{{ asset('js/app.js') }}" defer></script>
+{# charts.js belongs to the layout, not to the three pages that draw charts.
+   The dashboard navigates in place, and {% block scripts %} sits outside the
+   swapped region, so a tag declared there is only ever fetched on a full load.
+   Arriving at Reports from Inventory therefore meant the file had never been
+   requested and every chart came up blank until the page was refreshed — which
+   is exactly what it looked like: fine on refresh, empty on navigation.
+   Loading it here costs one deferred request on pages with no charts, where it
+   finds no hosts and does nothing. #}
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/charts.js') }}" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
