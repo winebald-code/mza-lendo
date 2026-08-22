@@ -1025,6 +1025,26 @@ class Attendance(db.Model):
         return None
 
 
+class ContactMessage(db.Model):
+    """An enquiry from the public contact form.
+
+    Written to the database rather than emailed, because there is no mail
+    transport configured in this application and a form that quietly drops
+    messages is worse than no form. Persisting means nothing is lost while the
+    forwarding is wired up; see the note on contact_post() below.
+    """
+    __tablename__ = "contact_messages"
+    id = db.Column(db.Integer, primary_key=True)
+    topic = db.Column(db.String(32), default="general", index=True)
+    name = db.Column(db.String(120), default="")
+    email = db.Column(db.String(190), default="", index=True)
+    plant = db.Column(db.String(160), default="")
+    message = db.Column(db.Text, default="")
+    ip = db.Column(db.String(64), default="")
+    handled = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=_now, index=True)
+
+
 class SmsLog(db.Model):
     __tablename__ = "sms_logs"
     id = db.Column(db.Integer, primary_key=True)
@@ -2111,9 +2131,65 @@ def privacy():
     return render_template("public/privacy.html")
 
 
-@app.route("/contact")
+CONTACT_TOPICS = [
+    ("urgent", "My floor is stopped"),
+    ("sales", "A question before signing up"),
+    ("data", "Something wrong with my data"),
+    ("security", "A security report"),
+    ("privacy", "A data request"),
+    ("general", "Something else"),
+]
+
+
+@app.route("/contact", methods=["GET", "POST"])
+@limiter.limit("8 per hour", methods=["POST"])
 def contact():
-    return render_template("public/contact.html")
+    form, errors = {}, {}
+
+    if request.method == "POST":
+        form = {k: (request.form.get(k) or "").strip() for k in
+                ("name", "email", "plant", "topic", "message")}
+
+        if not form["name"]:
+            errors["name"] = "Tell us who you are."
+        if not form["email"]:
+            errors["email"] = "We need somewhere to reply."
+        elif "@" not in form["email"] or "." not in form["email"].split("@")[-1]:
+            errors["email"] = "That does not look like an email address."
+        if len(form["message"]) < 12:
+            errors["message"] = "A sentence or two, so we can answer properly."
+        if form["topic"] not in dict(CONTACT_TOPICS):
+            form["topic"] = "general"
+
+        if not errors:
+            msg = ContactMessage(
+                topic=form["topic"], name=form["name"][:120], email=form["email"][:190],
+                plant=form["plant"][:160], message=form["message"][:4000],
+                ip=(request.headers.get("X-Forwarded-For", request.remote_addr) or "")[:64],
+            )
+            db.session.add(msg)
+            db.session.commit()
+
+            # The enquiry is safely stored. It is also logged at WARNING for the
+            # urgent topic so it surfaces wherever logs are watched, because a
+            # stopped floor should not wait for someone to open a table.
+            #
+            # TODO(deploy): wire real delivery — SMTP or a forwarding service —
+            # so these reach a person without anyone remembering to look. Until
+            # that exists, read them with:  SELECT * FROM contact_messages
+            # WHERE handled = 0 ORDER BY created_at DESC;
+            log.log(logging.WARNING if form["topic"] == "urgent" else logging.INFO,
+                    "contact message #%s [%s] from %s <%s>",
+                    msg.id, form["topic"], form["name"], form["email"])
+
+            flash("Thank you. We have your message and will reply to "
+                  f"{form['email']} within one working day.", "ok")
+            return redirect(url_for("contact"))
+
+        flash("Please check the highlighted fields.", "error")
+
+    return render_template("public/contact.html", form=form, errors=errors,
+                           topics=CONTACT_TOPICS)
 
 
 @app.route("/status")
