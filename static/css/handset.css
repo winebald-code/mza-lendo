@@ -996,8 +996,10 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   color: var(--hs-ink);
 }
 
+/* No top margin: the mark that used to sit above this is gone, so the title is
+   the first thing on the glass and the padding is its only offset. */
 .hs-legal-title {
-  margin: 5.5cqw 0 0;
+  margin: 0;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   font-weight: 700;
   font-size: max(21px, 7.4cqw);

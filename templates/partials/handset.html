@@ -246,17 +246,12 @@
       <div class="hs-status"><span>WINEBALD</span>{{ _meters() }}</div>
 
       <div class="hs-deck-main">
+        {# No mark on the glass here. These pages sit inside the public layout,
+           so the site header above already carries the logo and the way home;
+           repeating it on the screen said the same thing twice and pushed the
+           document title down for nothing. The auth decks keep theirs — they
+           have no header. #}
         <div class="hs-legal">
-          <a class="hs-mark" href="{{ url_for('home') }}">
-            <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <rect width="32" height="32" rx="9" fill="#07090B"/>
-              <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
-              <path d="M10 9h7l3 3-3 3h-7" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
-              <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
-            </svg>
-            <span>Bacaan</span>
-          </a>
-
           <h1 class="hs-legal-title">{{ title }}</h1>
           {% if updated %}<p class="hs-legal-updated">Last updated {{ updated }}</p>{% endif %}
 
