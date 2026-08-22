@@ -75,6 +75,14 @@
   --hs-off: #9aa0a6;
   /* A black wash would grey out the very screen we just made white. */
   --hs-scrim: rgba(255, 255, 255, 0.62);
+
+  /* Ink washes now, for the same reason in reverse. Kept a shade lighter than
+     the white-on-black values: a dark wash on white reads stronger than a light
+     wash on black at the same alpha. */
+  --hs-press: rgba(7, 9, 11, 0.07);
+  --hs-press-focus: rgba(7, 9, 11, 0.10);
+  --hs-press-active: rgba(7, 9, 11, 0.15);
+  --hs-hair: rgba(7, 9, 11, 0.10);
 }
 
 .hs {
@@ -92,6 +100,15 @@
   --hs-rule: #c7cdd4;       /* the rule above the actions   */
   --hs-act: #ff6a00;        /* CANCEL / SEND                */
   --hs-off: #bdc1c6;        /* a disabled action            */
+
+  /* Washes drawn on the glass. They were hardcoded white, which is right on a
+     black screen and invisible on a white one — the keypad lost its press
+     feedback entirely on the dark theme. Tokenised so they invert with the
+     device. */
+  --hs-press: rgba(255, 255, 255, 0.08);
+  --hs-press-focus: rgba(255, 255, 255, 0.12);
+  --hs-press-active: rgba(255, 255, 255, 0.17);
+  --hs-hair: rgba(255, 255, 255, 0.10);
 
   container-type: inline-size;
   position: relative;
@@ -224,7 +241,7 @@
   font-size: 7.4cqw;
   line-height: 1.1;
   letter-spacing: 0.01em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--hs-hair);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -279,15 +296,15 @@
 }
 
 button.hs-key { cursor: pointer; }
-button.hs-key:hover b { background: rgba(255, 255, 255, 0.08); }
-button.hs-key:active b { background: rgba(255, 255, 255, 0.17); }
+button.hs-key:hover b { background: var(--hs-press); }
+button.hs-key:active b { background: var(--hs-press-active); }
 
 /* No accent ring here. Reaching a key from the keyboard used to paint an orange
    circle on whichever key was last touched, which read as a pressed state that
    had not been pressed. The neutral fill is indicator enough. */
 button.hs-key:focus { outline: none; }
 button.hs-key:focus-visible { outline: none; }
-button.hs-key:focus-visible b { background: rgba(255, 255, 255, 0.12); }
+button.hs-key:focus-visible b { background: var(--hs-press-focus); }
 
 .hs-key--sym b { color: var(--hs-fg); }
 
@@ -312,7 +329,7 @@ button.hs-key:focus-visible b { background: rgba(255, 255, 255, 0.12); }
   transition: background-color 0.12s ease;
 }
 
-.hs-back:hover { background: rgba(255, 255, 255, 0.07); }
+.hs-back:hover { background: var(--hs-press); }
 .hs-back:focus-visible { outline: 2px solid var(--hs-act); outline-offset: -2px; }
 .hs-back svg { width: 6.4cqw; height: 6.4cqw; fill: var(--hs-mute); }
 
@@ -337,7 +354,7 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 .hs-nav {
   height: 9cqw;
   margin-top: 3cqw;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--hs-hair);
   display: grid;
   place-items: center;
 }
@@ -596,8 +613,10 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   z-index: 20;
 }
 
-.hs-theme .btn { color: #5c6570; }
-[data-theme="dark"] .hs-theme .btn { color: #9aa0a6; }
+.hs-theme .theme-toggle { color: #5c6570; }
+.hs-theme .theme-toggle:hover { color: #07090b; }
+[data-theme="dark"] .hs-theme .theme-toggle { color: #9aa0a6; }
+[data-theme="dark"] .hs-theme .theme-toggle:hover { color: #ffffff; }
 
 .hs-pair {
   --hs-gx: clamp(12px, 1.6vw, 34px);

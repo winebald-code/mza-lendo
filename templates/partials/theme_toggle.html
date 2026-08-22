@@ -1,9 +1,13 @@
 {# ---------------------------------------------------------------------------
    The theme control. One button, two glyphs; the one shown is the theme you
    would switch TO, which is the convention people already read.
+
+   No btn classes: the ghost button's hover wash drew a filled circle behind the
+   glyph, and on a control that only ever flips there is no state for a filled
+   circle to mean. The 38px box stays for the tap target; the fill does not.
    --------------------------------------------------------------------------- #}
 {% from "partials/icons.html" import icon %}
-<button type="button" class="theme-toggle btn btn-ghost btn-icon" data-theme-toggle
+<button type="button" class="theme-toggle" data-theme-toggle
         aria-label="Switch theme" title="Switch theme">
   <span class="theme-toggle-dark">{{ icon('moon', 'ico ico-sm') }}</span>
   <span class="theme-toggle-light">{{ icon('sun', 'ico ico-sm') }}</span>
