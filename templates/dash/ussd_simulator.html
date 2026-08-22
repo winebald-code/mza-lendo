@@ -14,7 +14,7 @@
 
   {# ══════════ The handset ══════════ #}
   <div class="mx-auto xl:mx-0 xl:sticky xl:top-[78px]">
-    {% call handset(size='lg', code=ussd_code, live=true) %}
+    {% call handset(size='lg', code=ussd_code, live=true, home_url=url_for('dash_overview')) %}
       {# The JS rewrites this pre's class on every paint, so its layout and
          colour live in handset.css, where the repaint cannot reach them. #}
       <pre class="term" data-sim-screen>Ready.

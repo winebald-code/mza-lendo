@@ -263,17 +263,17 @@ input.hs-dialed {
 input.hs-dialed::placeholder { color: var(--hs-off); }
 input.hs-dialed:disabled { opacity: 0.55; }
 
-/* No fill behind a selection on the glass. The site's peach highlight is tuned
-   for white pages and painted a bright block across the dialled code; an orange
-   one was no better. A real handset does not paint a block behind digits, so
-   nothing is painted here either. The caret still shows where an edit will land,
-   which is what the selection was being read for.
-
-   The dialler only. The document screens — terms, privacy, FAQs — are text
-   people may want to select and copy, and an invisible selection there would be
-   a loss rather than a fix. */
-.hs-dialer ::selection, .hs-dialed::selection { background: transparent; color: inherit; }
-.hs-dialer ::-moz-selection, .hs-dialed::-moz-selection { background: transparent; color: inherit; }
+/* Selection on the glass. The site's peach highlight is tuned for white pages
+   and painted a washed-out block across the dialled code, so inside the handset
+   the selection takes the screen's own accent: solid orange on the dark dialler,
+   and a soft orange wash on the white document screens, where the text is dark
+   and a solid fill would fight it. */
+.hs-screen ::selection { background: var(--hs-act); color: var(--hs-glass); }
+.hs-screen ::-moz-selection { background: var(--hs-act); color: var(--hs-glass); }
+.hs--sms .hs-screen ::selection,
+.hs--deck .hs-screen ::selection { background: rgba(255, 106, 0, 0.22); color: var(--hs-ink); }
+.hs--sms .hs-screen ::-moz-selection,
+.hs--deck .hs-screen ::-moz-selection { background: rgba(255, 106, 0, 0.22); color: var(--hs-ink); }
 
 .hs-dialed {
   margin: auto 0 0;

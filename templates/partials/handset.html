@@ -32,7 +32,11 @@
 </span>
 {%- endmacro -%}
 
-{% macro handset(size='md', carrier='WINEBALD', code='', live=false) -%}
+{# home_url — where the home bar goes. Defaults to the public site; the
+   simulator passes the dashboard, because a person who has just signed in and
+   is testing a session should land back in the plant, not on the marketing
+   pages. #}
+{% macro handset(size='md', carrier='WINEBALD', code='', live=false, home_url='') -%}
 {% set keys = [('1',''),('2','ABC'),('3','DEF'),('4','GHI'),('5','JKL'),('6','MNO'),
                ('7','PQRS'),('8','TUV'),('9','WXYZ'),('*',''),('0','+'),('#','')] %}
 <div class="hs hs--{{ size }} hs--ussd{% if live %} hs--live{% endif %}">
@@ -50,7 +54,7 @@
          a real field, so it takes a click, a caret and a selection. #}
       {% if live %}<input class="hs-dialed" data-sim-dialed data-sim-code="{{ code }}" type="text"
              inputmode="tel" spellcheck="false" autocomplete="off"
-             aria-label="Dialled code" placeholder="Dial a code">
+             aria-label="Dialled code">
       {% else %}<p class="hs-dialed">{{ code }}</p>{% endif %}
 
       <div class="hs-pad">
@@ -84,7 +88,7 @@
       </span>
       {% endif %}
 
-      <a class="hs-nav" href="{{ url_for('home') }}" aria-label="Bacaan home"><svg viewBox="0 0 24 24"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></a>
+      <a class="hs-nav" href="{{ home_url or url_for('home') }}" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></a>
     </div>
 
     <div class="hs-scrim" aria-hidden="true"></div>
