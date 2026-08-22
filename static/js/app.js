@@ -348,66 +348,6 @@
   /* ── Password strength meter ──────────────────────────────────────────── */
   let pwField = $('[data-strength]');
   PAGE_INIT.push((root) => { pwField = $('[data-strength]', root) || pwField; });
-
-  /* ── CONTACT: HAND THE MESSAGE TO THE MAIL CLIENT ──────────────────────────
-     There is no mail transport in this application, so a form that only posted
-     to the server recorded the message and delivered it to nobody. This composes
-     the same message as a mailto: and opens whatever mail app the person uses,
-     addressed and filled in, so they press send and it is genuinely sent.
-
-     The POST still happens, via fetch with keepalive so it survives the
-     navigation to the mail client — the message is on record either way. With
-     JavaScript off the plain form post is unchanged. */
-  PAGE_INIT.push((root) => {
-    const form = $('[data-contact-form]', root);
-    if (!form || form.__wired) return;
-    form.__wired = 1;
-
-    const TOPICS = {
-      urgent: 'URGENT: my floor is stopped',
-      sales: 'Question before signing up',
-      data: 'Something wrong with my data',
-      security: 'SECURITY report',
-      privacy: 'Data request',
-      general: 'Message from the Bacaan site',
-    };
-
-    form.addEventListener('submit', function (e) {
-      const val = (n) => { const f = form.elements[n]; return f ? f.value.trim() : ''; };
-      const name = val('name'), email = val('email');
-      const plant = val('plant'), message = val('message'), topic = val('topic');
-
-      // Let the server handle it if anything required is missing, so the person
-      // sees the same field errors they would without JavaScript.
-      if (!name || !email || message.length < 12) return;
-
-      e.preventDefault();
-
-      try {
-        fetch(form.getAttribute('action'), {
-          method: 'POST', body: new FormData(form), keepalive: true,
-        }).catch(function () {});
-      } catch (err) { /* the mail client still opens */ }
-
-      const lines = [
-        message, '', '--',
-        'Name: ' + name,
-        'Email: ' + email,
-        plant ? 'Plant: ' + plant : null,
-        'Topic: ' + (TOPICS[topic] || TOPICS.general),
-        'Sent from ' + window.location.origin + '/contact',
-      ].filter(Boolean);
-
-      const to = form.getAttribute('data-mailto');
-      const href = 'mailto:' + to +
-        '?subject=' + encodeURIComponent(TOPICS[topic] || TOPICS.general) +
-        '&body=' + encodeURIComponent(lines.join('\n'));
-
-      const note = $('[data-contact-note]', form);
-      if (note) note.hidden = false;
-      window.location.href = href;
-    });
-  });
   if (pwField) {
     const meter = $('#pw-meter');
     const rules = $$('[data-rule]');
@@ -691,11 +631,20 @@
       revealScreen();
     }
 
-    /* The handset holds still while you type. Scrolling it into view on focus,
-       or on visual-viewport resize, means moving the device on every keystroke:
-       the on-screen keyboard fires that event as it opens. The keyboard covering
-       part of the page is the browser's business; the phone staying put is ours. */
-    function revealScreen() {}
+    // On a phone the on-screen keyboard covers the lower half of the viewport,
+    // so the handset ends up above the fold exactly when the reply lands.
+    function revealScreen() {
+      if (window.innerWidth >= 640) return;
+      window.requestAnimationFrame(function () {
+        screen.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    }
+    input.addEventListener('focus', function () { setTimeout(revealScreen, 250); });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function () {
+        if (document.activeElement === input) revealScreen();
+      });
+    }
 
     /* ── Keys. One path for the on-screen pad and the real keyboard. ────── */
     function press(ch) {

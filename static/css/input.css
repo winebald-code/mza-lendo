@@ -188,10 +188,17 @@
   [data-theme="dark"] .hero  { @apply text-white; background: #000; border-bottom: 1px solid rgba(255,255,255,0.10); }
   [data-theme="light"] .hero { @apply bg-fog text-ink border-b border-divider; }
 
-  /* The hero's square grid is off, matching .grid-lines. This is a separate
-     rule from that one, which is why removing the utility left the pattern
-     still showing behind the hero. Kept as a no-op so the markup can stay. */
-  .hero-rules { background-image: none; }
+  .hero-rules { background-size: 56px 56px; }
+  [data-theme="dark"] .hero .hero-rules {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  }
+  [data-theme="light"] .hero .hero-rules {
+    background-image:
+      linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
+  }
 
   [data-theme="dark"] .hero .hero-bloom  { @apply bg-signal-500/[0.13]; }
   [data-theme="light"] .hero .hero-bloom { @apply bg-signal-500/[0.07]; }
@@ -392,9 +399,10 @@
 
   /* Navigation rail -------------------------------------------- */
   /* ── THE RAIL ────────────────────────────────────────────────────────────
-     White in light, dark in dark. The washes are ink at low alpha rather than a
-     fixed white, so one rule is a dark wash on the white rail and a light wash
-     on the dark one. A literal colour here is readable on one ground only. */
+     White in light, dark in dark. It used to be bg-slate-800 with white type
+     and white washes — correct on one ground and unreadable on the other. The
+     washes are now ink at low alpha, which inverts with the theme, so a single
+     rule is a dark wash on the white rail and a light wash on the dark one. */
   .rail-link {
     @apply flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] font-medium
            text-slate-600 transition-colors relative;
@@ -436,10 +444,12 @@
 }
 
 @layer utilities {
-  /* The square grid is gone. It was a faint graph-paper wash behind the hero
-     and the cards, and it read as a rendering artefact on small screens more
-     than as texture. Kept as a no-op class so no template has to change. */
-  .grid-lines { background-image: none; }
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
   .hatch {
     background-image: repeating-linear-gradient(
       135deg, rgba(255,106,0,0.14) 0 6px, transparent 6px 12px);

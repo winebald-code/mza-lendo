@@ -428,10 +428,13 @@
   }
 
   function render(host) {
-    /* Observe FIRST, before any bail. A host measured at zero width must still
-       be observed, or nothing exists to redraw it once it has a size — and a
-       draw triggered before layout measures every host at zero, which is the
-       state after an in-place navigation. */
+    /* Observe FIRST, before any bail. This line used to sit below the size
+       check, which meant a host measured at zero width was returned on without
+       ever being observed — and nothing then existed to redraw it when it got
+       its real width. That is why charts came up blank after in-place
+       navigation and only appeared on a hard refresh: the mutation that swapped
+       the page in fired a draw before layout, every host measured zero, and the
+       one mechanism that could have recovered them was never attached. */
     if (ro && !host.__ro) { host.__ro = 1; ro.observe(host); }
 
     const box = host.getBoundingClientRect();
