@@ -1,0 +1,10 @@
+{# ---------------------------------------------------------------------------
+   The theme control. One button, two glyphs; the one shown is the theme you
+   would switch TO, which is the convention people already read.
+   --------------------------------------------------------------------------- #}
+{% from "partials/icons.html" import icon %}
+<button type="button" class="theme-toggle btn btn-ghost btn-icon" data-theme-toggle
+        aria-label="Switch theme" title="Switch theme">
+  <span class="theme-toggle-dark">{{ icon('moon', 'ico ico-sm') }}</span>
+  <span class="theme-toggle-light">{{ icon('sun', 'ico ico-sm') }}</span>
+</button>

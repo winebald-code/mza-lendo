@@ -1,0 +1,21 @@
+{# ---------------------------------------------------------------------------
+   Sets the theme before the first paint.
+
+   This has to be inline and in <head>, ahead of any stylesheet-driven colour,
+   or the page paints light and then flips — the "flash of wrong theme". It is
+   the one script allowed to block, because it is three lines and it runs before
+   anything is drawn.
+
+   Light is the default. Dark is opt-in and remembered; a visitor who has never
+   touched the control gets the light ground, whatever their OS is set to.
+   --------------------------------------------------------------------------- #}
+<script nonce="{{ csp_nonce }}">
+  (function () {
+    try {
+      var t = localStorage.getItem('bacaan-theme');
+      document.documentElement.dataset.theme = (t === 'dark' || t === 'light') ? t : 'light';
+    } catch (e) {
+      document.documentElement.dataset.theme = 'light';
+    }
+  })();
+</script>

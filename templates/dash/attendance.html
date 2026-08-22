@@ -115,7 +115,7 @@
            class="grid grid-cols-[46px_1fr_28px] gap-2.5 items-center group">
           <span class="font-mono text-[10.5px] {% if d.day == day %}text-signal-700 font-semibold{% else %}text-slate-400{% endif %}">{{ d.day|d('%a %d') }}</span>
           <span class="h-[8px] rounded-full bg-divider overflow-hidden">
-            <span class="block h-full rounded-full {% if d.day == day %}bg-signal-500{% else %}bg-ink group-hover:bg-signal-500{% endif %} transition-colors"
+            <span class="block h-full rounded-full {% if d.day == day %}bg-signal-500{% else %}bg-slate-900 group-hover:bg-signal-500{% endif %} transition-colors"
                   data-css-w="{{ ((d.count / peak) * 100)|round|int if peak else 0 }}%"></span>
           </span>
           <span class="num text-[11.5px] text-slate-500 text-right">{{ d.count }}</span>

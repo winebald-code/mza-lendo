@@ -27,7 +27,7 @@
     </div>
     <div class="field">
       <label for="f-county">County</label>
-      <input id="f-county" name="county" class="input" value="{{ form.county|default('Nairobi') }}" placeholder="Nairobi">
+      <input id="f-county" name="county" class="input" value="{{ form.county|default('') }}" placeholder="Nairobi">
     </div>
   </div>
 
@@ -94,7 +94,12 @@
 
   <label class="check mt-3">
     <input type="checkbox" name="terms" value="1" {% if form.terms %}checked{% endif %}>
-    <span>I accept the terms of service and the privacy policy.</span>
+    <span>I accept the
+      <a href="{{ url_for('terms') }}" target="_blank" rel="noopener"
+         class="font-medium text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">terms of service</a>
+      and the
+      <a href="{{ url_for('privacy') }}" target="_blank" rel="noopener"
+         class="font-medium text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">privacy policy</a>.</span>
   </label>
   {% if errors.terms %}<p class="err mt-1 mb-0">{{ errors.terms }}</p>{% endif %}
 

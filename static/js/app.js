@@ -885,3 +885,28 @@
     rescan(document);
   }
 })();
+
+/* ---------------------------------------------------------------------------
+   THEME
+   The ground is chosen before first paint by the inline script in
+   partials/theme_boot.html; this only handles the button and remembering the
+   choice. Delegated from the document so it survives the in-place navigator
+   swapping the header out, and so it works on any page that includes the
+   control without each of them wiring it up.
+   --------------------------------------------------------------------------- */
+(function () {
+  'use strict';
+  var KEY = 'bacaan-theme';
+
+  function apply(theme) {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem(KEY, theme); } catch (e) { /* private mode: this session only */ }
+  }
+
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest && ev.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    ev.preventDefault();
+    apply(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+})();

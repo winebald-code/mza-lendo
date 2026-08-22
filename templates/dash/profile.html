@@ -52,7 +52,7 @@
 
   <aside class="grid gap-6 xl:sticky xl:top-[78px]">
     <section class="card card-pad text-center">
-      <span class="inline-grid place-items-center w-[62px] h-[62px] rounded-full bg-ink text-white font-mono text-[20px] font-semibold mx-auto mb-3">{{ current_user.initials }}</span>
+      <span class="inline-grid place-items-center w-[62px] h-[62px] rounded-full bg-slate-900 text-white font-mono text-[20px] font-semibold mx-auto mb-3">{{ current_user.initials }}</span>
       <p class="text-[15px] font-semibold m-0">{{ current_user.full_name or current_user.username }}</p>
       <p class="font-mono text-[11px] text-slate-400 mt-1 mb-3">{{ current_user.username }}</p>
       <span class="tag tag-signal">{{ current_user.role_label }}</span>

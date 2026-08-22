@@ -1,0 +1,110 @@
+{% extends "public/_legal.html" %}
+
+{# NOTE FOR WHOEVER SHIPS THIS: a plain-language draft, not legal advice, and
+   not reviewed by a lawyer. Kenya's Data Protection Act 2019 requires a named
+   data controller and, above a threshold, registration with the ODPC — confirm
+   both, along with real retention periods and any sub-processors, before this
+   goes live. #}
+
+{% block title %}Privacy policy — {{ APP_NAME }}{% endblock %}
+{% block description %}What Bacaan records about your plant and your workers, and what it does with it.{% endblock %}
+
+{% set legal_title = 'Privacy policy' %}
+{% set legal_updated = '22 August 2026' %}
+
+{% block legal %}
+<h2>1. The short version</h2>
+<p>
+  Bacaan holds what your plant enters and what it needs to reach your workers by phone. We do
+  not sell it, we do not advertise against it, and we do not use one plant's data to inform
+  another's. Workers are the people least able to argue about this, so the rules below apply to
+  their records most strictly.
+</p>
+
+<h2>2. Who controls the data</h2>
+<p>
+  Your plant is the controller of its own operational records — its workers, orders and
+  production. Winebald Technologies is the processor: we hold and handle that data on your
+  instructions. For account and billing details, we are the controller.
+</p>
+
+<h2>3. What we hold</h2>
+<ul>
+  <li><strong>Account details</strong> — the plant name, sector, county, and the name, username, email and phone of each user.</li>
+  <li><strong>Worker records</strong> — name, phone number, role, and the shifts and production a worker reports.</li>
+  <li><strong>Operational records</strong> — materials, stock movements, runs, orders, machines, maintenance and quality checks.</li>
+  <li><strong>Message logs</strong> — the USSD sessions and SMS sent and received, so a disputed entry can be traced.</li>
+  <li><strong>Technical records</strong> — sign-in times, IP address and an audit trail of changes, kept for security.</li>
+</ul>
+<p>
+  We do not ask for national ID numbers, bank details or biometrics, and you should not put
+  them into free-text fields.
+</p>
+
+<h2>4. Why we hold it</h2>
+<p>
+  To run the service you have asked for: to record what the floor reports, to show it back to
+  you, to send the alerts you configure, and to keep the account secure. We also use aggregate
+  counts — how many plants, how many sessions — to understand whether the product works. Those
+  counts never identify a plant or a person.
+</p>
+
+<h2>5. Workers and their phones</h2>
+<p>
+  A worker's phone number is held so the plant can reach them and so their USSD entries can be
+  attributed. It is not shared with other plants, and it is not used for marketing.
+</p>
+<p>
+  If you register a worker, you are responsible for telling them their work is being recorded
+  and what it is used for. If a worker asks to see or correct their record, the plant owner can
+  do it from Users, or you can ask us.
+</p>
+
+<h2>6. Who else sees it</h2>
+<ul>
+  <li><strong>Mobile network operators</strong> carry the USSD and SMS traffic and see the numbers and message contents in transit. That is how the network works.</li>
+  <li><strong>Our hosting and infrastructure providers</strong> store the data on our instructions and may not use it for anything else.</li>
+  <li><strong>Nobody else</strong>, unless you ask us to, or the law requires it — and if we are compelled to hand something over we will tell you unless we are barred from doing so.</li>
+</ul>
+
+<h2>7. How long we keep it</h2>
+<p>
+  Operational records stay while your account is open, because the point of them is history.
+  If you close the account we keep the data for a short wind-down period so it can be
+  recovered or exported, then delete it. Audit and security logs are kept longer, because they
+  are the record of who did what.
+</p>
+
+<h2>8. Keeping it safe</h2>
+<p>
+  Passwords are hashed, never stored as text. Traffic to the dashboard is encrypted. Access is
+  scoped by role, so a worker cannot read the whole plant. Sign-in attempts are rate-limited
+  and locked after repeated failures. See <a href="{{ url_for('security_page') }}">the security
+  page</a> for more.
+</p>
+<p>
+  No system is perfect. If data is exposed in a way that puts people at risk, we will tell the
+  affected plants and the regulator as the law requires.
+</p>
+
+<h2>9. Your rights</h2>
+<p>
+  Under Kenya's Data Protection Act you can ask what is held about you, correct it, ask for it
+  to be deleted, object to how it is used, or ask for a copy to take elsewhere. Write to us and
+  we will answer within the statutory period. If you are not satisfied, you can complain to the
+  Office of the Data Protection Commissioner.
+</p>
+
+<h2>10. Children</h2>
+<p>
+  Bacaan is for workplaces and is not for anyone under 18. If you believe a child's data is in
+  the system, tell us and we will remove it.
+</p>
+
+<h2>11. Changes and contact</h2>
+<p>
+  If this policy changes in a way that affects you, we will tell account owners before it takes
+  effect. Questions, requests and complaints go to
+  <a href="mailto:info@winebald.tech">info@winebald.tech</a>.
+</p>
+{% endblock %}

@@ -8,8 +8,67 @@
    Base
    ───────────────────────────────────────────────────────────── */
 @layer base {
+  /* ── THEME GROUNDS ───────────────────────────────────────────────────────
+     The marketing site ships in two grounds. Every Tailwind colour token
+     resolves through one of these variables (see tailwind.config.js), so the
+     theme is this block and nothing else — no dark: variants scattered through
+     markup, no second set of classes to keep in step.
+
+     Only the public site opts in: base.html sets data-theme on <html>. The
+     dashboard and the auth pages never set it, so they read :root and stay as
+     they were. The auth pages are already black by design.
+
+     Values are "R G B" triples rather than hex so Tailwind's slash-opacity
+     syntax keeps working: bg-fog/40 becomes rgb(var(--c-fog) / 0.4). */
   :root {
     --rail-w: 264px;
+
+    --c-fog: 242 244 246;
+    --c-surface: 255 255 255;
+    --c-ink: 7 9 11;
+    --c-divider: 215 220 226;
+
+    --c-slate-400: 139 147 158;
+    --c-slate-500: 92 101 112;
+    --c-slate-600: 58 66 80;
+
+    --c-signal-50: 255 243 234;
+    --c-signal-600: 219 90 0;
+    --c-signal-700: 176 73 0;
+
+    --c-ok: 31 138 91;
+    --c-warn: 217 119 6;
+    --c-bad: 214 40 40;
+
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    /* The ground is a shade off black so cards have something to sit on; the
+       hero goes to true #000 on top of it, which reads as depth rather than as
+       two colours that failed to match. */
+    --c-fog: 11 13 16;
+    --c-surface: 20 24 29;
+    --c-ink: 242 244 246;
+    --c-divider: 39 45 54;
+
+    /* The body greys invert. 400 is the midpoint and holds on either ground,
+       so it is the one that does not move. */
+    --c-slate-400: 139 147 158;
+    --c-slate-500: 163 171 182;
+    --c-slate-600: 198 204 212;
+
+    /* signal-600 is a dark orange tuned for white; on black it goes muddy, so
+       the accent lifts two stops. The 50 tint becomes a dark wash. */
+    --c-signal-50: 42 22 6;
+    --c-signal-600: 255 122 36;
+    --c-signal-700: 255 154 87;
+
+    --c-ok: 61 190 130;
+    --c-warn: 245 158 11;
+    --c-bad: 248 88 88;
+
+    color-scheme: dark;
   }
   html {
     -webkit-text-size-adjust: 100%;
@@ -58,63 +117,75 @@
    Components
    ───────────────────────────────────────────────────────────── */
 @layer components {
+  /* ── THE THEME CONTROL ───────────────────────────────────────────────────
+     One button showing the ground you would switch TO. Both glyphs are in the
+     markup and CSS picks one, so the control needs no JavaScript to render
+     correctly on the server-painted page. */
+  .theme-toggle .theme-toggle-dark,
+  .theme-toggle .theme-toggle-light { display: none; line-height: 0; }
+  [data-theme="light"] .theme-toggle .theme-toggle-dark { display: inline-block; }
+  [data-theme="dark"]  .theme-toggle .theme-toggle-light { display: inline-block; }
+
   /* ── THE HERO, IN TWO GROUNDS ────────────────────────────────────────────
-     The homepage hero ships light or dark. Everything that differs between the
-     two lives here, keyed off one class on the section, so switching grounds is
-     a single word in index.html and never a hunt through markup for colours.
+     The hero follows the document theme like everything else, but it needs its
+     own block because two of its choices are not simple token swaps: the dark
+     ground is true black rather than the site's --c-fog, and the accent and the
+     second button change shape rather than just colour.
 
      The dark ground exists because the thing the section is showing is a lit
      phone screen; on fog the handset reads as a picture pasted onto a page.
-     The light ground is the original, kept whole for anyone who wants the
-     marketing site to stay one colour throughout. */
+     The light ground is the original, unchanged. */
   /* 71px, not 68: the header is 68 plus its own 1px bottom border, and this
      section adds another below itself, and subpixel rounding on 100svh can add a
      fraction more. Two stray pixels are enough to put the
      whole hero one scroll-notch past the fold. */
-  .hero--dark  { @apply bg-ink text-white; border-bottom: 1px solid rgba(255,255,255,0.10); }
-  .hero--light { @apply bg-fog text-ink border-b border-divider; }
+  /* Pure black, not the ink token (#07090B). The handset's own glass is #000,
+     so anything near-but-not-quite black put a faint edge between the section
+     and the screen it is showing. */
+  [data-theme="dark"] .hero  { @apply text-white; background: #000; border-bottom: 1px solid rgba(255,255,255,0.10); }
+  [data-theme="light"] .hero { @apply bg-fog text-ink border-b border-divider; }
 
   .hero-rules { background-size: 56px 56px; }
-  .hero--dark .hero-rules {
+  [data-theme="dark"] .hero .hero-rules {
     background-image:
       linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
   }
-  .hero--light .hero-rules {
+  [data-theme="light"] .hero .hero-rules {
     background-image:
       linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
   }
 
-  .hero--dark .hero-bloom  { @apply bg-signal-500/[0.13]; }
-  .hero--light .hero-bloom { @apply bg-signal-500/[0.07]; }
+  [data-theme="dark"] .hero .hero-bloom  { @apply bg-signal-500/[0.13]; }
+  [data-theme="light"] .hero .hero-bloom { @apply bg-signal-500/[0.07]; }
 
   /* h1 sets its own colour in the base layer, so the title must be told; it
      will not inherit white from the section. */
-  .hero--dark .hero-title,
-  .hero--dark .hero-figure  { @apply text-white; }
-  .hero--light .hero-title,
-  .hero--light .hero-figure { @apply text-ink; }
+  [data-theme="dark"] .hero .hero-title,
+  [data-theme="dark"] .hero .hero-figure  { @apply text-white; }
+  [data-theme="light"] .hero .hero-title,
+  [data-theme="light"] .hero .hero-figure { @apply text-ink; }
 
   /* signal-600 is a dark orange that goes muddy on black; two stops up holds. */
-  .hero--dark .hero-accent  { @apply text-signal-400; }
-  .hero--light .hero-accent { @apply text-signal-600; }
+  [data-theme="dark"] .hero .hero-accent  { @apply text-signal-400; }
+  [data-theme="light"] .hero .hero-accent { @apply text-signal-600; }
 
-  .hero--dark .hero-lede  { @apply text-slate-400; }
-  .hero--light .hero-lede { @apply text-slate-500; }
+  [data-theme="dark"] .hero .hero-lede  { @apply text-slate-400; }
+  [data-theme="light"] .hero .hero-lede { @apply text-slate-500; }
 
-  .hero--dark .hero-rule  { border-color: rgba(255,255,255,0.10); }
-  .hero--light .hero-rule { @apply border-divider; }
+  [data-theme="dark"] .hero .hero-rule  { border-color: rgba(255,255,255,0.10); }
+  [data-theme="light"] .hero .hero-rule { @apply border-divider; }
 
   /* A solid white button beside a solid orange one is two shouts, so on the
      dark ground the second action is an outline instead. */
-  .hero--dark .hero-btn2        { @apply text-white; border-color: rgba(255,255,255,0.25); background-color: rgba(255,255,255,0.06); }
-  .hero--dark .hero-btn2:hover  { border-color: rgba(255,255,255,0.40); background-color: rgba(255,255,255,0.12); }
-  .hero--light .hero-btn2       { @apply border-divider bg-surface text-ink; }
-  .hero--light .hero-btn2:hover { @apply border-slate-400; }
+  [data-theme="dark"] .hero .hero-btn2        { @apply text-white; border-color: rgba(255,255,255,0.25); background-color: rgba(255,255,255,0.06); }
+  [data-theme="dark"] .hero .hero-btn2:hover  { border-color: rgba(255,255,255,0.40); background-color: rgba(255,255,255,0.12); }
+  [data-theme="light"] .hero .hero-btn2       { @apply border-divider bg-surface text-ink; }
+  [data-theme="light"] .hero .hero-btn2:hover { @apply border-slate-400; }
 
-  .hero--dark .hs-cap  { color: #8B939E; }
-  .hero--light .hs-cap { color: #5C6570; }
+  [data-theme="dark"] .hero .hs-cap  { color: #8B939E; }
+  [data-theme="light"] .hero .hs-cap { color: #5C6570; }
 
 
   /* Typographic utilities ------------------------------------ */
@@ -146,11 +217,13 @@
   .btn:disabled, .btn[aria-disabled="true"] { @apply opacity-40 pointer-events-none; }
   .btn:focus-visible { @apply outline-none ring-2 ring-signal-500 ring-offset-2 ring-offset-fog; }
 
-  .btn-primary { @apply bg-signal-500 text-ink border-signal-500 shadow-s1; }
-  .btn-primary:hover { @apply bg-signal-400 text-ink border-signal-400 shadow-s2; }
-  .btn-primary:active { @apply bg-signal-600 text-ink border-signal-600 shadow-s1; }
+  /* text-slate-900, not text-ink: ink inverts with the theme and this pairing
+     is dark-on-orange in BOTH grounds. With ink it went near-white on orange. */
+  .btn-primary { @apply bg-signal-500 text-slate-900 border-signal-500 shadow-s1; }
+  .btn-primary:hover { @apply bg-signal-400 text-slate-900 border-signal-400 shadow-s2; }
+  .btn-primary:active { @apply bg-signal-600 text-slate-900 border-signal-600 shadow-s1; }
 
-  .btn-dark { @apply bg-ink text-white border-ink; }
+  .btn-dark { @apply bg-slate-900 text-white border-slate-900; }
   .btn-dark:hover { @apply bg-slate-800 text-white border-slate-800; }
   .btn-dark:active { @apply bg-ink text-white border-ink; }
 
@@ -256,8 +329,10 @@
   .tag-warn { @apply bg-warn/10 text-warn border-warn/25; }
   .tag-bad { @apply bg-bad/10 text-bad border-bad/25; }
   .tag-signal { @apply bg-signal-500/10 text-signal-700 border-signal-500/30; }
-  .tag-neutral { @apply bg-slate-200 text-slate-500 border-divider; }
-  .tag-ink { @apply bg-ink text-white border-ink; }
+    /* bg-fog, not bg-slate-200: slate-200 is literal in both themes, so on the
+     dark ground this put light grey text on a light chip. fog flips. */
+  .tag-neutral { @apply bg-fog text-slate-500 border-divider; }
+  .tag-ink { @apply bg-slate-900 text-white border-slate-900; }
   .dot { @apply w-[6px] h-[6px] rounded-full shrink-0; }
 
   /* Tables ----------------------------------------------------- */

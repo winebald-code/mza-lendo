@@ -2102,6 +2102,16 @@ def security_page():
     return render_template("public/security.html")
 
 
+@app.route("/terms")
+def terms():
+    return render_template("public/terms.html")
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("public/privacy.html")
+
+
 @app.route("/healthz")
 def healthz():
     try:

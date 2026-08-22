@@ -24,6 +24,59 @@
    numbers; if the art is replaced, re-measure and update them.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── THE DEVICE ON A DARK GROUND ─────────────────────────────────────────────
+   On the dark theme the handset turns white. A black phone on a black page is
+   a silhouette: the shell's bezel is the only thing separating the two, and the
+   screen — the part actually carrying the product — reads as a hole. Inverting
+   the glass makes the device the lit object in the room, which is what it is
+   meant to be.
+
+   Only the screen inverts. The shell is a photograph of a real handset and
+   stays what it is; a phone with a white body would stop looking like a phone.
+   The dialogue stays pure white in both themes, so on this ground it sits on a
+   near-white dialler rather than a black one, and its rule and shadow are what
+   separate them. */
+/* ── THE GLASS IS A LIGHT ISLAND ─────────────────────────────────────────────
+   The screens stay white on the dark theme, but the form and the copy on them
+   are the app's own markup and were following the document theme — so the
+   headline inverted to near-white and landed on white glass at a contrast of
+   1.1. Unreadable.
+
+   Re-declaring the palette variables at the screen boundary fixes every one of
+   them at once: inside the glass the tokens hold their light values, so the
+   form, the labels, the hints and the alerts paint exactly as they do on the
+   light theme, and nothing in the markup has to know which theme is running.
+   This is the whole reason the palette is variables rather than classes. */
+[data-theme="dark"] .hs-screen {
+  --c-fog: 242 244 246;
+  --c-surface: 255 255 255;
+  --c-ink: 7 9 11;
+  --c-divider: 215 220 226;
+  --c-slate-400: 139 147 158;
+  --c-slate-500: 92 101 112;
+  --c-slate-600: 58 66 80;
+  --c-signal-50: 255 243 234;
+  --c-signal-600: 219 90 0;
+  --c-signal-700: 176 73 0;
+  --c-ok: 31 138 91;
+  --c-warn: 217 119 6;
+  --c-bad: 214 40 40;
+  color-scheme: light;
+}
+
+[data-theme="dark"] .hs {
+  --hs-glass: #ffffff;      /* the screen, now the lit surface   */
+  --hs-surface: #f2f4f6;    /* the dialler drawn on it           */
+  --hs-fg: #202124;         /* type on the light dialler         */
+  --hs-mute: #5c6570;       /* keypad letters, home bar          */
+  --hs-digit: #1a56c4;      /* keypad digits, darkened to hold   */
+  --hs-call: #1e8e3e;       /* the call button is green either way */
+  --hs-rule: #d7dce2;
+  --hs-off: #9aa0a6;
+  /* A black wash would grey out the very screen we just made white. */
+  --hs-scrim: rgba(255, 255, 255, 0.62);
+}
+
 .hs {
   --hs-w: 300px;
 
@@ -303,7 +356,7 @@ button.hs-fab:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--hs-scrim, rgba(0, 0, 0, 0.5));
   /* The keypad underneath stays clickable — it is the reply pad once a
      session is open, which is what the JS expects. */
   pointer-events: none;
@@ -507,11 +560,29 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* The page. This is the only background in the auth layout. */
+/* The auth stage follows the theme: white on light, pure black on dark — the
+   same black as the dark hero, so the product has one black and not three that
+   nearly match. On the light ground the handsets keep their dark shells, which
+   is what separates them from the page; on the dark ground the shells invert
+   with everything else and the screens become the lit surfaces. */
 .hs-stage {
   min-height: 100vh;
   overflow: hidden;
-  background: #07090b;
+  background: #fff;
 }
+
+[data-theme="dark"] .hs-stage { background: #000; }
+
+/* Floating theme control — these pages have no header to hold it. */
+.hs-theme {
+  position: fixed;
+  top: clamp(10px, 1.8vh, 22px);
+  right: clamp(10px, 1.4vw, 26px);
+  z-index: 20;
+}
+
+.hs-theme .btn { color: #5c6570; }
+[data-theme="dark"] .hs-theme .btn { color: #9aa0a6; }
 
 .hs-pair {
   --hs-gx: clamp(12px, 1.6vw, 34px);
@@ -827,6 +898,11 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 }
 
 .hs-form a:not(.hs-mark):hover { color: #db5a00; }
+
+/* The terms and privacy links carry their own hover from Tailwind; without
+   this the block above would repaint them and they would stop matching the
+   sign-in link they are meant to look like. */
+.hs-form a.hover\:text-signal-600:hover { color: #db5a00; }
 .hs-form .btn { text-decoration: none; }
 
 /* Password strength meter and its checklist. */
@@ -854,6 +930,105 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 @container (max-width: 320px) {
   .hs-form form > div.grid { grid-template-columns: 1fr; }
 }
+/* ══ THE LEGAL DECK — A DOCUMENT ON ONE BIG SCREEN ═════════════════════════
+   Terms and privacy get the same handset the rest of the site uses, sized to
+   the window instead of to a column. The glass scrolls; the page does not, so
+   the device stays whole while the document moves inside it. */
+.legal-stage {
+  --legal-pad: clamp(16px, 3vh, 40px);
+  display: grid;
+  place-items: center;
+  padding: var(--legal-pad) clamp(12px, 2vw, 32px);
+  min-height: calc(100svh - 69px);
+}
+
+/* Sized off the viewport, not off the stage. A container-relative height was
+   the obvious way to write this and it resolved to zero: cqh needs the
+   container's block size to be definite in a way min-height on a grid does not
+   give it, so the frame collapsed and the page rendered empty. The same svh
+   arithmetic the hero uses is deterministic and has no such edge. */
+.hs--legal {
+  --hs-w: min(clamp(300px, 46vw, 560px),
+              calc((100vh - 69px - 2 * var(--legal-pad)) * 444 / 916));
+  --hs-w: min(clamp(300px, 46vw, 560px),
+              calc((100svh - 69px - 2 * var(--legal-pad)) * 444 / 916));
+}
+
+.hs-legal {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 5cqw 6.5cqw 6cqw;
+  color: var(--hs-ink);
+}
+
+.hs-legal-title {
+  margin: 5.5cqw 0 0;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: max(21px, 7.4cqw);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--hs-ink);
+}
+
+.hs-legal-updated {
+  margin: 1.6cqw 0 0;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: max(9.5px, 2.7cqw);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b939e;
+}
+
+.hs-legal-body { margin-top: 5cqw; }
+
+.hs-legal-body h2 {
+  margin: 6.5cqw 0 0;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: max(14px, 4.3cqw);
+  letter-spacing: -0.02em;
+  color: var(--hs-ink);
+}
+
+.hs-legal-body h2:first-child { margin-top: 0; }
+
+.hs-legal-body p,
+.hs-legal-body li {
+  margin: 2.6cqw 0 0;
+  font-size: max(12px, 3.5cqw);
+  line-height: 1.62;
+  color: #3a4250;
+}
+
+/* The base layer strips list markers site-wide, which is right for navigation
+   and wrong for a document: these are enumerated obligations and need to read
+   as a list. */
+.hs-legal-body ul {
+  margin: 2.6cqw 0 0;
+  padding-left: 5cqw;
+  list-style: disc;
+}
+
+.hs-legal-body li::marker { color: #8b939e; }
+
+.hs-legal-body li { margin-top: 1.4cqw; }
+
+.hs-legal-body a {
+  color: var(--hs-ink);
+  text-decoration: underline;
+  text-decoration-color: #d7dce2;
+  text-underline-offset: 2px;
+}
+
+.hs-legal-body a:hover { color: #db5a00; }
+
+/* On the dark ground the screen is white, so the document keeps its own dark
+   type — only the greys lift a little to sit right on the inverted dialler. */
+[data-theme="dark"] .hs-legal-body p,
+[data-theme="dark"] .hs-legal-body li { color: #3a4250; }
+
 /* ── One phone per page below the split ─────────────────────────────────────
    Two phones side by side stop working long before a tablet. Under 1024px the
    argument screen steps aside and the form fills the window: same screen, same

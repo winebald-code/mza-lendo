@@ -7,18 +7,13 @@
 {% from "partials/handset.html" import handset with context %}
 
 {# ══════════════ HERO ══════════════ #}
-{# ONE SWITCH FOR THE WHOLE SECTION: 'dark' or 'light'.
-   Every colour that differs between the two grounds lives in input.css under
-   .hero--dark / .hero--light, so this word is the only edit. #}
-{% set hero_theme = 'light' %}
-
 {# The section is built to land inside the fold. Two things used to stop that:
    the Manufacturing Pulse card stacked above the handset — it has moved to THE
    PULSE below, which is the section actually about that score — and generous
    pt-24/pb-28 padding. What remains is sized against the window: the handset
    width is derived from the viewport height in .hs--hero, so the phone is as
    large as the fold allows and never larger. #}
-<section class="hero hero--{{ hero_theme }} relative overflow-hidden">
+<section class="hero relative overflow-hidden">
   <div class="hero-rules absolute inset-0" aria-hidden="true"></div>
   <div class="hero-bloom absolute -right-40 -top-40 w-[560px] h-[560px] rounded-full blur-3xl" aria-hidden="true"></div>
 
@@ -151,7 +146,7 @@ Habari Peter
       </div>
 
       <div class="card card-pad" data-reveal-on-scroll>
-        <span class="inline-grid place-items-center w-[42px] h-[42px] rounded-[13px] bg-ink text-white mb-5">{{ icon('gauge') }}</span>
+        <span class="inline-grid place-items-center w-[42px] h-[42px] rounded-[13px] bg-slate-900 text-white mb-5">{{ icon('gauge') }}</span>
         <h3 class="text-[19px] font-semibold m-0 mb-2.5">The office reads one number</h3>
         <p class="text-[13.5px] text-slate-500 leading-relaxed mb-5">
           Five subsystems, weighted by what stops a plant fastest, resolved into a single score —

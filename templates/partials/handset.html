@@ -229,3 +229,43 @@
 </div>
 {% endcall %}
 {%- endmacro %}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   legal_deck — a legal document on one big handset screen.
+
+   Same frame and same chrome as the auth deck, sized to the window rather than
+   to a column. The glass scrolls; the page behind it does not.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+{% macro legal_deck(title='', updated='') -%}
+{%- set doc = caller() -%}
+<div class="hs hs--deck hs--legal">
+  <img class="hs-shell" src="{{ asset('img/handset.png') }}" alt="" aria-hidden="true"
+       width="444" height="916" draggable="false">
+  <div class="hs-screen">
+    <div class="hs-deck">
+      <div class="hs-status"><span>WINEBALD</span>{{ _meters() }}</div>
+
+      <div class="hs-deck-main">
+        <div class="hs-legal">
+          <a class="hs-mark" href="{{ url_for('home') }}">
+            <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <rect width="32" height="32" rx="9" fill="#07090B"/>
+              <path d="M10 9V23" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
+              <path d="M10 9h7l3 3-3 3h-7" stroke="#F2F4F6" stroke-width="2.6" stroke-linecap="square"/>
+              <path d="M10 16h8l3 3.5-3 3.5h-8" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="square"/>
+            </svg>
+            <span>Bacaan</span>
+          </a>
+
+          <h1 class="hs-legal-title">{{ title }}</h1>
+          {% if updated %}<p class="hs-legal-updated">Last updated {{ updated }}</p>{% endif %}
+
+          <div class="hs-legal-body">{{ doc }}</div>
+        </div>
+      </div>
+
+      <div class="hs-sms-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></div>
+    </div>
+  </div>
+</div>
+{%- endmacro %}

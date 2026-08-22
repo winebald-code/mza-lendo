@@ -6,37 +6,49 @@ module.exports = {
   content: ['./templates/**/*.html', './static/js/**/*.js', './app.py'],
   theme: {
     extend: {
+      /* Every colour resolves through a CSS variable holding an "R G B" triple,
+       * so one variable set swaps the whole marketing site between grounds and
+       * every existing utility — bg-fog, text-slate-600, border-divider — comes
+       * along without a single class changing in the markup. The <alpha-value>
+       * placeholder is what keeps the slash syntax (bg-fog/40) working.
+       * Values live in static/css/input.css under THEME GROUNDS. */
       colors: {
-        fog: '#F2F4F6',
-        surface: '#FFFFFF',
-        ink: '#07090B',
-        divider: '#D7DCE2',
+        fog: 'rgb(var(--c-fog) / <alpha-value>)',
+        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        divider: 'rgb(var(--c-divider) / <alpha-value>)',
         signal: {
-          50: '#FFF3EA',
+          50: 'rgb(var(--c-signal-50) / <alpha-value>)',
           100: '#FFE4D1',
           200: '#FFC29A',
           300: '#FF9A57',
           400: '#FF7A24',
           500: '#FF6A00',
-          600: '#DB5A00',
-          700: '#B04900',
+          600: 'rgb(var(--c-signal-600) / <alpha-value>)',
+          700: 'rgb(var(--c-signal-700) / <alpha-value>)',
           800: '#7A3300',
           900: '#3D1A00',
         },
+      /* 100-300 and 700-900 stay literal on purpose. The dark end is used as a
+       * dark surface (bg-slate-900 bands, the footer) and the light end as text
+       * ON those bands, so both must hold their value in either theme. Only the
+       * middle of the scale — the body-text greys — flips. */
         slate: {
           100: '#FFFFFF',
           200: '#F2F4F6',
           300: '#D7DCE2',
-          400: '#8B939E',
-          500: '#5C6570',
-          600: '#3A4250',
+          400: 'rgb(var(--c-slate-400) / <alpha-value>)',
+          500: 'rgb(var(--c-slate-500) / <alpha-value>)',
+          600: 'rgb(var(--c-slate-600) / <alpha-value>)',
           700: '#1C222A',
           800: '#0F1216',
           900: '#07090B',
         },
-        ok: '#1F8A5B',
-        warn: '#D97706',
-        bad: '#D62828',
+        /* Status colours lift a little on the dark ground; the light-mode
+         * values are tuned for contrast against white and go flat on black. */
+        ok: 'rgb(var(--c-ok) / <alpha-value>)',
+        warn: 'rgb(var(--c-warn) / <alpha-value>)',
+        bad: 'rgb(var(--c-bad) / <alpha-value>)',
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],

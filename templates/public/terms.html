@@ -1,0 +1,109 @@
+{% extends "public/_legal.html" %}
+
+{# NOTE FOR WHOEVER SHIPS THIS: this is a plain-language draft, not legal
+   advice, and it has not been reviewed by a lawyer. The bracketed items need
+   real answers before it goes live — company registration, notice address,
+   governing law, and how long you actually retain data. #}
+
+{% block title %}Terms of service — {{ APP_NAME }}{% endblock %}
+{% block description %}The agreement between Bacaan and the workshops that use it.{% endblock %}
+
+{% set legal_title = 'Terms of service' %}
+{% set legal_updated = '22 August 2026' %}
+
+{% block legal %}
+<h2>1. Who this agreement is with</h2>
+<p>
+  Bacaan is operated by Winebald Technologies. These terms are the agreement between us and
+  the plant that holds the account — the workshop, factory or business, not the individual
+  who happened to sign up. If you accept these terms on behalf of a business, you are saying
+  you are allowed to.
+</p>
+
+<h2>2. What the service is</h2>
+<p>
+  Bacaan records manufacturing work: inventory, production runs, orders, maintenance and
+  attendance. Workers enter that record over USSD or SMS from their own handsets; owners and
+  supervisors read it on the web dashboard.
+</p>
+<p>
+  We provide the software. We do not manufacture anything, inspect anything or verify what is
+  entered. The record is only as accurate as what your floor reports into it.
+</p>
+
+<h2>3. Your account</h2>
+<ul>
+  <li>The person who creates the plant becomes its owner and can add and remove other users.</li>
+  <li>You are responsible for what happens under your accounts, including work done by anyone you give access to.</li>
+  <li>Keep passwords private. Tell us promptly if you think an account has been reached by someone who should not have it.</li>
+  <li>We may suspend an account that is being used to break the law, to attack the service, or in a way that puts other plants at risk.</li>
+</ul>
+
+<h2>4. Your data belongs to you</h2>
+<p>
+  Everything your plant enters — materials, runs, orders, worker records, messages — stays
+  yours. We hold it to run the service for you. We do not sell it, and we do not use one
+  plant's data to advantage another.
+</p>
+<p>
+  You can export your data while your account is open. If you close the account, ask us for an
+  export first: see <a href="{{ url_for('privacy') }}">the privacy policy</a> for how long we
+  keep things afterwards.
+</p>
+
+<h2>5. Handset charges</h2>
+<p>
+  Bacaan reaches your workers over USSD and SMS on ordinary mobile networks. Those networks
+  charge for that traffic and we do not control what they charge. Session and message costs
+  are between you, your workers and your operator.
+</p>
+
+<h2>6. Paying for it</h2>
+<p>
+  Paid plans are billed in advance for the period shown at checkout. Prices are listed on
+  <a href="{{ url_for('pricing') }}">the pricing page</a>. If a payment fails we will tell you
+  before anything changes about your access.
+</p>
+<p>
+  You can stop a subscription at any time and it runs to the end of the period you have paid
+  for. We do not pro-rate part-periods unless the law where you are says we must.
+</p>
+
+<h2>7. What we promise, and what we do not</h2>
+<p>
+  We work to keep Bacaan available and correct, and we will tell you about planned downtime in
+  advance. We cannot promise the service is never interrupted — networks fail, operators change
+  their rules, and hardware breaks.
+</p>
+<p>
+  Bacaan is provided as it is. We are not liable for production decisions made from the record,
+  for lost profit, or for losses we could not reasonably have foreseen. Nothing here limits
+  liability that cannot be limited by law, including for death, personal injury or fraud.
+</p>
+
+<h2>8. Ending the agreement</h2>
+<p>
+  You can close your plant whenever you like. We can end this agreement if you break these
+  terms materially and do not fix it after we have asked, or if we stop offering the service —
+  in which case we will give you reasonable notice and time to export.
+</p>
+
+<h2>9. Changes</h2>
+<p>
+  We may update these terms as the product changes. If a change matters to you — pricing,
+  rights, how data is handled — we will tell account owners before it takes effect. Continuing
+  to use Bacaan after that means you accept the new terms.
+</p>
+
+<h2>10. Law and disputes</h2>
+<p>
+  This agreement is governed by the laws of Kenya, and the courts of Kenya have jurisdiction.
+  Before going to court, please write to us — most things are quicker to fix directly.
+</p>
+
+<h2>11. Reaching us</h2>
+<p>
+  Write to <a href="mailto:info@winebald.tech">info@winebald.tech</a> with anything about
+  this agreement, including notices required under it.
+</p>
+{% endblock %}

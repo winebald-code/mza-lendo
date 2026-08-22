@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 <link rel="stylesheet" href="{{ asset('css/handset.css') }}">
+{% include "partials/theme_boot.html" %}
 </head>
 <body class="hs-stage">
 {% from "partials/icons.html" import icon, sprite %}
@@ -18,6 +19,9 @@
 
 {# ── Two handsets, one page. Same frame, same size, one on each half; the
      black behind them is the only other thing on the screen. ───────────── #}
+{# The control floats over the stage: these pages have no header to hang it in. #}
+<div class="hs-theme">{% include "partials/theme_toggle.html" %}</div>
+
 <div class="hs-pair">
 
   {# ── Left: the argument ──────────────────────────────────────────────── #}
