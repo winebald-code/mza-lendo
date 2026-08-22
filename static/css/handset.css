@@ -49,19 +49,19 @@
    This is the whole reason the palette is variables rather than classes. */
 @media (min-width: 1024px) {
 [data-theme="dark"] .hs-screen {
-  --c-fog: 242 244 246;
-  --c-surface: 255 255 255;
-  --c-ink: 7 9 11;
-  --c-divider: 215 220 226;
-  --c-slate-400: 139 147 158;
-  --c-slate-500: 92 101 112;
-  --c-slate-600: 58 66 80;
-  --c-signal-50: 255 243 234;
-  --c-signal-600: 219 90 0;
-  --c-signal-700: 176 73 0;
-  --c-ok: 31 138 91;
-  --c-warn: 217 119 6;
-  --c-bad: 214 40 40;
+  --c-fog: var(--lt-fog);
+  --c-surface: var(--lt-surface);
+  --c-ink: var(--lt-ink);
+  --c-divider: var(--lt-divider);
+  --c-slate-400: var(--lt-slate-400);
+  --c-slate-500: var(--lt-slate-500);
+  --c-slate-600: var(--lt-slate-600);
+  --c-signal-50: var(--lt-signal-50);
+  --c-signal-600: var(--lt-signal-600);
+  --c-signal-700: var(--lt-signal-700);
+  --c-ok: var(--lt-ok);
+  --c-warn: var(--lt-warn);
+  --c-bad: var(--lt-bad);
   color-scheme: light;
 }
 }
@@ -143,6 +143,11 @@
    the section's own bottom border, plus three to spare. The floor wins on a
    very short window, where fitting the fold would mean a phone too small to
    read the menu on — legibility beats the fold at that point. */
+/* The platform page, where the handset carries the whole argument. Width-driven
+   only: unlike the homepage hero this one has no fold to fit inside, so tying it
+   to viewport height would shrink it on a short window for no reason. */
+.hs--wide { --hs-w: clamp(300px, 33vw, 440px); }
+
 .hs--hero {
   --hs-w: clamp(260px, min(30vw, calc((100vh - 194px) * 444 / 916)), 420px);
   --hs-w: clamp(260px, min(30vw, calc((100svh - 194px) * 444 / 916)), 420px);
@@ -1019,7 +1024,8 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   font-size: max(9.5px, 2.7cqw);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(var(--c-slate-400));
+  /* slate-500, not 400: at this size 400 lands on 3.1 against white glass. */
+  color: rgb(var(--c-slate-500));
 }
 
 .hs-legal-body { margin-top: 5cqw; }
@@ -1053,6 +1059,80 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 }
 
 .hs-legal-body li::marker { color: rgb(var(--c-slate-400)); }
+
+/* ── ON-GLASS PIECES THE DOCUMENT PAGES ADD ─────────────────────────────────
+   Inline code, and the status page's live check list. Colours come from the
+   palette variables rather than hex, so they hold inside a white device on the
+   dark theme and follow the page on a phone, where the frame is gone. */
+.hs-legal-body .hs-mono,
+.hs-legal-body ul .hs-mono {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.92em;
+  padding: 0.1em 0.36em;
+  border-radius: 0.35em;
+  background: rgb(var(--c-fog));
+  color: rgb(var(--c-ink));
+}
+
+.hs-status-line {
+  margin: 0 0 4cqw;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: max(13px, 4cqw);
+  letter-spacing: -0.01em;
+}
+
+.hs-status-ok { color: rgb(var(--c-ok)); }
+.hs-status-degraded { color: rgb(var(--c-warn)); }
+.hs-status-down { color: rgb(var(--c-bad)); }
+
+.hs-checks {
+  margin: 0 0 6cqw;
+  border-top: 1px solid rgb(var(--c-divider));
+}
+
+.hs-check {
+  padding: 3cqw 0;
+  border-bottom: 1px solid rgb(var(--c-divider));
+}
+
+.hs-check dt {
+  display: flex;
+  align-items: center;
+  gap: 2.2cqw;
+  margin: 0;
+  font-weight: 600;
+  font-size: max(12.5px, 3.7cqw);
+  color: rgb(var(--c-ink));
+}
+
+.hs-check dd {
+  margin: 1.4cqw 0 0 5.4cqw;
+  font-size: max(11.5px, 3.3cqw);
+  line-height: 1.55;
+  color: rgb(var(--c-slate-600));
+}
+
+.hs-check-state {
+  margin-left: auto;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: max(9px, 2.5cqw);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hs-dot {
+  width: 2.2cqw;
+  min-width: 7px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hs-dot-ok { background: rgb(var(--c-ok)); }
+.hs-dot-degraded { background: rgb(var(--c-warn)); }
+.hs-dot-down { background: rgb(var(--c-bad)); }
 
 .hs-legal-body li { margin-top: 1.4cqw; }
 

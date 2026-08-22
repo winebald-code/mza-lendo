@@ -231,12 +231,16 @@
 {%- endmacro %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   legal_deck — a legal document on one big handset screen.
+   screen_deck — a document on one big handset screen.
+
+   Terms, privacy, security, service status and contact all use it: the same
+   device the rest of the site shows, sized to the window instead of a column,
+   with the page's text on the glass.
 
    Same frame and same chrome as the auth deck, sized to the window rather than
    to a column. The glass scrolls; the page behind it does not.
    ═══════════════════════════════════════════════════════════════════════════ #}
-{% macro legal_deck(title='', updated='') -%}
+{% macro screen_deck(title='', updated='') -%}
 {%- set doc = caller() -%}
 <div class="hs hs--deck hs--legal">
   <img class="hs-shell" src="{{ asset('img/handset.png') }}" alt="" aria-hidden="true"

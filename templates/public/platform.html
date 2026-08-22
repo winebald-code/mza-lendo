@@ -99,7 +99,9 @@
 {# ── USSD ── #}
 <section class="border-b border-divider bg-surface">
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="grid lg:grid-cols-[1fr_300px] gap-12 xl:gap-16 items-start">
+    {# auto, not a fixed 300px track: the column is now whatever the handset is,
+       so its size is set in one place and the copy keeps the rest. #}
+    <div class="grid lg:grid-cols-[1fr_auto] gap-12 xl:gap-16 items-start">
       <div>
         <p class="kicker mb-4">The floor line</p>
         <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
@@ -167,8 +169,12 @@
         </p>
       </div>
 
-      <div class="mx-auto lg:mx-0 w-full max-w-[300px]">
-        {% call handset(size='md', code=ussd_code) %}
+      {# The handset is the argument on this page, so it gets the fluid hero size
+         rather than the 290px preset. It sits in its own grid track and the cap
+         is on this wrapper, so growing it widens nothing and takes no measure
+         from the copy beside it. #}
+      <div class="mx-auto lg:mx-0">
+        {% call handset(size='wide', code=ussd_code) %}
           <pre class="term">REPORT PRODUCTION
 1. RUN-0003 Swing gate 3
 2. RUN-0001 Steel cabine

@@ -2112,6 +2112,59 @@ def privacy():
     return render_template("public/privacy.html")
 
 
+@app.route("/contact")
+def contact():
+    return render_template("public/contact.html")
+
+
+@app.route("/status")
+def status_page():
+    """The service status page.
+
+    Runs the same checks a monitor would rather than printing a reassuring
+    sentence: a status page that cannot go red is decoration. Each entry is a
+    live read at request time, so what the page says is what the process can
+    actually see right now.
+    """
+    checks = []
+
+    try:
+        db.session.execute(db.text("SELECT 1"))
+        checks.append(("Database", "ok", "Answering queries."))
+    except Exception as exc:                                    # pragma: no cover
+        checks.append(("Database", "down", f"Not answering: {str(exc)[:90]}"))
+
+    try:
+        plants = Factory.query.filter_by(is_active=True).count()
+        checks.append(("Plants served", "ok", f"{plants} active."))
+    except Exception:                                           # pragma: no cover
+        checks.append(("Plants served", "down", "Cannot read the plant table."))
+
+    ussd = app.config.get("AT_USSD_CODE") or ""
+    checks.append(("USSD line", "ok" if ussd else "degraded",
+                   f"Menu answers on {ussd}." if ussd
+                   else "No shortcode configured; the floor cannot dial in."))
+
+    if app.config.get("SMS_ENABLED"):
+        keyed = bool(app.config.get("AT_API_KEY"))
+        checks.append(("Outbound SMS", "ok" if keyed else "degraded",
+                       "Alerts are being sent." if keyed
+                       else "Enabled but no API key, so nothing will send."))
+    else:
+        checks.append(("Outbound SMS", "degraded",
+                       "Turned off. The dashboard still records everything."))
+
+    checks.append(("Encrypted transport", "ok" if app.config.get("FORCE_HTTPS") else "degraded",
+                   "HTTPS enforced, with HSTS." if app.config.get("FORCE_HTTPS")
+                   else "Not enforced on this deployment."))
+
+    worst = ("down" if any(c[1] == "down" for c in checks)
+             else "degraded" if any(c[1] == "degraded" for c in checks) else "ok")
+
+    return render_template("public/status.html", checks=checks, overall=worst,
+                           version=APP_VERSION, checked_at=_now())
+
+
 @app.route("/healthz")
 def healthz():
     try:

@@ -1,0 +1,64 @@
+{% extends "public/_screen.html" %}
+
+{% block title %}Contact — {{ APP_NAME }}{% endblock %}
+{% block description %}How to reach Bacaan: support for plants already running, questions before you sign up, and where to report a security issue.{% endblock %}
+
+{% set screen_title = 'Contact' %}
+
+{% block screen %}
+<p>
+  One inbox, answered by the people who build the thing. There is no ticket queue to disappear
+  into and no chatbot in front of it.
+</p>
+
+<h2>Email</h2>
+<p>
+  <a href="mailto:info@winebald.tech">info@winebald.tech</a> — for everything below. We answer
+  within one working day, Nairobi time, and usually sooner.
+</p>
+
+<h2>If your floor is stopped</h2>
+<p>
+  Put <span class="hs-mono">URGENT</span> at the front of the subject line and include your plant
+  name. A stopped line is not a support ticket, and it does not wait its turn.
+</p>
+<p>Before you write, two things save an hour:</p>
+<ul>
+  <li>Check <a href="{{ url_for('status_page') }}">service status</a> — if the USSD line is down it is already known.</li>
+  <li>Have a worker dial the shortcode from a second network, so we know which side the fault is on.</li>
+</ul>
+
+<h2>Questions before signing up</h2>
+<p>
+  Tell us what the plant makes, roughly how many people report on a shift, and what you are using
+  now — a book, a spreadsheet, or nothing. That is enough for a straight answer about whether
+  Bacaan fits, including when it does not.
+</p>
+
+<h2>Something wrong with your data</h2>
+<p>
+  A worker's record, a stock figure you did not enter, a run that looks wrong. Send the plant name
+  and roughly when it happened. Every change is written to an audit trail, so a mistaken entry can
+  usually be traced back to the session that made it.
+</p>
+
+<h2>Security reports</h2>
+<p>
+  If you have found a vulnerability, write to the same address with
+  <span class="hs-mono">SECURITY</span> in the subject and please give us time to fix it before
+  publishing. We will confirm receipt, tell you what we found, and credit you if you want that.
+  See <a href="{{ url_for('security_page') }}">security</a> for what the application already does.
+</p>
+
+<h2>Data requests</h2>
+<p>
+  Access, correction, deletion or an export of what is held about you. Same address, and see
+  <a href="{{ url_for('privacy') }}">the privacy policy</a> for what those rights cover.
+</p>
+
+<h2>Where we are</h2>
+<p>
+  Winebald Technologies, Nairobi, Kenya. Working hours are 08:00 to 17:00 East Africa Time,
+  Monday to Friday. Urgent floor outages are read outside them.
+</p>
+{% endblock %}

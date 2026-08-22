@@ -1,0 +1,70 @@
+{% extends "public/_screen.html" %}
+
+{% block title %}Service status — {{ APP_NAME }}{% endblock %}
+{% block description %}Live status of the Bacaan USSD line, SMS delivery, dashboard and database.{% endblock %}
+
+{% set screen_title = 'Service status' %}
+{% set screen_updated = checked_at.strftime('%d %B %Y, %H:%M') ~ ' UTC' %}
+
+{% block screen %}
+{# Every row below is a live read taken when this page was requested — see
+   status_page() in app.py. Nothing here is hardcoded, so the page can go red. #}
+
+<p class="hs-status-line hs-status-{{ overall }}">
+  {% if overall == 'ok' %}Everything is running.
+  {% elif overall == 'degraded' %}Running, with something worth knowing about.
+  {% else %}Something is down.{% endif %}
+</p>
+
+<dl class="hs-checks">
+  {% for name, state, detail in checks %}
+  <div class="hs-check">
+    <dt>
+      <span class="hs-dot hs-dot-{{ state }}" aria-hidden="true"></span>
+      {{ name }}
+      <span class="hs-check-state hs-status-{{ state }}">
+        {{ 'Operational' if state == 'ok' else ('Limited' if state == 'degraded' else 'Down') }}
+      </span>
+    </dt>
+    <dd>{{ detail }}</dd>
+  </div>
+  {% endfor %}
+</dl>
+
+<h2>What each one means</h2>
+<p>
+  <strong>USSD line</strong> is the shortcode workers dial. If it is down the floor cannot report,
+  and entries made during the outage are simply not made — nothing queues on a feature phone.
+</p>
+<p>
+  <strong>Outbound SMS</strong> is alerts leaving the system. If it is limited, the plant record is
+  still complete and the dashboard still shows everything; only the pushed messages stop.
+</p>
+<p>
+  <strong>Database</strong> is the plant record itself. If it is down the dashboard will not load,
+  and this page would be showing red rather than loading at all.
+</p>
+<p>
+  <strong>Encrypted transport</strong> is HTTPS with HSTS. Anything other than operational here
+  means the deployment is not enforcing it, which is a configuration matter rather than an outage.
+</p>
+
+<h2>If something is wrong</h2>
+<p>
+  The USSD line depends on the mobile network as well as on us, so a fault can sit on either side.
+  Before reporting one, have a worker dial the shortcode from a second network if you can — it
+  tells us immediately which half to look at.
+</p>
+<p>
+  Report outages to <a href="mailto:info@winebald.tech">info@winebald.tech</a> with the plant name,
+  the time, and what the handset showed. There is a machine-readable version of this page at
+  <a href="{{ url_for('healthz') }}">/healthz</a> if you want to poll it.
+</p>
+
+<h2>Planned work</h2>
+<p>
+  Anything that will interrupt the USSD line is announced to plant owners by email beforehand, and
+  scheduled outside Kenyan working hours where the change allows it. Version running now:
+  <span class="hs-mono">{{ version }}</span>.
+</p>
+{% endblock %}

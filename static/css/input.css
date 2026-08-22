@@ -23,22 +23,48 @@
   :root {
     --rail-w: 264px;
 
-    --c-fog: 242 244 246;
-    --c-surface: 255 255 255;
-    --c-ink: 7 9 11;
-    --c-divider: 215 220 226;
+    /* The light values live here once, under --lt-*, and are never overridden.
+       --c-* is what the palette actually reads, and it points at them.
 
-    --c-slate-400: 139 147 158;
-    --c-slate-500: 92 101 112;
-    --c-slate-600: 58 66 80;
+       The indirection earns its keep because there are two places that need the
+       light values: this block, and the rule in handset.css that keeps a white
+       handset's glass light while the page around it is dark. That second block
+       used to repeat the numbers, and the repetition did exactly what
+       repetition does — the greens and ambers were darkened here for contrast
+       and the copy inside the handset kept the old ones. Now there is one
+       source and no way for them to drift. */
+    --lt-fog: 242 244 246;
+    --lt-surface: 255 255 255;
+    --lt-ink: 7 9 11;
+    --lt-divider: 215 220 226;
+    --lt-slate-400: 139 147 158;
+    --lt-slate-500: 92 101 112;
+    --lt-slate-600: 58 66 80;
+    --lt-signal-50: 255 243 234;
+    --lt-signal-600: 219 90 0;
+    --lt-signal-700: 176 73 0;
 
-    --c-signal-50: 255 243 234;
-    --c-signal-600: 219 90 0;
-    --c-signal-700: 176 73 0;
+    /* Darkened from #1F8A5B and #D97706. Both were tuned as fills and fell
+       short as small text on white — 4.33 and 3.19 against a 4.5 threshold —
+       which the status page's OPERATIONAL and LIMITED labels made obvious.
+       Darker also helps every existing chip that puts white text on them. */
+    --lt-ok: 20 122 76;
+    --lt-warn: 168 76 4;
+    --lt-bad: 199 32 32;
 
-    --c-ok: 31 138 91;
-    --c-warn: 217 119 6;
-    --c-bad: 214 40 40;
+    --c-fog: var(--lt-fog);
+    --c-surface: var(--lt-surface);
+    --c-ink: var(--lt-ink);
+    --c-divider: var(--lt-divider);
+    --c-slate-400: var(--lt-slate-400);
+    --c-slate-500: var(--lt-slate-500);
+    --c-slate-600: var(--lt-slate-600);
+    --c-signal-50: var(--lt-signal-50);
+    --c-signal-600: var(--lt-signal-600);
+    --c-signal-700: var(--lt-signal-700);
+    --c-ok: var(--lt-ok);
+    --c-warn: var(--lt-warn);
+    --c-bad: var(--lt-bad);
 
     color-scheme: light;
   }

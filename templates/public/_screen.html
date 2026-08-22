@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   The legal pages, on one big handset.
+   Any page that is a document, on one big handset.
 
    Same device as everywhere else on the site, scaled to the window the way the
    auth deck is, with the document on the glass. The screen scrolls; the page
    does not. It reuses .hs-deck for the chrome — status bar, body, home bar — so
    the frame here and the frame on sign-in are the same object.
 
-   Pages extending this fill legal_title, legal_updated and the content block.
+   Pages extending this fill screen_title, screen_updated and the content block.
    ═══════════════════════════════════════════════════════════════════════════ #}
 
 {% block content %}
-{% from "partials/handset.html" import legal_deck with context %}
+{% from "partials/handset.html" import screen_deck with context %}
 
 <div class="legal-stage">
-  {% call legal_deck(title=legal_title, updated=legal_updated) %}
-    {% block legal %}{% endblock %}
+  {% call screen_deck(title=screen_title, updated=screen_updated) %}
+    {% block screen %}{% endblock %}
   {% endcall %}
 </div>
 {% endblock %}
