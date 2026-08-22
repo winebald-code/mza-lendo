@@ -1093,6 +1093,18 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   line-height: 1.6;
   color: rgb(var(--c-ink));
 }
+
+.hs-sent-open {
+  display: inline-block;
+  margin-top: 3.4cqw;
+  font-weight: 600;
+  color: rgb(var(--c-ink));
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--c-divider));
+  text-underline-offset: 2px;
+}
+
+.hs-sent-open:hover { color: rgb(var(--c-signal-600)); }
 .hs-form-fields .field { margin-bottom: 3.2cqw; gap: 1.4cqw; }
 .hs-form-fields .field > label { font-size: max(8.5px, 2.7cqw); letter-spacing: 0.1em; }
 .hs-form-fields .input,

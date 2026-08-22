@@ -67,9 +67,14 @@
     <button type="submit" class="btn btn-primary btn-block">Send message</button>
   </div>
 
-  <p class="hs-sent" data-contact-note hidden>
-    Your mail app should be opening with the message ready. If nothing happened,
-    write to <span class="hs-mono">info@winebald.tech</span>.
-  </p>
+  <div class="hs-sent" data-contact-note hidden>
+    <p class="m-0">
+      Your mail app should be opening with the message ready. If nothing happened,
+      write to <span class="hs-mono">info@winebald.tech</span>.
+    </p>
+    {# The same link again, so the sender can raise the app chooser a second
+       time if the first attempt went nowhere or opened the wrong app. #}
+    <a class="hs-sent-open" data-contact-open href="mailto:info@winebald.tech">Choose a mail app</a>
+  </div>
 </form>
 {% endblock %}

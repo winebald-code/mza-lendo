@@ -396,7 +396,7 @@
         'Name: ' + name,
         'Email: ' + email,
         plant ? 'Plant: ' + plant : null,
-        'Sent from ' + window.location.origin + '/contact',
+        'Sent from BACAAN',
       ].filter(Boolean);
 
       const to = form.getAttribute('data-mailto');
@@ -409,10 +409,22 @@
          especially when the mail client opens in another window. */
       const note = $('[data-contact-note]', form);
       const fields = $('[data-contact-fields]', form);
+      const again = $('[data-contact-open]', form);
+      if (again) again.href = href;
       if (fields) fields.hidden = true;
       if (note) note.hidden = false;
 
-      window.location.href = href;
+      /* An anchor click rather than a location assignment. Both hand the URL to
+         the operating system, but a real link is what Android and Windows treat
+         as an app-chooser intent, so the sender picks which mail app opens it
+         instead of being sent straight to a default. */
+      const a = document.createElement('a');
+      a.href = href;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { a.remove(); }, 0);
     });
   });
   if (pwField) {
