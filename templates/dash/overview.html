@@ -190,6 +190,37 @@
         {{ empty_state('clipboard', 'The order book is empty', 'Record your first customer order to start planning production.', url_for('order_form') if current_user.can_write else None, 'New order') }}
       {% endif %}
     </section>
+
+    {# Moved out of the right column, which ran far longer than this one and
+       left roughly 650px of empty page beside it. Card heights follow the
+       plant's data, so this balances rather than guarantees. #}
+    {# ── Floor activity ── #}
+    <section class="card min-w-0">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title m-0">Floor activity</h2>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Latest handset sessions</p>
+        </div>
+        <a href="{{ url_for('dash_ussd_sessions') }}" class="btn btn-ghost btn-xs">All {{ icon('arrow-right','ico ico-sm') }}</a>
+      </div>
+      {% if feed %}
+      <ul class="list-none m-0 p-0">
+        {% for s in feed %}
+        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0 flex items-center gap-3">
+          <span class="w-[30px] h-[30px] rounded-[9px] bg-fog border border-divider grid place-items-center text-slate-400 shrink-0">{{ icon('signal','ico ico-sm') }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[12.5px] font-medium text-ink m-0 truncate">{{ s.worker.name if s.worker else s.phone_number }}</p>
+            <p class="font-mono text-[10px] text-slate-400 mt-0.5 m-0 truncate">{{ s.outcome or 'session' }} · {{ s.last_input or '—' }}</p>
+          </div>
+          <span class="font-mono text-[10px] text-slate-400 shrink-0">{{ s.started_at|ago }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state('signal', 'No sessions yet', 'Open the handset simulator to walk through the worker menu.', url_for('dash_ussd_simulator'), 'Open simulator') }}
+      {% endif %}
+    </section>
+
   </div>
 
   <div class="grid gap-6 content-start min-w-0">
@@ -291,33 +322,6 @@
       </ul>
       {% else %}
         {{ empty_state('wrench', 'No open faults', 'Every machine is reporting clear.') }}
-      {% endif %}
-    </section>
-
-    {# ── Floor activity ── #}
-    <section class="card min-w-0">
-      <div class="card-head">
-        <div>
-          <h2 class="card-title m-0">Floor activity</h2>
-          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Latest handset sessions</p>
-        </div>
-        <a href="{{ url_for('dash_ussd_sessions') }}" class="btn btn-ghost btn-xs">All {{ icon('arrow-right','ico ico-sm') }}</a>
-      </div>
-      {% if feed %}
-      <ul class="list-none m-0 p-0">
-        {% for s in feed %}
-        <li class="px-5 py-3 border-b border-divider/70 last:border-b-0 flex items-center gap-3">
-          <span class="w-[30px] h-[30px] rounded-[9px] bg-fog border border-divider grid place-items-center text-slate-400 shrink-0">{{ icon('signal','ico ico-sm') }}</span>
-          <div class="min-w-0 flex-1">
-            <p class="text-[12.5px] font-medium text-ink m-0 truncate">{{ s.worker.name if s.worker else s.phone_number }}</p>
-            <p class="font-mono text-[10px] text-slate-400 mt-0.5 m-0 truncate">{{ s.outcome or 'session' }} · {{ s.last_input or '—' }}</p>
-          </div>
-          <span class="font-mono text-[10px] text-slate-400 shrink-0">{{ s.started_at|ago }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-        {{ empty_state('signal', 'No sessions yet', 'Open the handset simulator to walk through the worker menu.', url_for('dash_ussd_simulator'), 'Open simulator') }}
       {% endif %}
     </section>
   </div>

@@ -389,12 +389,13 @@
         }).catch(function () {});
       } catch (err) { /* the mail client still opens */ }
 
+      // No Topic line: it is already the subject, and repeating it in the body
+      // only makes the message longer to read.
       const lines = [
         message, '', '--',
         'Name: ' + name,
         'Email: ' + email,
         plant ? 'Plant: ' + plant : null,
-        'Topic: ' + (TOPICS[topic] || TOPICS.general),
         'Sent from ' + window.location.origin + '/contact',
       ].filter(Boolean);
 
@@ -403,8 +404,14 @@
         '?subject=' + encodeURIComponent(TOPICS[topic] || TOPICS.general) +
         '&body=' + encodeURIComponent(lines.join('\n'));
 
+      /* Hand the screen over to the confirmation. Leaving the filled-in form
+         on screen behind a one-line hint reads as though nothing happened,
+         especially when the mail client opens in another window. */
       const note = $('[data-contact-note]', form);
+      const fields = $('[data-contact-fields]', form);
+      if (fields) fields.hidden = true;
       if (note) note.hidden = false;
+
       window.location.href = href;
     });
   });

@@ -8,130 +8,133 @@
 {% endblock %}
 
 {% block content %}
-<div class="grid gap-6 xl:grid-cols-[380px_1fr] items-start">
+{# Three summary cards across, then the ledger full width below. In two
+   columns the ledger made one side twice the length of the other, and
+   moving it out left the remaining column short by the same amount. #}
+<div class="grid gap-6 xl:grid-cols-3 items-start">
+  <section class="card overflow-hidden">
+    <div class="p-7 flex flex-col items-center bg-fog/40 grid-lines border-b border-divider">
+      {{ pulse_ring(pulse.overall, pulse.overall_band, 220) }}
+      <p class="font-mono text-[10.5px] text-slate-400 mt-4 m-0">Read {{ pulse.taken_at|dt('%d %b %Y · %H:%M') }} {{ TZ_LABEL }}</p>
+    </div>
+    <div class="p-6">
+      <p class="label mb-4">Subsystem scores</p>
+      {{ pulse_bars(pulse.scores, pulse.bands, {
+        'production': url_for('dash_runs'),
+        'inventory': url_for('dash_materials'),
+        'orders': url_for('dash_orders'),
+        'maintenance': url_for('dash_machines'),
+        'suppliers': url_for('dash_suppliers')}) }}
+    </div>
+  </section>
 
-  <div class="grid gap-6">
-    <section class="card overflow-hidden">
-      <div class="p-7 flex flex-col items-center bg-fog/40 grid-lines border-b border-divider">
-        {{ pulse_ring(pulse.overall, pulse.overall_band, 220) }}
-        <p class="font-mono text-[10.5px] text-slate-400 mt-4 m-0">Read {{ pulse.taken_at|dt('%d %b %Y · %H:%M') }} {{ TZ_LABEL }}</p>
-      </div>
-      <div class="p-6">
-        <p class="label mb-4">Subsystem scores</p>
-        {{ pulse_bars(pulse.scores, pulse.bands, {
-          'production': url_for('dash_runs'),
-          'inventory': url_for('dash_materials'),
-          'orders': url_for('dash_orders'),
-          'maintenance': url_for('dash_machines'),
-          'suppliers': url_for('dash_suppliers')}) }}
-      </div>
-    </section>
+  <section class="card card-pad">
+    <h2 class="card-title mb-3">How the number is built</h2>
+    <p class="text-[12.5px] text-slate-500 leading-relaxed mb-4">
+      Each subsystem is scored 0–100 from live records, then weighted. The weighting favours
+      what stops a plant fastest: a run that has slipped hurts more than a supplier who was
+      two days late.
+    </p>
+    <table class="w-full">
+      <tbody>
+      {% for name, weight, why in [
+        ('Production', 26, 'Run progress against plan, and runs past their end date'),
+        ('Inventory', 22, 'Items below minimum, weighted by how far below'),
+        ('Orders', 22, 'Late orders and orders due inside three days'),
+        ('Maintenance', 16, 'Machines stopped, open faults, overdue services'),
+        ('Suppliers', 14, 'Delivery reliability and overdue purchase orders')] %}
+        <tr class="border-b border-divider last:border-b-0">
+          <td class="py-2.5 pr-3 align-top">
+            <p class="text-[12.5px] font-medium text-ink m-0">{{ name }}</p>
+            <p class="text-[11.5px] text-slate-400 mt-0.5 m-0 leading-snug">{{ why }}</p>
+          </td>
+          <td class="py-2.5 text-right align-top num text-[12.5px] font-semibold text-signal-600 w-[46px]">{{ weight }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="mt-4 pt-4 border-t border-divider flex items-center gap-4">
+      <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-ok"></span> 75–100 healthy</span>
+      <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-warn"></span> 50–74 watch</span>
+      <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-bad"></span> below 50</span>
+    </div>
+  </section>
 
-    <section class="card card-pad">
-      <h2 class="card-title mb-3">How the number is built</h2>
-      <p class="text-[12.5px] text-slate-500 leading-relaxed mb-4">
-        Each subsystem is scored 0–100 from live records, then weighted. The weighting favours
-        what stops a plant fastest: a run that has slipped hurts more than a supplier who was
-        two days late.
-      </p>
-      <table class="w-full">
-        <tbody>
-        {% for name, weight, why in [
-          ('Production', 26, 'Run progress against plan, and runs past their end date'),
-          ('Inventory', 22, 'Items below minimum, weighted by how far below'),
-          ('Orders', 22, 'Late orders and orders due inside three days'),
-          ('Maintenance', 16, 'Machines stopped, open faults, overdue services'),
-          ('Suppliers', 14, 'Delivery reliability and overdue purchase orders')] %}
-          <tr class="border-b border-divider last:border-b-0">
-            <td class="py-2.5 pr-3 align-top">
-              <p class="text-[12.5px] font-medium text-ink m-0">{{ name }}</p>
-              <p class="text-[11.5px] text-slate-400 mt-0.5 m-0 leading-snug">{{ why }}</p>
-            </td>
-            <td class="py-2.5 text-right align-top num text-[12.5px] font-semibold text-signal-600 w-[46px]">{{ weight }}%</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      <div class="mt-4 pt-4 border-t border-divider flex items-center gap-4">
-        <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-ok"></span> 75–100 healthy</span>
-        <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-warn"></span> 50–74 watch</span>
-        <span class="flex items-center gap-1.5 text-[11.5px] text-slate-500"><span class="dot bg-bad"></span> below 50</span>
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Pulse over time</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Last {{ history|length }} readings, taken hourly while the dashboard is in use</p>
       </div>
-    </section>
-  </div>
-
-  <div class="grid gap-6">
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2 class="card-title m-0">Pulse over time</h2>
-          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Last {{ history|length }} readings, taken hourly while the dashboard is in use</p>
-        </div>
-      </div>
-      <div class="p-5">
-        {% if history|length > 1 %}
-          <div class="h-[180px]" data-label="Overall pulse over time"
-               data-line='[{% for h in history %}{"t":"{{ h.taken_at|dt('%d %b %H:%M') }}","v":{{ h.overall }}}{{ ',' if not loop.last }}{% endfor %}]'></div>
-        {% else %}
-          {{ empty_state('chart', 'Not enough readings yet', 'The engine records one reading an hour. Come back after a few hours of use.') }}
-        {% endif %}
-      </div>
+    </div>
+    <div class="p-5">
       {% if history|length > 1 %}
-      <div class="grid grid-cols-3 sm:grid-cols-5 border-t border-divider divide-x divide-divider">
-        {% for key, label in [('production','Production'),('inventory','Inventory'),('orders','Orders'),('maintenance','Maintenance'),('suppliers','Suppliers')] %}
-        {% set last = history[-1] %}
-        {% set prev = history[0] %}
-        {% set now_v = last[key] if last[key] is not none else 0 %}
-        {% set then_v = prev[key] if prev[key] is not none else 0 %}
-        {% set delta = now_v - then_v %}
-        <div class="p-4">
-          <p class="label m-0">{{ label }}</p>
-          <p class="num text-[18px] font-semibold mt-1 m-0">{{ now_v }}</p>
-          <p class="font-mono text-[10.5px] mt-1 m-0 {% if delta > 0 %}text-ok{% elif delta < 0 %}text-bad{% else %}text-slate-400{% endif %}">
-            {% if delta > 0 %}+{% endif %}{{ delta }} since first reading
-          </p>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </section>
-
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2 class="card-title m-0">Signal ledger</h2>
-          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Everything currently pulling the score down, worst first</p>
-        </div>
-        <span class="tag tag-neutral">{{ pulse.findings|length }}</span>
-      </div>
-      {% if pulse.findings %}
-      <ol class="list-none m-0 p-0">
-        {% for f in pulse.findings %}
-        <li class="px-5 py-4 border-b border-divider/70 last:border-b-0 flex items-start gap-4">
-          <span class="font-mono text-[11px] text-slate-300 pt-0.5 w-[20px] shrink-0">{{ '%02d'|format(loop.index) }}</span>
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2 mb-1">
-              <p class="text-[13.5px] font-semibold text-ink m-0">{{ f.title }}</p>
-              {{ sev_tag(f.severity) }}
-              <span class="tag tag-neutral">{{ f.area }}</span>
-            </div>
-            <p class="text-[12.5px] text-slate-500 m-0 leading-relaxed">{{ f.body }}</p>
-            <p class="text-[12.5px] mt-2 mb-0 leading-relaxed">
-              <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Do</span>{{ f.action }}
-            </p>
-          </div>
-          <a href="{{ url_for(f.link) }}" class="btn btn-secondary btn-sm shrink-0 self-center">
-            Go {{ icon('arrow-right','ico ico-sm') }}
-          </a>
-        </li>
-        {% endfor %}
-      </ol>
+        <div class="h-[180px]" data-label="Overall pulse over time"
+             data-line='[{% for h in history %}{"t":"{{ h.taken_at|dt('%d %b %H:%M') }}","v":{{ h.overall }}}{{ ',' if not loop.last }}{% endfor %}]'></div>
       {% else %}
-        {{ empty_state('badge-check', 'Clean board', 'Nothing is currently dragging the pulse down. Stock, machines, orders and suppliers are all inside their limits.') }}
+        {{ empty_state('chart', 'Not enough readings yet', 'The engine records one reading an hour. Come back after a few hours of use.') }}
       {% endif %}
-    </section>
+    </div>
+    {% if history|length > 1 %}
+    <div class="grid grid-cols-3 sm:grid-cols-5 border-t border-divider divide-x divide-divider">
+      {% for key, label in [('production','Production'),('inventory','Inventory'),('orders','Orders'),('maintenance','Maintenance'),('suppliers','Suppliers')] %}
+      {% set last = history[-1] %}
+      {% set prev = history[0] %}
+      {% set now_v = last[key] if last[key] is not none else 0 %}
+      {% set then_v = prev[key] if prev[key] is not none else 0 %}
+      {% set delta = now_v - then_v %}
+      <div class="p-4">
+        <p class="label m-0">{{ label }}</p>
+        <p class="num text-[18px] font-semibold mt-1 m-0">{{ now_v }}</p>
+        <p class="font-mono text-[10.5px] mt-1 m-0 {% if delta > 0 %}text-ok{% elif delta < 0 %}text-bad{% else %}text-slate-400{% endif %}">
+          {% if delta > 0 %}+{% endif %}{{ delta }} since first reading
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
   </div>
 </div>
+
+{# The ledger runs the full width instead of sitting in a column. It is far
+   longer than the two summary cards beside it, so in a column it left the
+   shorter side of the page empty for its whole length. #}
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title m-0">Signal ledger</h2>
+        <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Everything currently pulling the score down, worst first</p>
+      </div>
+      <span class="tag tag-neutral">{{ pulse.findings|length }}</span>
+    </div>
+    {% if pulse.findings %}
+    <ol class="list-none m-0 p-0">
+      {% for f in pulse.findings %}
+      <li class="px-5 py-4 border-b border-divider/70 last:border-b-0 flex items-start gap-4">
+        <span class="font-mono text-[11px] text-slate-300 pt-0.5 w-[20px] shrink-0">{{ '%02d'|format(loop.index) }}</span>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <p class="text-[13.5px] font-semibold text-ink m-0">{{ f.title }}</p>
+            {{ sev_tag(f.severity) }}
+            <span class="tag tag-neutral">{{ f.area }}</span>
+          </div>
+          <p class="text-[12.5px] text-slate-500 m-0 leading-relaxed">{{ f.body }}</p>
+          <p class="text-[12.5px] mt-2 mb-0 leading-relaxed">
+            <span class="font-mono text-[9.5px] uppercase tracking-label text-signal-600 mr-1.5">Do</span>{{ f.action }}
+          </p>
+        </div>
+        <a href="{{ url_for(f.link) }}" class="btn btn-secondary btn-sm shrink-0 self-center">
+          Go {{ icon('arrow-right','ico ico-sm') }}
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+      {{ empty_state('badge-check', 'Clean board', 'Nothing is currently dragging the pulse down. Stock, machines, orders and suppliers are all inside their limits.') }}
+    {% endif %}
+  </section>
+
 {% endblock %}
 
 {% block scripts %}

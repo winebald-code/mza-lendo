@@ -1022,6 +1022,11 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    stage left a pale band under the device on a phone. */
 .legal-stage {
   --legal-pad: clamp(16px, 3vh, 40px);
+  /* The same ground as the footer below it. The page ground is fog and the
+     footer is surface, so without this the two meet in a hard seam a few
+     centimetres under the device, which reads as a pale band stuck to the
+     bottom of the phone. */
+  background: rgb(var(--c-surface));
   display: grid;
   place-items: center;
   padding: var(--legal-pad) clamp(12px, 2vw, 32px);
@@ -1075,6 +1080,19 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    contact form is the same markup on the same glass, so it borrows the rules
    rather than growing a second set that would drift from them. */
 .hs-form-fields { margin-top: 5cqw; }
+
+/* The confirmation after a message is handed to the mail client. It replaces
+   the form rather than sitting under it, so the screen shows one thing. */
+.hs-sent {
+  margin: 8cqw 0 0;
+  padding: 5cqw;
+  border: 1px solid rgb(var(--c-divider));
+  border-radius: 4cqw;
+  background: rgb(var(--c-fog));
+  font-size: max(12px, 3.6cqw);
+  line-height: 1.6;
+  color: rgb(var(--c-ink));
+}
 .hs-form-fields .field { margin-bottom: 3.2cqw; gap: 1.4cqw; }
 .hs-form-fields .field > label { font-size: max(8.5px, 2.7cqw); letter-spacing: 0.1em; }
 .hs-form-fields .input,
