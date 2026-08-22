@@ -188,17 +188,10 @@
   [data-theme="dark"] .hero  { @apply text-white; background: #000; border-bottom: 1px solid rgba(255,255,255,0.10); }
   [data-theme="light"] .hero { @apply bg-fog text-ink border-b border-divider; }
 
-  .hero-rules { background-size: 56px 56px; }
-  [data-theme="dark"] .hero .hero-rules {
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-  }
-  [data-theme="light"] .hero .hero-rules {
-    background-image:
-      linear-gradient(to right, rgba(7,9,11,0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(7,9,11,0.045) 1px, transparent 1px);
-  }
+  /* The hero's square grid is off, matching .grid-lines. This is a separate
+     rule from that one, which is why removing the utility left the pattern
+     still showing behind the hero. Kept as a no-op so the markup can stay. */
+  .hero-rules { background-image: none; }
 
   [data-theme="dark"] .hero .hero-bloom  { @apply bg-signal-500/[0.13]; }
   [data-theme="light"] .hero .hero-bloom { @apply bg-signal-500/[0.07]; }
