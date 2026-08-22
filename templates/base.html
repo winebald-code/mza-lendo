@@ -31,7 +31,10 @@
     <nav class="flex items-center justify-between h-[68px] gap-6" aria-label="Main">
       <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 shrink-0 no-tap">
         {% include "partials/logo.html" %}
-        <span class="font-display font-bold text-[17px] tracking-[-0.02em] text-ink">Bacaan</span>
+        {# The wordmark steps aside under 260px. On a watch-sized viewport the
+           brand plus the header actions were wider than the window and the page
+           scrolled sideways; the logo alone still identifies the site. #}
+        <span class="brand-word font-display font-bold text-[17px] tracking-[-0.02em] text-ink">Bacaan</span>
       </a>
 
       <ul class="hidden lg:flex items-center gap-7 list-none m-0 p-0 text-[13.5px]">
@@ -87,10 +90,10 @@
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-12">
     <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
       <div>
-        <div class="flex items-center gap-2.5 mb-3">
+        <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 mb-3 w-fit no-tap">
           {% include "partials/logo.html" %}
           <span class="font-display font-bold text-[16px] text-ink">Bacaan</span>
-        </div>
+        </a>
         <p class="text-[13px] text-slate-500 max-w-[34ch] leading-relaxed">
           A manufacturing operating system for workshops that run on paper, notebooks
           and basic phones. Built in Nairobi for the Jua Kali floor.

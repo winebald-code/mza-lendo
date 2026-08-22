@@ -143,12 +143,10 @@
    read the menu on — legibility beats the fold at that point. */
 /* The platform page, where the handset carries the whole argument.
 
-   Height-aware, and it was not before. I had reasoned that this page has no fold
-   to fit inside so width alone would do, which missed the obvious: a 916/444
-   frame at 440px wide is 908px tall, taller than the window it has to be seen
-   in. The top of the device sat behind the sticky header and there was no scroll
-   position that showed the whole phone. Every other handset on the site is sized
-   against the window; this one now is too. */
+   Height-aware, because width alone is not enough: a 916/444 frame at 440px
+   wide stands 908px tall, taller than the window it has to be seen in, and its
+   top ends up behind the sticky header with no scroll position that shows the
+   whole device. Every handset on the site is sized against the window. */
 .hs--wide {
   --hs-w: min(clamp(300px, 33vw, 440px), calc((100vh - 150px) * 444 / 916));
   --hs-w: min(clamp(300px, 33vw, 440px), calc((100svh - 150px) * 444 / 916));
@@ -341,9 +339,8 @@ button.hs-key { cursor: pointer; }
 button.hs-key:hover b { background: var(--hs-press); }
 button.hs-key:active b { background: var(--hs-press-active); }
 
-/* No accent ring here. Reaching a key from the keyboard used to paint an orange
-   circle on whichever key was last touched, which read as a pressed state that
-   had not been pressed. The neutral fill is indicator enough. */
+/* No accent ring: an orange circle on the last-touched key reads as a pressed
+   state that was never pressed. The neutral fill is indicator enough. */
 button.hs-key:focus { outline: none; }
 button.hs-key:focus-visible { outline: none; }
 button.hs-key:focus-visible b { background: var(--hs-press-focus); }
@@ -639,8 +636,12 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
    nearly match. On the light ground the handsets keep their dark shells, which
    is what separates them from the page; on the dark ground the shells invert
    with everything else and the screens become the lit surfaces. */
+/* svh, and a height rather than a min-height: with min-height:100vh the stage
+   could stand taller than the small viewport and the page would scroll by the
+   difference, which is exactly what "the phone must stay put" rules out. */
 .hs-stage {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100svh;
   overflow: hidden;
   background: #fff;
 }
@@ -1016,11 +1017,15 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    Terms and privacy get the same handset the rest of the site uses, sized to
    the window instead of to a column. The glass scrolls; the page does not, so
    the device stays whole while the document moves inside it. */
+/* The document pages scroll normally: the handset sits in the flow and moves
+   with the page, and the footer follows it. No background either — an opaque
+   stage left a pale band under the device on a phone. */
 .legal-stage {
   --legal-pad: clamp(16px, 3vh, 40px);
   display: grid;
   place-items: center;
   padding: var(--legal-pad) clamp(12px, 2vw, 32px);
+  min-height: calc(100vh - 69px);
   min-height: calc(100svh - 69px);
 }
 
@@ -1042,8 +1047,8 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   color: var(--hs-ink);
 }
 
-/* No top margin: the mark that used to sit above this is gone, so the title is
-   the first thing on the glass and the padding is its only offset. */
+/* The title is the first thing on the glass, so the screen padding is its only
+   offset. */
 .hs-legal-title {
   margin: 0;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -1238,16 +1243,25 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    Two phones side by side stop working long before a tablet, so under 1024px
    the argument screen steps aside and the form takes the column.
 
-   The frame stays. It used to be stripped here and the screen made the page,
-   which meant the product looked like one thing on a laptop and another on a
-   handset — and it took the theme with it, since a screen that is the page
-   cannot also be a lit white device on a dark ground. The device is the device
-   at every width now; only the count changes. */
+   The frame stays at every width; only the count changes. Stripping it and
+   letting the screen become the page makes the product look like one thing on a
+   laptop and another on a handset, and takes the theme with it: a screen that is
+   the page cannot also be a lit white device on a dark ground. */
 @media (max-width: 1023px) {
   .hs-pair { grid-template-columns: 1fr; }
   .hs-say-phone { display: none; }
   /* One column, so the phone gets the whole width rather than half of it. */
   .hs--deck { --hs-slot: 100cqw; }
+}
+
+/* Below this the phone is nearly as wide as the window, and the floating theme
+   control — fixed to the top right corner — landed on top of the device. The
+   band at the top is the control's own space; the phone sizes itself from what
+   is left, so the two cannot meet. */
+@media (max-width: 640px) {
+  /* The control's own offset plus its 38px box plus a gap. A flat guess left a
+     one-pixel corner touching at 360 and 320. */
+  .hs-pair { padding-top: calc(clamp(10px, 1.8vh, 22px) + 46px); }
 }
 
 /* On a narrow viewport a fixed-width frame takes the width it needs rather than
@@ -1259,10 +1273,9 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 
 /* ── NO ZOOM ON FOCUS ───────────────────────────────────────────────────────
    iOS Safari zooms the page into any field whose text is smaller than 16px, and
-   it does not zoom back out when the field is left. That is the whole of the
-   "screen jumps when I type and stays zoomed after I tap away" behaviour: the
-   fields on the glass are sized in cqw and land around 12px on a handset, so
-   every tap into one zoomed the page and left it there.
+   it does not zoom back out when the field is left. The fields on the glass are
+   sized in cqw and land around 12px on a handset, so without a floor every tap
+   into one magnifies the page and leaves it that way.
 
    Sixteen pixels on coarse pointers is the fix. The alternative — user-scalable=no
    in the viewport meta — also stops the zoom, by taking pinch-to-zoom away from
@@ -1275,6 +1288,11 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   .hs-form .input, .hs-form .select, .hs-form .textarea,
   .hs-form-fields .input, .hs-form-fields .select, .hs-form-fields .textarea,
   .hs-field, input.hs-dialed { font-size: 16px; }
+}
+
+/* Nothing may push the page sideways, at any width the browser will report. */
+@media (max-width: 260px) {
+  .brand-word { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
