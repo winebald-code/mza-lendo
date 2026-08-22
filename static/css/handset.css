@@ -144,6 +144,21 @@
   filter: drop-shadow(0 18px 34px rgba(7, 9, 11, 0.18));
 }
 
+/* ── THE WHITE COVER ────────────────────────────────────────────────────────
+   On the dark theme the whole device turns white, cover included, not just the
+   glass. The shell is a render of a dark handset, so the light one is the same
+   render inverted — a white phone is not a dark phone lightened, it is the same
+   object lit the other way round, with the body bright and the seams and
+   chamfers reading dark. Swapped through content: rather than a second <img>,
+   so no macro has to know which theme is running.
+
+   The dark ground eats a drop shadow, so the cover gets a faint halo instead —
+   otherwise a white phone on black has a hard cut for an edge. */
+[data-theme="dark"] .hs-shell {
+  content: url("../img/handset-light.png");
+  filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.10));
+}
+
 .hs-screen {
   container-type: size;
   position: absolute;
