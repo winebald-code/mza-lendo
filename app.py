@@ -2192,6 +2192,11 @@ def contact():
                            topics=CONTACT_TOPICS)
 
 
+@app.route("/faqs")
+def faqs():
+    return render_template("public/faqs.html")
+
+
 @app.route("/status")
 def status_page():
     """The service status page.

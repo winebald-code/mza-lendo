@@ -1,0 +1,79 @@
+{% extends "public/_screen.html" %}
+
+{% block title %}FAQs, {{ APP_NAME }}{% endblock %}
+{% block description %}The questions workshops ask first about Bacaan: handsets, session costs, trying it, data isolation, outages and getting your data out.{% endblock %}
+
+{% set screen_title = 'FAQs' %}
+
+{% block screen %}
+<p>The things people ask before they sign up, answered plainly.</p>
+
+<h2>Do workers need a smartphone?</h2>
+<p>
+  No, and that is the whole point. The floor menu runs over USSD, which works on any handset that
+  can make a call. No app, no data bundle, nothing to install or update.
+</p>
+
+<h2>What does a USSD session cost?</h2>
+<p>
+  You pay Africa's Talking directly. A session is a fraction of a shilling, and typically the plant
+  covers it rather than the worker.
+</p>
+
+<h2>How long does a worker spend on it?</h2>
+<p>
+  Every branch of the menu finishes inside thirty seconds and four keypresses. Nobody trains
+  anybody; a supervisor shows a welder once and it sticks.
+</p>
+
+<h2>Can I try it before paying?</h2>
+<p>
+  Set up a plant and use it. Add a couple of materials and one worker number, and the Manufacturing
+  Pulse starts reading real records within the hour.
+</p>
+
+<h2>Is my data mixed with other plants?</h2>
+<p>
+  No. Every query is scoped to your plant at the database layer, and Enterprise can run an entirely
+  separate instance. See <a href="{{ url_for('security_page') }}">security</a> for how that is
+  enforced.
+</p>
+
+<h2>What if the internet goes down?</h2>
+<p>
+  The USSD side keeps working, because it rides the mobile network rather than broadband. The
+  dashboard needs a connection; the floor does not.
+</p>
+
+<h2>What if the USSD line goes down?</h2>
+<p>
+  Nothing queues on a feature phone, so entries made during an outage are simply not made. Current
+  state is always on <a href="{{ url_for('status_page') }}">service status</a>, and a fault can sit
+  with us or with the mobile network. Having a worker dial from a second network tells us which.
+</p>
+
+<h2>Do you charge per worker?</h2>
+<p>
+  No. One price per plant, every module included. Charging per worker would make you think twice
+  about registering the ones who most need to report.
+</p>
+
+<h2>Can I get my data out?</h2>
+<p>
+  Every table exports to CSV from the Reports screen, at any time, without asking us. It is your
+  record; see <a href="{{ url_for('terms') }}">the terms</a>.
+</p>
+
+<h2>Who can see what inside my plant?</h2>
+<p>
+  Five roles run from viewer to owner. A supervisor can run the floor without seeing margins; a
+  viewer sees everything and changes nothing.
+</p>
+
+<h2>Something else?</h2>
+<p>
+  <a href="{{ url_for('contact') }}">Send us a message</a> and tell us what the plant makes and
+  roughly how many people report on a shift. That is enough for a straight answer, including when
+  Bacaan is not the right fit.
+</p>
+{% endblock %}

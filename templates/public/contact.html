@@ -1,128 +1,61 @@
-{% extends "base.html" %}
+{% extends "public/_screen.html" %}
 
-{% block title %}Contact, {{ APP_NAME }}{% endblock %}
-{% block description %}Reach Bacaan: support for plants already running, questions before you sign up, data requests, and where to report a security issue.{% endblock %}
+{% block title %}Phone, {{ APP_NAME }}{% endblock %}
+{% block description %}Send Bacaan a message: support for plants already running, questions before you sign up, data requests and security reports.{% endblock %}
 
-{% block content %}
-{% from "partials/icons.html" import icon %}
+{% set screen_title = 'Get in touch' %}
 
-<section class="border-b border-divider relative overflow-hidden">
-  <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
-  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[62ch]">
-      <p class="kicker mb-5">Contact</p>
-      <h1 class="font-display text-[36px] sm:text-[46px] font-bold leading-[1.06] tracking-[-0.035em] m-0">
-        One inbox, answered by the people who build the thing.
-      </h1>
-      <p class="lede mt-6">
-        There is no ticket queue to disappear into and no chatbot in front of it. Tell us what is
-        happening and we will reply within one working day, Nairobi time, usually sooner.
-      </p>
-    </div>
+{% block screen %}
+{# The form and nothing else. Everything that used to sit beside it — what to
+   include, where we are, how security reports are handled — is on the pages
+   that own those subjects, and repeating it here only pushed the fields down. #}
+<p>
+  One inbox, answered by the people who build the thing. We reply within one working day,
+  Nairobi time.
+</p>
+
+<form method="post" action="{{ url_for('contact') }}" class="hs-form-fields" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="field">
+    <label for="c-topic">What is this about</label>
+    <select id="c-topic" name="topic" class="input select">
+      {% for value, label in topics %}
+      <option value="{{ value }}" {% if form.topic == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
   </div>
-</section>
 
-<section class="border-b border-divider bg-surface">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16">
-    <div class="grid lg:grid-cols-[1fr_360px] gap-12 xl:gap-16 items-start">
-
-      {# ── The form ──────────────────────────────────────────────────────── #}
-      <div class="card card-pad max-w-[62ch]">
-        <form method="post" action="{{ url_for('contact') }}" class="grid gap-1" novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          <div class="field">
-            <label for="c-topic">What is this about</label>
-            <select id="c-topic" name="topic" class="input select">
-              {% for value, label in topics %}
-              <option value="{{ value }}" {% if form.topic == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="grid sm:grid-cols-2 gap-x-4 gap-y-1">
-            <div class="field">
-              <label for="c-name">Your name <span class="text-bad">*</span></label>
-              <input id="c-name" name="name" class="input {% if errors.name %}input-err{% endif %}"
-                     value="{{ form.name|default('') }}" placeholder="Grace Wanjiku" autocomplete="name">
-              {% if errors.name %}<p class="err m-0">{{ errors.name }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="c-email">Email <span class="text-bad">*</span></label>
-              <input id="c-email" name="email" type="email"
-                     class="input {% if errors.email %}input-err{% endif %}"
-                     value="{{ form.email|default('') }}" placeholder="you@workshop.co.ke" autocomplete="email">
-              {% if errors.email %}<p class="err m-0">{{ errors.email }}</p>{% endif %}
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="c-plant">Plant or workshop</label>
-            <input id="c-plant" name="plant" class="input" value="{{ form.plant|default('') }}"
-                   placeholder="Kamukunji Metalworks">
-            <p class="hint m-0">Optional, but it saves us asking if you already have an account.</p>
-          </div>
-
-          <div class="field">
-            <label for="c-message">Message <span class="text-bad">*</span></label>
-            <textarea id="c-message" name="message" rows="6"
-                      class="input textarea {% if errors.message %}input-err{% endif %}"
-                      placeholder="What the plant makes, what is happening, and roughly when it started.">{{ form.message|default('') }}</textarea>
-            {% if errors.message %}<p class="err m-0">{{ errors.message }}</p>{% endif %}
-          </div>
-
-          <button type="submit" class="btn btn-primary mt-4 w-fit">
-            {{ icon('arrow-right','ico ico-sm') }} Send message
-          </button>
-
-          <p class="text-[12px] text-slate-500 mt-4 mb-0 leading-relaxed">
-            We use what you send here only to answer you. See the
-            <a href="{{ url_for('privacy') }}" class="text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">privacy policy</a>.
-          </p>
-        </form>
-      </div>
-
-      {# ── What to include, so the first reply is the useful one ─────────── #}
-      <div class="grid gap-5">
-        <div class="card card-pad">
-          <p class="kicker mb-3">If your floor is stopped</p>
-          <p class="text-[13px] text-slate-500 leading-relaxed m-0">
-            Pick that topic and we read it outside working hours. Two things save an hour before you write:
-          </p>
-          <ul class="list-none m-0 mt-3 p-0 grid gap-2 text-[13px] text-slate-500">
-            <li class="flex gap-2.5">
-              <span class="text-signal-600 shrink-0">{{ icon('check','ico ico-sm') }}</span>
-              <span>Check <a href="{{ url_for('status_page') }}" class="text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">service status</a>. If the USSD line is down it is already known.</span>
-            </li>
-            <li class="flex gap-2.5">
-              <span class="text-signal-600 shrink-0">{{ icon('check','ico ico-sm') }}</span>
-              <span>Have a worker dial the shortcode from a second network, so we know which side the fault is on.</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="card card-pad">
-          <p class="kicker mb-3">Security reports</p>
-          <p class="text-[13px] text-slate-500 leading-relaxed m-0">
-            Use the security topic and please give us time to fix it before publishing. We confirm
-            receipt, tell you what we found, and credit you if you want that.
-            <a href="{{ url_for('security_page') }}" class="text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">What the application already does</a>.
-          </p>
-        </div>
-
-        <div class="card card-pad">
-          <p class="kicker mb-3">Where we are</p>
-          <p class="text-[13px] text-slate-500 leading-relaxed m-0">
-            Winebald Technologies, Nairobi, Kenya. Working hours are 08:00 to 17:00 East Africa
-            Time, Monday to Friday.
-          </p>
-          <p class="text-[13px] mt-3 mb-0">
-            <a href="mailto:info@winebald.tech" class="font-mono text-[12.5px] text-ink hover:text-signal-600 underline decoration-divider underline-offset-2">info@winebald.tech</a>
-          </p>
-        </div>
-      </div>
-
-    </div>
+  <div class="field">
+    <label for="c-name">Your name <span class="text-bad">*</span></label>
+    <input id="c-name" name="name" class="input {% if errors.name %}input-err{% endif %}"
+           value="{{ form.name|default('') }}" placeholder="Grace Wanjiku" autocomplete="name">
+    {% if errors.name %}<p class="err m-0">{{ errors.name }}</p>{% endif %}
   </div>
-</section>
+
+  <div class="field">
+    <label for="c-email">Email <span class="text-bad">*</span></label>
+    <input id="c-email" name="email" type="email"
+           class="input {% if errors.email %}input-err{% endif %}"
+           value="{{ form.email|default('') }}" placeholder="you@workshop.co.ke" autocomplete="email">
+    {% if errors.email %}<p class="err m-0">{{ errors.email }}</p>{% endif %}
+  </div>
+
+  <div class="field">
+    <label for="c-plant">Plant or workshop</label>
+    <input id="c-plant" name="plant" class="input" value="{{ form.plant|default('') }}"
+           placeholder="Kamukunji Metalworks">
+    <p class="hint m-0">Optional, but it saves us asking if you already have an account.</p>
+  </div>
+
+  <div class="field">
+    <label for="c-message">Message <span class="text-bad">*</span></label>
+    <textarea id="c-message" name="message" rows="6"
+              class="input textarea {% if errors.message %}input-err{% endif %}"
+              placeholder="What the plant makes, what is happening, and roughly when it started.">{{ form.message|default('') }}</textarea>
+    {% if errors.message %}<p class="err m-0">{{ errors.message }}</p>{% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary btn-block">Send message</button>
+</form>
 {% endblock %}

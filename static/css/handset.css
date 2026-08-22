@@ -1030,6 +1030,30 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 
 .hs-legal-body { margin-top: 5cqw; }
 
+/* A form on a document screen. .hs-form does this work for the auth decks; the
+   contact form is the same markup on the same glass, so it borrows the rules
+   rather than growing a second set that would drift from them. */
+.hs-form-fields { margin-top: 5cqw; }
+.hs-form-fields .field { margin-bottom: 3.2cqw; gap: 1.4cqw; }
+.hs-form-fields .field > label { font-size: max(8.5px, 2.7cqw); letter-spacing: 0.1em; }
+.hs-form-fields .input,
+.hs-form-fields .select,
+.hs-form-fields .textarea {
+  min-height: max(34px, 11.6cqw);
+  padding: 1.8cqw 4.4cqw;
+  border-radius: 6cqw;
+  font-size: max(11.5px, 3.8cqw);
+}
+.hs-form-fields .textarea { min-height: max(90px, 30cqw); }
+.hs-form-fields .hint, .hs-form-fields .err { font-size: max(9.5px, 3cqw); }
+.hs-form-fields .btn {
+  min-height: max(34px, 12cqw);
+  gap: 2cqw;
+  border-radius: 6cqw;
+  font-size: max(11.5px, 3.8cqw);
+  margin-top: 4cqw;
+}
+
 .hs-legal-body h2 {
   margin: 6.5cqw 0 0;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;

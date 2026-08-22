@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/handset.html" import handset with context %}
 {% block title %}Platform, {{ APP_NAME }}{% endblock %}
 {% block description %}How Bacaan works: the Manufacturing Pulse engine, the USSD floor menu, and the modules that cover inventory, production, orders, maintenance and people.{% endblock %}
 
@@ -98,7 +99,9 @@
 {# ── USSD ── #}
 <section class="border-b border-divider bg-surface">
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="grid gap-12 xl:gap-16 items-start">
+    {# auto, not a fixed track: the column is whatever the handset is, so its size
+       is set in one place and the copy keeps the rest. #}
+    <div class="grid lg:grid-cols-[1fr_auto] gap-12 xl:gap-16 items-start">
       <div>
         <p class="kicker mb-4">The floor line</p>
         <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
@@ -164,6 +167,17 @@
           <span class="font-mono text-[12px] text-ink">OUT</span> and <span class="font-mono text-[12px] text-ink">DOWN</span>
           all work without opening a menu at all.
         </p>
+      </div>
+
+      <div class="mx-auto lg:mx-0">
+        {% call handset(size='wide', code=ussd_code) %}
+          <pre class="term">REPORT PRODUCTION
+1. RUN-0003 Swing gate 3
+2. RUN-0001 Steel cabine
+3. RUN-0002 Storage box
+4. RUN-0005 Wheelbarrow
+0 Back 00 Menu 99 Exit</pre>
+        {% endcall %}
       </div>
 
     </div>

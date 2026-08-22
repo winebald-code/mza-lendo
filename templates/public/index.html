@@ -313,7 +313,10 @@ Habari Peter
 </section>
 
 {# ══════════════ RUNNING NOW ══════════════ #}
-<section class="border-b border-divider bg-slate-900 text-white relative overflow-hidden">
+{# bg-surface, not bg-slate-900: slate-900 is literal in both themes, so this
+   band stayed black on the light site. The tokens flip, so it is white on
+   light and dark on dark like everything else. #}
+<section class="border-b border-divider bg-surface text-ink relative overflow-hidden">
   <div class="absolute inset-0 hatch opacity-[0.05]" aria-hidden="true"></div>
   <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-14">
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -325,7 +328,7 @@ Habari Peter
       <div>
         <p class="label text-slate-500 m-0">{{ label }}</p>
         <p class="font-display text-[36px] font-bold tracking-[-0.03em] mt-2 m-0">{{ value }}</p>
-        <p class="text-[12px] text-slate-400 mt-1 m-0">{{ sub }}</p>
+        <p class="text-[12px] text-slate-500 mt-1 m-0">{{ sub }}</p>
       </div>
       {% endfor %}
     </div>

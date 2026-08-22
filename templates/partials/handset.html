@@ -132,7 +132,9 @@
         </div>
       </div>
 
-      <div class="hs-sms-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></div>
+      {# The home bar is a real way home. It is the only chrome on these screens
+         that looks tappable, so it should do what it looks like it does. #}
+      <a class="hs-sms-nav" href="{{ url_for('home') }}" aria-label="Bacaan home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></a>
     </div>
 
   </div>
@@ -173,7 +175,9 @@
     <div class="hs-deck">
       <div class="hs-status"><span>{{ carrier }}</span>{{ _meters() }}</div>
       <div class="hs-deck-main">{{ caller() }}</div>
-      <div class="hs-sms-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></div>
+      {# The home bar is a real way home. It is the only chrome on these screens
+         that looks tappable, so it should do what it looks like it does. #}
+      <a class="hs-sms-nav" href="{{ url_for('home') }}" aria-label="Bacaan home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></a>
     </div>
   </div>
 </div>
@@ -262,7 +266,9 @@
         </div>
       </div>
 
-      <div class="hs-sms-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></div>
+      {# The home bar is a real way home. It is the only chrome on these screens
+         that looks tappable, so it should do what it looks like it does. #}
+      <a class="hs-sms-nav" href="{{ url_for('home') }}" aria-label="Bacaan home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5z"/></svg></a>
     </div>
   </div>
 </div>

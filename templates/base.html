@@ -37,7 +37,7 @@
       <ul class="hidden lg:flex items-center gap-7 list-none m-0 p-0 text-[13.5px]">
         <li><a href="{{ url_for('platform') }}" class="text-slate-600 hover:text-signal-600 font-medium">Platform</a></li>
         <li><a href="{{ url_for('pricing') }}" class="text-slate-600 hover:text-signal-600 font-medium">Pricing</a></li>
-        <li><a href="{{ url_for('contact') }}" class="text-slate-600 hover:text-signal-600 font-medium">Contact</a></li>
+        <li><a href="{{ url_for('contact') }}" class="text-slate-600 hover:text-signal-600 font-medium">Phone</a></li>
       </ul>
 
       <div class="flex items-center gap-2.5">
@@ -64,7 +64,7 @@
     <ul class="max-w-shell mx-auto px-5 py-3 list-none m-0 grid gap-1 text-[14px]">
       <li><a href="{{ url_for('platform') }}" class="block py-2.5 text-slate-600 font-medium">Platform</a></li>
             <li><a href="{{ url_for('pricing') }}" class="block py-2.5 text-slate-600 font-medium">Pricing</a></li>
-      <li><a href="{{ url_for('contact') }}" class="block py-2.5 text-slate-600 font-medium">Contact</a></li>
+      <li><a href="{{ url_for('contact') }}" class="block py-2.5 text-slate-600 font-medium">Phone</a></li>
       {% if not current_user.is_authenticated %}
       <li class="pt-2"><a href="{{ cta_url }}" class="btn btn-primary btn-block btn-sm">{{ cta_label }}</a></li>
       {% if ALLOW_PUBLIC_SIGNUP %}
@@ -81,15 +81,17 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer class="border-t border-divider bg-slate-900 text-slate-300 mt-auto">
+{# Same story as the stats band: literal slate-900 kept the footer black on the
+   light site. Tokens flip; the link colours below move with them. #}
+<footer class="border-t border-divider bg-surface text-slate-600 mt-auto">
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-12">
     <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
       <div>
         <div class="flex items-center gap-2.5 mb-3">
           {% include "partials/logo.html" %}
-          <span class="font-display font-bold text-[16px] text-white">Bacaan</span>
+          <span class="font-display font-bold text-[16px] text-ink">Bacaan</span>
         </div>
-        <p class="text-[13px] text-slate-400 max-w-[34ch] leading-relaxed">
+        <p class="text-[13px] text-slate-500 max-w-[34ch] leading-relaxed">
           A manufacturing operating system for workshops that run on paper, notebooks
           and basic phones. Built in Nairobi for the Jua Kali floor.
         </p>
@@ -97,15 +99,15 @@
       <div>
         <p class="label mb-3 text-slate-500">Product</p>
         <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
-          <li><a href="{{ url_for('jua_kali') }}" class="text-slate-400 hover:text-signal-400">Jua Kali</a></li>
-          <li><a href="{{ url_for('status_page') }}" class="text-slate-400 hover:text-signal-400">Service status</a></li>
-          <li><a href="{{ url_for('terms') }}" class="text-slate-400 hover:text-signal-400">Terms of service</a></li>
-          <li><a href="{{ url_for('privacy') }}" class="text-slate-400 hover:text-signal-400">Privacy policy</a></li>
+          <li><a href="{{ url_for('jua_kali') }}" class="text-slate-500 hover:text-signal-600">Jua Kali</a></li>
+          <li><a href="{{ url_for('status_page') }}" class="text-slate-500 hover:text-signal-600">Service status</a></li>
+          <li><a href="{{ url_for('terms') }}" class="text-slate-500 hover:text-signal-600">Terms of service</a></li>
+          <li><a href="{{ url_for('privacy') }}" class="text-slate-500 hover:text-signal-600">Privacy policy</a></li>
         </ul>
       </div>
       <div>
         <p class="label mb-3 text-slate-500">Channels</p>
-        <ul class="list-none m-0 p-0 grid gap-2 text-[13px] text-slate-400">
+        <ul class="list-none m-0 p-0 grid gap-2 text-[13px] text-slate-500">
           <li>USSD menu</li>
           <li>Bulk and premium SMS</li>
           <li>Web dashboard</li>
@@ -115,16 +117,16 @@
       <div>
         <p class="label mb-3 text-slate-500">Company</p>
         <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
-          <li><a href="{{ url_for('security_page') }}" class="text-slate-400 hover:text-signal-400">Security</a></li>
-          <li><a href="{{ url_for('contact') }}" class="text-slate-400 hover:text-signal-400">Contact</a></li>
-          <li><a href="{{ url_for('login') }}" class="text-slate-400 hover:text-signal-400">Sign in</a></li>
+          <li><a href="{{ url_for('security_page') }}" class="text-slate-500 hover:text-signal-600">Security</a></li>
+          <li><a href="{{ url_for('faqs') }}" class="text-slate-500 hover:text-signal-600">FAQs</a></li>
+          <li><a href="{{ url_for('login') }}" class="text-slate-500 hover:text-signal-600">Sign in</a></li>
           {% if ALLOW_PUBLIC_SIGNUP %}
-          <li><a href="{{ cta_url }}" class="text-slate-400 hover:text-signal-400">{{ cta_label_long }}</a></li>
+          <li><a href="{{ cta_url }}" class="text-slate-500 hover:text-signal-600">{{ cta_label_long }}</a></li>
           {% endif %}
         </ul>
       </div>
     </div>
-    <div class="mt-10 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+    <div class="mt-10 pt-6 border-t border-divider flex flex-wrap items-center justify-between gap-4">
       <p class="font-mono text-[11px] text-slate-500 m-0">
         © {{ now.year }} Winebald Technologies
       </p>
