@@ -90,10 +90,10 @@
   <div class="max-w-shell mx-auto px-5 sm:px-8 py-12">
     <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
       <div>
-        <div class="flex items-center gap-2.5 mb-3">
+        <a href="{{ url_for('home') }}" class="flex items-center gap-2.5 mb-3 w-fit no-tap">
           {% include "partials/logo.html" %}
           <span class="font-display font-bold text-[16px] text-ink">Bacaan</span>
-        </div>
+        </a>
         <p class="text-[13px] text-slate-500 max-w-[34ch] leading-relaxed">
           A manufacturing operating system for workshops that run on paper, notebooks
           and basic phones. Built in Nairobi for the Jua Kali floor.
