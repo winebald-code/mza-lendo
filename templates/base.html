@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{% block title %}{{ APP_NAME }} — {{ APP_TAGLINE }}{% endblock %}</title>
-<meta name="description" content="{% block description %}Bacaan is a manufacturing operating system for African SMEs and Jua Kali producers. Inventory, production, orders, maintenance and workforce — reachable from a web dashboard or a basic phone over USSD and SMS.{% endblock %}">
+<title>{% block title %}{{ APP_NAME }}, {{ APP_TAGLINE }}{% endblock %}</title>
+<meta name="description" content="{% block description %}Bacaan is a manufacturing operating system for African SMEs and Jua Kali producers. Inventory, production, orders, maintenance and workforce, reachable from a web dashboard or a basic phone over USSD and SMS.{% endblock %}">
 <meta name="theme-color" content="#07090B">
 {# color-scheme now comes from the theme variables, so form controls and
    scrollbars follow the ground too. #}
 <meta name="robots" content="index, follow">
-<meta property="og:title" content="{{ APP_NAME }} — {{ APP_TAGLINE }}">
+<meta property="og:title" content="{{ APP_NAME }}, {{ APP_TAGLINE }}">
 <meta property="og:description" content="A manufacturing operating system built for workshops that run on basic phones.">
 <meta property="og:type" content="website">
 <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
@@ -36,7 +36,6 @@
 
       <ul class="hidden lg:flex items-center gap-7 list-none m-0 p-0 text-[13.5px]">
         <li><a href="{{ url_for('platform') }}" class="text-slate-600 hover:text-signal-600 font-medium">Platform</a></li>
-        <li><a href="{{ url_for('jua_kali') }}" class="text-slate-600 hover:text-signal-600 font-medium">Jua Kali</a></li>
         <li><a href="{{ url_for('pricing') }}" class="text-slate-600 hover:text-signal-600 font-medium">Pricing</a></li>
         <li><a href="{{ url_for('contact') }}" class="text-slate-600 hover:text-signal-600 font-medium">Contact</a></li>
       </ul>
@@ -64,8 +63,7 @@
   <div id="mobile-nav" hidden class="lg:hidden border-t border-divider bg-surface">
     <ul class="max-w-shell mx-auto px-5 py-3 list-none m-0 grid gap-1 text-[14px]">
       <li><a href="{{ url_for('platform') }}" class="block py-2.5 text-slate-600 font-medium">Platform</a></li>
-      <li><a href="{{ url_for('jua_kali') }}" class="block py-2.5 text-slate-600 font-medium">Jua Kali</a></li>
-      <li><a href="{{ url_for('pricing') }}" class="block py-2.5 text-slate-600 font-medium">Pricing</a></li>
+            <li><a href="{{ url_for('pricing') }}" class="block py-2.5 text-slate-600 font-medium">Pricing</a></li>
       <li><a href="{{ url_for('contact') }}" class="block py-2.5 text-slate-600 font-medium">Contact</a></li>
       {% if not current_user.is_authenticated %}
       <li class="pt-2"><a href="{{ cta_url }}" class="btn btn-primary btn-block btn-sm">{{ cta_label }}</a></li>
@@ -95,13 +93,10 @@
           A manufacturing operating system for workshops that run on paper, notebooks
           and basic phones. Built in Nairobi for the Jua Kali floor.
         </p>
-        <p class="mt-4 font-mono text-[11px] text-slate-500">Dial {{ ussd_code }} to reach the floor menu.</p>
       </div>
       <div>
         <p class="label mb-3 text-slate-500">Product</p>
         <ul class="list-none m-0 p-0 grid gap-2 text-[13px]">
-          <li><a href="{{ url_for('platform') }}" class="text-slate-400 hover:text-signal-400">Platform</a></li>
-          <li><a href="{{ url_for('pricing') }}" class="text-slate-400 hover:text-signal-400">Pricing</a></li>
           <li><a href="{{ url_for('jua_kali') }}" class="text-slate-400 hover:text-signal-400">Jua Kali</a></li>
           <li><a href="{{ url_for('status_page') }}" class="text-slate-400 hover:text-signal-400">Service status</a></li>
           <li><a href="{{ url_for('terms') }}" class="text-slate-400 hover:text-signal-400">Terms of service</a></li>

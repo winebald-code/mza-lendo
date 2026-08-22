@@ -9,7 +9,7 @@
      handset_sms()  a messages thread, for an inbound alert
 
    Both draw their own status bar, so no caller ever repeats the chrome, and
-   no network branding appears anywhere — the carrier label is a parameter.
+   no network branding appears anywhere, the carrier label is a parameter.
 
    Usage:
      {% from "partials/handset.html" import handset with context %}
@@ -17,8 +17,8 @@
        <pre class="term" data-sim-screen>…</pre>
      {% endcall %}
 
-   size   sm | md | lg   — 250px, 290px, 330px wide, everything inside scales
-          hero            — fluid, fills its column; for the homepage hero
+   size   sm | md | lg, 250px, 290px, 330px wide, everything inside scales
+          hero, fluid, fills its column; for the homepage hero
    code   the service code, shown on the dialler
    live   true on the simulator only. It swaps the inert dialler for real
           controls and tags them for the JS: the keypad becomes the reply pad,
@@ -107,7 +107,7 @@
 {%- endmacro %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   handset_sms — an inbound alert, as the worker sees it.
+   handset_sms, an inbound alert, as the worker sees it.
    ═══════════════════════════════════════════════════════════════════════════ #}
 {% macro handset_sms(size='md', carrier='WINEBALD', sender='BACAAN') -%}
 <div class="hs hs--{{ size }} hs--sms">
@@ -140,12 +140,11 @@
 {%- endmacro %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   The auth deck — two handsets, one page.
+   The auth deck, two handsets, one page.
 
    Sign-in, sign-up and change-password show the same phone twice: the argument
    on one screen, the form on the other. Both are built from _deck() below, so
-   the frame, the status bar, the mark and the home bar cannot drift apart —
-   there is one definition of a phone here, used twice.
+   the frame, the status bar, the mark and the home bar cannot drift apart, there is one definition of a phone here, used twice.
 
      deck_say()   the claim, the figures and the message the floor receives
      deck_form()  the app's own auth form, on the glass
@@ -231,7 +230,7 @@
 {%- endmacro %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   screen_deck — a document on one big handset screen.
+   screen_deck, a document on one big handset screen.
 
    Terms, privacy, security, service status and contact all use it: the same
    device the rest of the site shows, sized to the window instead of a column,
@@ -253,7 +252,7 @@
         {# No mark on the glass here. These pages sit inside the public layout,
            so the site header above already carries the logo and the way home;
            repeating it on the screen said the same thing twice and pushed the
-           document title down for nothing. The auth decks keep theirs — they
+           document title down for nothing. The auth decks keep theirs, they
            have no header. #}
         <div class="hs-legal">
           <h1 class="hs-legal-title">{{ title }}</h1>

@@ -37,7 +37,7 @@ Enter a worker number and press Dial.</pre>
       </div>
 
       {% if workers %}
-      <p class="label mt-4 mb-2.5">Registered workers — click to load</p>
+      <p class="label mt-4 mb-2.5">Registered workers, click to load</p>
       <div class="flex flex-wrap gap-1.5">
         {% for w in workers %}
         <button type="button" data-copy="{{ w.phone }}"
@@ -65,10 +65,10 @@ Enter a worker number and press Dial.</pre>
       <ol class="list-none m-0 p-0">
         {% for num, title, what in [
           ('1','My tasks','Runs assigned to them, with progress and due date'),
-          ('2','Report production','Pick a run, enter units completed — updates the run and the schedule'),
-          ('3','Report stock','Issued, received, counted or wasted — writes straight to the ledger'),
+          ('2','Report production','Pick a run, enter units completed, updates the run and the schedule'),
+          ('3','Report stock','Issued, received, counted or wasted, writes straight to the ledger'),
           ('4','Machine fault','Machine, fault type, severity. Critical stops the machine and texts managers'),
-          ('5','Safety incident','Type and severity — recorded against the worker'),
+          ('5','Safety incident','Type and severity, recorded against the worker'),
           ('6','Clock in or out','Attendance without a card reader'),
           ('7','Stock check','What is below its minimum right now')] %}
         <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-start gap-3.5">
@@ -118,7 +118,7 @@ Enter a worker number and press Dial.</pre>
         </div>
       </div>
       <p class="text-[12.5px] text-slate-500 leading-relaxed mt-5 pt-5 border-t border-divider m-0">
-        This simulator posts to <span class="font-mono text-[11.5px] text-ink">/ussd/callback</span> — the same
+        This simulator posts to <span class="font-mono text-[11.5px] text-ink">/ussd/callback</span>, the same
         endpoint Africa's Talking calls in production. There is no separate demo path, so anything you record
         here shows up in the ledger, the schedule and the Pulse exactly as a real session would.
       </p>

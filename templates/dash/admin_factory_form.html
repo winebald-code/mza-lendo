@@ -40,7 +40,7 @@
       <h2 class="card-title mb-4">Status</h2>
       <label class="check">
         <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
-        <span>Active — users can sign in</span>
+        <span>Active, users can sign in</span>
       </label>
       {% if item %}
       <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">
@@ -61,8 +61,7 @@
 <section id="delete" class="card card-pad mt-6 max-w-[1080px] scroll-mt-24">
   <h2 class="card-title mb-2">Delete this plant</h2>
   <p class="text-[13px] text-slate-500 leading-relaxed mb-4 max-w-[70ch]">
-    This removes <strong class="text-ink">{{ item.name }}</strong> and everything inside it —
-    materials, products, orders, runs, machines, workers, messages and history. It cannot be undone.
+    This removes <strong class="text-ink">{{ item.name }}</strong> and everything inside it, materials, products, orders, runs, machines, workers, messages and history. It cannot be undone.
     Users who belong only to this plant are removed with it. Export anything you need first from
     <a href="{{ url_for('dash_reports') }}" class="link-u">Reports</a>.
   </p>

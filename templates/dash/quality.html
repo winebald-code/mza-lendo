@@ -37,7 +37,7 @@
           <td>
             {% if q.order %}<a href="{{ url_for('order_detail', order_id=q.order_id) }}" class="font-mono text-[11px] text-slate-500 hover:text-signal-600">{{ q.order.number }}</a>
             {% elif q.run %}<a href="{{ url_for('run_detail', run_id=q.run_id) }}" class="font-mono text-[11px] text-slate-500 hover:text-signal-600">{{ q.run.reference }}</a>
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}<span class="text-slate-400"></span>{% endif %}
           </td>
           <td class="font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ q.created_at|dt('%d %b · %H:%M') }}</td>
           <td class="r num text-[12.5px]">{{ q.sample_size }}</td>

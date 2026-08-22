@@ -15,7 +15,7 @@
         {{ field('sku', 'SKU', item.sku if item else '', 'text', errors, 'Leave blank to generate one', False, 'PRD-0001') }}
         {{ field('category', 'Category', item.category if item else '', 'text', errors, None, False, 'Windows') }}
         {{ field('build_days', 'Build days', item.build_days if item else '3', 'number', errors,
-                 'How long one batch normally takes — drives the schedule', False, '3', 'min="1" max="365"') }}
+                 'How long one batch normally takes, drives the schedule', False, '3', 'min="1" max="365"') }}
         {{ field('unit_price', 'Sell price', item.unit_price if item else '0', 'number', errors,
                  'What the customer pays per unit', False, '0.00', 'step="0.01" min="0"') }}
       </div>
@@ -95,7 +95,7 @@
       <h2 class="card-title mb-4">Status</h2>
       <label class="check">
         <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
-        <span>Active — available when creating orders and runs</span>
+        <span>Active, available when creating orders and runs</span>
       </label>
       {% if item %}
       <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">

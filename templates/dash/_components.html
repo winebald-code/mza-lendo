@@ -1,7 +1,7 @@
 {% from "partials/icons.html" import icon %}
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   PULSE RING — the signature instrument.
+   PULSE RING, the signature instrument.
    A segmented analogue panel meter: 44 ticks around a 270° arc, lit up to the
    score. Deliberately not a smooth donut; a factory gauge reads in notches.
    ═══════════════════════════════════════════════════════════════════════════ #}
@@ -32,7 +32,7 @@
 
 
 {# ═══════════════════════════════════════════════════════════════════════════
-   PULSE BARS — one segmented meter per subsystem, 20 cells each.
+   PULSE BARS, one segmented meter per subsystem, 20 cells each.
    ═══════════════════════════════════════════════════════════════════════════ #}
 {% macro pulse_bars(scores, bands, links={}) -%}
 {% set names = {'production':'Production','inventory':'Inventory','orders':'Orders','maintenance':'Maintenance','suppliers':'Suppliers'} %}

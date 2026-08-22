@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{% block title %}{{ auth_title|default('Sign in') }} — {{ APP_NAME }}{% endblock %}</title>
+<title>{% block title %}{{ auth_title|default('Sign in') }}, {{ APP_NAME }}{% endblock %}</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#07090B">
 <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">

@@ -66,15 +66,15 @@
         <div class="flex items-center justify-between gap-3"><dt class="label m-0">Standard</dt><dd class="text-[12.5px] m-0">{{ item.standard }}</dd></div>
         <div class="flex items-start justify-between gap-3">
           <dt class="label m-0">Product</dt>
-          <dd class="text-[12.5px] m-0 text-right">{% if item.product %}<a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="link-u">{{ item.product.name }}</a>{% else %}—{% endif %}</dd>
+          <dd class="text-[12.5px] m-0 text-right">{% if item.product %}<a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="link-u">{{ item.product.name }}</a>{% else %}, {% endif %}</dd>
         </div>
         <div class="flex items-center justify-between gap-3">
           <dt class="label m-0">Order</dt>
-          <dd class="m-0 text-right">{% if item.order %}<a href="{{ url_for('order_detail', order_id=item.order_id) }}" class="font-mono text-[11.5px] link-u">{{ item.order.number }}</a>{% else %}<span class="text-slate-400 text-[12.5px]">—</span>{% endif %}</dd>
+          <dd class="m-0 text-right">{% if item.order %}<a href="{{ url_for('order_detail', order_id=item.order_id) }}" class="font-mono text-[11.5px] link-u">{{ item.order.number }}</a>{% else %}<span class="text-slate-400 text-[12.5px]"></span>{% endif %}</dd>
         </div>
         <div class="flex items-center justify-between gap-3">
           <dt class="label m-0">Run</dt>
-          <dd class="m-0 text-right">{% if item.run %}<a href="{{ url_for('run_detail', run_id=item.run_id) }}" class="font-mono text-[11.5px] link-u">{{ item.run.reference }}</a>{% else %}<span class="text-slate-400 text-[12.5px]">—</span>{% endif %}</dd>
+          <dd class="m-0 text-right">{% if item.run %}<a href="{{ url_for('run_detail', run_id=item.run_id) }}" class="font-mono text-[11.5px] link-u">{{ item.run.reference }}</a>{% else %}<span class="text-slate-400 text-[12.5px]"></span>{% endif %}</dd>
         </div>
         <div class="flex items-center justify-between gap-3 pt-3 border-t border-divider">
           <dt class="label m-0">Inspector</dt><dd class="text-[12.5px] m-0">{{ item.inspector.full_name if item.inspector else '—' }}</dd>

@@ -1,115 +1,74 @@
-{% extends "base.html" %}
-{% block title %}Built for Jua Kali — {{ APP_NAME }}{% endblock %}
-{% block description %}Why Bacaan is designed around feature phones, intermittent power and informal record-keeping — the actual conditions of Kenyan small manufacturing.{% endblock %}
+{% extends "public/_screen.html" %}
 
-{% block content %}
-{% from "partials/icons.html" import icon %}
+{% block title %}Built for Jua Kali, {{ APP_NAME }}{% endblock %}
+{% block description %}Why Bacaan is designed around feature phones, intermittent power and informal record-keeping, the actual conditions of Kenyan small manufacturing.{% endblock %}
 
-<section class="border-b border-divider relative overflow-hidden">
-  <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
-  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[64ch]">
-      <p class="kicker mb-5">Jua Kali</p>
-      <h1 class="font-display text-[36px] sm:text-[46px] font-bold leading-[1.06] tracking-[-0.035em] m-0">
-        Software written for the workshop that exists, not the one in the brochure.
-      </h1>
-      <p class="lede mt-6">
-        Kenya's small manufacturers employ most of the country's industrial workforce. Almost none
-        of them use production software, and the reason is not that they do not care about
-        efficiency. It is that the software assumes conditions they do not have.
-      </p>
-    </div>
+{% set screen_title = 'Jua Kali' %}
+
+{% block screen %}
+<p>
+  Software written for the workshop that exists, not the one in the brochure.
+</p>
+<p>
+  Kenya's small manufacturers employ most of the country's industrial workforce. Almost none of
+  them use production software, and the reason is not that they do not care about efficiency. It is
+  that the software assumes conditions they do not have.
+</p>
+
+<h2>Assumptions we dropped</h2>
+<p>Four things most systems take for granted.</p>
+
+<h2>Everyone has a smartphone with data</h2>
+<p>
+  Most of the floor has a feature phone and a tight airtime budget. So the worker surface is USSD.
+  It runs on the signalling channel, needs no data bundle, no install and no updates. The oldest
+  handset in the workshop can use it.
+</p>
+
+<h2>People will learn a new interface</h2>
+<p>
+  They will learn a menu with seven options and nothing else. Every branch is under thirty seconds
+  and four keypresses. Nobody trains anybody. A supervisor shows a welder once and it sticks.
+</p>
+
+<h2>The internet is always up</h2>
+<p>
+  Power and connectivity both cut out, sometimes for hours. USSD works whenever the mobile network
+  works, which is far more of the time than broadband. The dashboard is the only piece that needs a
+  proper connection.
+</p>
+
+<h2>The office is the source of truth</h2>
+<p>
+  The floor knows first, and the office finds out later. So reporting starts where the work
+  happens: stock, production and faults are entered by the person who saw them, at the moment they
+  saw them.
+</p>
+
+<h2>A Tuesday in Kamukunji</h2>
+<p>
+  The value is not in having records. It is in the gap between something going wrong and somebody
+  who can fix it finding out.
+</p>
+
+<dl class="hs-checks">
+  {% for t, before, after in [
+    ('09:12','The grinder starts smoking. Peter switches to another bench and mentions it at lunch.','Peter dials in, four keypresses. The machine is marked down, a ticket opens, the managers get a text.'),
+    ('09:40','Nothing happens, because nobody upstream knows yet.','The office reassigns the two runs that depended on it before the morning is lost.'),
+    ('11:30','The last aluminium sheet goes into a gate. Nobody notices.','Stock hits zero on the issue, an alert fires, a draft purchase order is waiting for approval.'),
+    ('16:00','The afternoon run stops. The steel yard has closed.','The steel arrived at two, because the order went out at half eleven.')] %}
+  <div class="hs-check">
+    <dt><span class="hs-num">{{ t }}</span></dt>
+    <dd><strong>On paper:</strong> {{ before }}</dd>
+    <dd><strong>On Bacaan:</strong> {{ after }}</dd>
   </div>
-</section>
+  {% endfor %}
+</dl>
 
-<section class="border-b border-divider bg-surface">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[54ch] mb-12">
-      <p class="kicker mb-4">Assumptions we dropped</p>
-      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-        Four things most systems take for granted.
-      </h2>
-    </div>
-
-    <div class="grid gap-5">
-      {% for wrong, right, how in [
-        ('Everyone has a smartphone with data',
-         'Most of the floor has a feature phone and a tight airtime budget',
-         'The worker surface is USSD. It runs on the signalling channel, needs no data bundle, no install and no updates. The oldest handset in the workshop can use it.'),
-        ('People will learn a new interface',
-         'They will learn a menu with seven options and nothing else',
-         'Every branch is under thirty seconds and four keypresses. Nobody trains anybody. A supervisor shows a welder once and it sticks.'),
-        ('The internet is always up',
-         'Power and connectivity both cut out, sometimes for hours',
-         'USSD works whenever the mobile network works, which is far more of the time than broadband. The dashboard is the only piece that needs a proper connection.'),
-        ('The office is the source of truth',
-         'The floor knows first, and the office finds out later',
-         'Reporting starts where the work happens. Stock, faults and production all originate from the person holding the tool, not from a clerk transcribing a notebook.')] %}
-      <div class="card card-pad grid md:grid-cols-[1fr_1fr_1.4fr] gap-6 items-start" data-reveal-on-scroll>
-        <div>
-          <p class="label text-bad mb-1.5">Assumed</p>
-          <p class="text-[13.5px] text-slate-500 m-0 leading-snug line-through decoration-bad/40">{{ wrong }}</p>
-        </div>
-        <div>
-          <p class="label text-ok mb-1.5">Actually</p>
-          <p class="text-[13.5px] font-medium text-ink m-0 leading-snug">{{ right }}</p>
-        </div>
-        <div class="md:border-l border-divider md:pl-6">
-          <p class="label mb-1.5">So we did this</p>
-          <p class="text-[13px] text-slate-500 m-0 leading-relaxed">{{ how }}</p>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<section class="border-b border-divider">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="grid lg:grid-cols-[1fr_1fr] gap-12 xl:gap-16 items-center">
-      <div>
-        <p class="kicker mb-4">A Tuesday in Kamukunji</p>
-        <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-          What actually changes.
-        </h2>
-        <p class="lede mt-5">
-          The value is not in having records. It is in the gap between something going wrong and
-          somebody who can fix it finding out.
-        </p>
-      </div>
-
-      <div class="card overflow-hidden">
-        <ol class="list-none m-0 p-0">
-          {% for time, before, after in [
-            ('09:12','The grinder starts smoking. Peter switches to another bench and mentions it at lunch.','Peter dials in, four keypresses. The machine is marked down, a ticket opens, the managers get a text.'),
-            ('09:40','—','The office reassigns the two runs that depended on it before the morning is lost.'),
-            ('11:30','The last aluminium sheet goes into a gate. Nobody notices.','Stock hits zero on the issue, an alert fires, a draft purchase order is waiting for approval.'),
-            ('16:00','The afternoon run stops. The steel yard has closed.','The steel arrived at two because the order went out at half eleven.')] %}
-          <li class="px-5 py-4 border-b border-divider/70 last:border-b-0 grid grid-cols-[52px_1fr] gap-4">
-            <span class="font-mono text-[11.5px] font-semibold text-slate-400 pt-0.5">{{ time }}</span>
-            <div class="grid gap-2.5">
-              <p class="text-[12.5px] text-slate-400 m-0 leading-snug">{{ before }}</p>
-              <p class="text-[12.5px] text-ink m-0 leading-snug pl-3 border-l-2 border-signal-500">{{ after }}</p>
-            </div>
-          </li>
-          {% endfor %}
-        </ol>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20 text-center">
-    <h2 class="font-display text-[26px] sm:text-[32px] font-bold tracking-[-0.03em] m-0">Try it with your own numbers</h2>
-    <p class="lede mt-4 max-w-[46ch] mx-auto">
-      Set up a plant, add three workers and a handful of materials, and see whether the Pulse tells
-      you anything you did not already suspect.
-    </p>
-    <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
-      <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}</a>
-      <a href="{{ url_for('platform') }}" class="btn btn-secondary">How it works</a>
-    </div>
-  </div>
-</section>
+<h2>Try it with your own numbers</h2>
+<p>
+  Set up a plant, add three workers and a handful of materials, and see whether the Pulse tells you
+  anything you did not already suspect. <a href="{{ cta_url }}">{{ cta_label_long }}</a>, or read
+  <a href="{{ url_for('platform') }}">how it works</a>.
+</p>
 {% endblock %}

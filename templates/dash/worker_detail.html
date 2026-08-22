@@ -75,7 +75,7 @@
         <li class="px-5 py-3.5 border-b border-divider/70 flex items-start gap-3">
           <span class="w-[28px] h-[28px] rounded-[9px] bg-warn/10 text-warn grid place-items-center shrink-0">{{ icon('wrench','ico ico-sm') }}</span>
           <div class="min-w-0 flex-1">
-            <p class="text-[12.5px] font-medium text-ink m-0">{{ t.machine.name if t.machine else 'Machine' }} — {{ t.fault_type }}</p>
+            <p class="text-[12.5px] font-medium text-ink m-0">{{ t.machine.name if t.machine else 'Machine' }}, {{ t.fault_type }}</p>
             <p class="font-mono text-[10.5px] text-slate-400 mt-0.5 m-0">{{ t.reference }} · {{ t.created_at|dt('%d %b %Y · %H:%M') }}</p>
           </div>
           {{ sev_tag(t.severity) }}

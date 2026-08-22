@@ -18,7 +18,7 @@
                  None, True, '1', 'step="0.01" min="0.01"') }}
         {{ select('order_id', 'Against order', obj_options(orders, 'number'),
                   (item.order_id if item else request.args.get('order_id')), errors,
-                  'Optional — links the run to a customer order', 'Not tied to an order') }}
+                  'Optional, links the run to a customer order', 'Not tied to an order') }}
         {% if item %}
           {{ field('produced', 'Units completed so far', item.produced, 'number', errors, None, False, '0', 'step="0.01" min="0"') }}
         {% endif %}

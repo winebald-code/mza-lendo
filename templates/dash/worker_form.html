@@ -14,7 +14,7 @@
         {{ field('name', 'Full name', item.name if item else '', 'text', errors, None, True, 'Peter Mwangi') }}
         {{ field('employee_no', 'Employee number', item.employee_no if item else '', 'text', errors, 'Optional', False, 'EMP-014') }}
         {{ field('phone', 'Phone number', item.phone if item else '', 'tel', errors,
-                 'Kenyan format — saved as +254…', True, '0712 345 678') }}
+                 'Kenyan format, saved as +254…', True, '0712 345 678') }}
         {{ field('daily_rate', 'Daily rate', item.daily_rate if item else '0', 'number', errors, 'Optional', False, '0.00', 'step="0.01" min="0"') }}
       </div>
     </section>
@@ -45,7 +45,7 @@
       </div>
       <label class="check mt-3">
         <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
-        <span>Active — can use the USSD menu</span>
+        <span>Active, can use the USSD menu</span>
       </label>
     </section>
 

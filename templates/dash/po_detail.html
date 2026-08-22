@@ -15,7 +15,7 @@
 {% if overdue %}
 <div class="alert alert-bad mb-6">
   <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
-  <p class="m-0">This delivery was expected on {{ item.expected_date|d('%d %B') }} and has not been received. Chase the supplier — it is currently pulling their reliability score down.</p>
+  <p class="m-0">This delivery was expected on {{ item.expected_date|d('%d %B') }} and has not been received. Chase the supplier, it is currently pulling their reliability score down.</p>
 </div>
 {% endif %}
 
@@ -54,7 +54,7 @@
       <div class="card-head">
         <div>
           <h2 class="card-title m-0">Receive delivery</h2>
-          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Enter what actually arrived — it goes straight into stock</p>
+          <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">Enter what actually arrived, it goes straight into stock</p>
         </div>
       </div>
       <form method="post" action="{{ url_for('po_receive', po_id=item.id) }}">
@@ -80,7 +80,7 @@
         </div>
         <div class="px-5 py-4 border-t border-divider flex flex-wrap items-center justify-between gap-3">
           <p class="text-[12px] text-slate-500 m-0 max-w-[46ch] leading-snug">
-            Partial deliveries are fine — receive what came, and the outstanding column keeps the rest.
+            Partial deliveries are fine, receive what came, and the outstanding column keeps the rest.
           </p>
           <button type="submit" class="btn btn-primary">{{ icon('package-check','ico ico-sm') }} Receive into stock</button>
         </div>

@@ -11,8 +11,7 @@
     <div class="min-w-0 flex-1">
       <h2 class="card-title mb-1.5">Temporary password</h2>
       <p class="text-[12.5px] text-slate-500 mb-3 leading-relaxed">
-        This is shown once and never again. Pass it to the person over a channel you trust —
-        they will be forced to change it when they sign in.
+        This is shown once and never again. Pass it to the person over a channel you trust, they will be forced to change it when they sign in.
       </p>
       <div class="flex flex-wrap items-center gap-2">
         <code class="font-mono text-[15px] font-semibold text-ink bg-fog border border-divider rounded-control px-4 py-2 select-all">{{ generated }}</code>
@@ -65,7 +64,7 @@
       <label class="check">
         <input type="checkbox" name="is_active" {% if not item or item.is_active_flag %}checked{% endif %}
                {% if item and item.id == current_user.id %}disabled{% endif %}>
-        <span>Active — can sign in</span>
+        <span>Active, can sign in</span>
       </label>
       {% if item %}
       <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">

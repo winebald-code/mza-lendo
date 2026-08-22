@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    {# Signal ledger — why the number moved #}
+    {# Signal ledger, why the number moved #}
     <div class="p-6 min-w-0">
       <div class="flex items-center justify-between gap-3 mb-4">
         <p class="label m-0">Signal ledger</p>
@@ -98,7 +98,7 @@
   {# content-start, as the right column already has. Without it this grid
      stretches its rows to match the taller Alerts column beside it, and since
      the cards hold fixed-height content the extra height became dead space
-     inside them — the 150px chart sat in a 500px card. #}
+     inside them, the 150px chart sat in a 500px card. #}
   <div class="grid gap-6 content-start min-w-0">
     {# ── Production throughput ── #}
     <section class="card min-w-0">
@@ -178,7 +178,7 @@
                   <span class="text-bad font-semibold">{{ (o.days_left * -1) }}d late</span>
                 {% elif o.days_left is not none %}
                   <span class="{% if o.days_left <= 2 %}text-warn font-semibold{% else %}text-slate-500{% endif %}">{{ o.due_date|d('%d %b') }}</span>
-                {% else %}<span class="text-slate-400">—</span>{% endif %}
+                {% else %}<span class="text-slate-400"></span>{% endif %}
               </td>
               <td>{{ status_tag(o.status) }}</td>
             </tr>
@@ -279,7 +279,7 @@
         <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="text-[12.5px] font-semibold text-ink m-0 truncate">{{ t.machine.name if t.machine else 'Machine' }} — {{ t.fault_type }}</p>
+              <p class="text-[12.5px] font-semibold text-ink m-0 truncate">{{ t.machine.name if t.machine else 'Machine' }}, {{ t.fault_type }}</p>
               <p class="font-mono text-[10px] text-slate-400 mt-1 m-0">
                 {{ t.reference }} · {{ t.worker.name if t.worker else 'office' }} · {{ t.age_hours }}h open
               </p>

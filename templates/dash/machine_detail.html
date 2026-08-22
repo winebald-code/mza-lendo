@@ -14,7 +14,7 @@
 {% if item.status == 'down' %}
 <div class="alert alert-bad mb-6">
   <span class="shrink-0 mt-[1px]">{{ icon('alert','ico ico-sm') }}</span>
-  <p class="m-0">This machine is down. Any run assigned to it is stalled until it comes back — check the open faults below.</p>
+  <p class="m-0">This machine is down. Any run assigned to it is stalled until it comes back, check the open faults below.</p>
 </div>
 {% elif item.service_state == 'overdue' %}
 <div class="alert alert-warn mb-6">
@@ -118,7 +118,7 @@
         </div>
         <button type="submit" class="btn btn-secondary btn-block">{{ icon('badge-check','ico ico-sm') }} Mark serviced</button>
       </form>
-      <p class="hint mt-3 mb-0">Resets the clock — next due {{ item.service_interval_days }} days later.</p>
+      <p class="hint mt-3 mb-0">Resets the clock, next due {{ item.service_interval_days }} days later.</p>
     </section>
     {% endif %}
 

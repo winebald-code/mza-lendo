@@ -1,204 +1,102 @@
-{% extends "base.html" %}
-{% block title %}Platform — {{ APP_NAME }}{% endblock %}
-{% block description %}How Bacaan works: the Manufacturing Pulse engine, the USSD floor menu, and the modules that cover inventory, production, orders, maintenance and people.{% endblock %}
+{% extends "public/_screen.html" %}
 
-{% block content %}
-{% from "partials/icons.html" import icon %}
-{% from "partials/handset.html" import handset with context %}
+{% block title %}Platform, {{ APP_NAME }}{% endblock %}
+{% block description %}How Bacaan works: the Manufacturing Pulse engine, the USSD floor menu, and the modules covering inventory, production, orders, maintenance and people.{% endblock %}
 
-<section class="border-b border-divider relative overflow-hidden">
-  <div class="absolute inset-0 grid-lines opacity-50" aria-hidden="true"></div>
-  <div class="relative max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[64ch]">
-      <p class="kicker mb-5">The platform</p>
-      <h1 class="font-display text-[36px] sm:text-[46px] font-bold leading-[1.06] tracking-[-0.035em] m-0">
-        Everything a workshop actually runs on, and nothing it doesn't.
-      </h1>
-      <p class="lede mt-6">
-        Bacaan is deliberately narrow. It covers the five things that decide whether a plant makes
-        money this month, connects them properly, and refuses to become a general-purpose ERP that
-        nobody has time to fill in.
-      </p>
-    </div>
+{% set screen_title = 'The platform' %}
+
+{% block screen %}
+<p>
+  Everything a workshop actually runs on, and nothing it does not. Bacaan is deliberately narrow.
+  It covers the five things that decide whether a plant makes money this month, connects them
+  properly, and refuses to become a general-purpose ERP that nobody has time to fill in.
+</p>
+
+<h2>Manufacturing Pulse</h2>
+<p>
+  One score, five subsystems, and the reason it moved. Each subsystem is scored from live records,
+  then weighted by how fast it can stop a plant. A run that has slipped hurts more than a supplier
+  who was two days late, so the weighting says so.
+</p>
+
+<dl class="hs-checks">
+  {% for name, weight, from_what in [
+    ('Production', '26%', 'Run progress against plan, and any run past its end date'),
+    ('Inventory', '22%', 'Items below their minimum, weighted by how far below they are'),
+    ('Orders', '22%', 'Late orders, and orders falling due inside three days'),
+    ('Maintenance', '16%', 'Machines stopped, faults still open, services overdue'),
+    ('Suppliers', '14%', 'Delivery reliability earned from receipts, plus overdue purchase orders')] %}
+  <div class="hs-check">
+    <dt>{{ name }}<span class="hs-check-state">{{ weight }}</span></dt>
+    <dd>{{ from_what }}</dd>
   </div>
-</section>
+  {% endfor %}
+</dl>
 
-{# ── The Pulse ── #}
-<section class="border-b border-divider bg-surface">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[58ch] mb-12">
-      <p class="kicker mb-4">Manufacturing Pulse</p>
-      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-        One score, five subsystems, and the reason it moved.
-      </h2>
-      <p class="lede mt-5">
-        Each subsystem is scored from live records, then weighted by how fast it can stop a plant.
-        A run that has slipped hurts more than a supplier who was two days late, so the weighting
-        says so.
-      </p>
-    </div>
+<p>
+  A score of 75 to 100 is healthy. From 50 to 74 needs attention. Below 50, something is wrong, and
+  the dashboard says which subsystem moved and what to do about it.
+</p>
 
-    <div class="card overflow-hidden">
-      <table class="tbl">
-        <thead><tr><th>Subsystem</th><th>Weight</th><th>Scored from</th></tr></thead>
-        <tbody>
-          {% for name, weight, why in [
-            ('Production', '26%', 'Run progress against plan, and any run past its end date'),
-            ('Inventory', '22%', 'Items below their minimum, weighted by how far below they are'),
-            ('Orders', '22%', 'Late orders, and orders falling due inside three days'),
-            ('Maintenance', '16%', 'Machines stopped, faults still open, services overdue'),
-            ('Suppliers', '14%', 'Delivery reliability earned from receipts, plus overdue purchase orders')] %}
-          <tr>
-            <td class="text-[13px] font-semibold whitespace-nowrap">{{ name }}</td>
-            <td class="num text-[13px] font-semibold text-signal-600">{{ weight }}</td>
-            <td class="text-[12.5px] text-slate-500">{{ why }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <div class="px-5 py-4 border-t border-divider bg-fog/40 flex flex-wrap items-center gap-5">
-        <span class="flex items-center gap-2 text-[12.5px] text-slate-600"><span class="dot bg-ok"></span> 75–100 healthy</span>
-        <span class="flex items-center gap-2 text-[12.5px] text-slate-600"><span class="dot bg-warn"></span> 50–74 needs attention</span>
-        <span class="flex items-center gap-2 text-[12.5px] text-slate-600"><span class="dot bg-bad"></span> below 50, something is wrong</span>
-      </div>
-    </div>
+<h2>Modules</h2>
+<p>Connected, so entering something once is enough.</p>
+<ul>
+  <li><strong>Inventory.</strong> Materials with a minimum level and a reorder quantity. Every movement is written to a ledger with the balance after it, whether it came from the office or a handset.</li>
+  <li><strong>Products and BOM.</strong> What you build and what one unit consumes. The bill of materials lets the plant work out shortages before a run starts, and consume stock when it finishes.</li>
+  <li><strong>Orders.</strong> Customer orders that explode into dated production runs. Customers get an SMS at each status change, if they want one.</li>
+  <li><strong>Production.</strong> Runs with stages the floor ticks off from their phone. A Gantt view shows two weeks at a glance and marks anything that has slipped.</li>
+  <li><strong>Procurement.</strong> Purchase orders against suppliers, with partial receipts. Reliability is earned from what actually arrived and when, not typed in by hand.</li>
+  <li><strong>Maintenance.</strong> Machines, faults and services. A critical fault stops the machine and texts the managers without anyone deciding to.</li>
+  <li><strong>People.</strong> Workers, attendance and safety incidents, recorded from the floor rather than reconstructed at month end.</li>
+</ul>
+
+<h2>The floor line</h2>
+<p>
+  Seven options. No app, no bundle, no training. The menu is short on purpose: every branch
+  finishes inside thirty seconds, because a reporting system people find tedious is a reporting
+  system that stops being used by Thursday.
+</p>
+
+<dl class="hs-checks">
+  {% for n, name, what in [
+    ('1','My tasks','The runs assigned to them, with progress and due date'),
+    ('2','Report production','Pick a run, enter units done, which updates the run and the schedule'),
+    ('3','Report stock','Issued, received, counted or wasted, straight into the ledger'),
+    ('4','Machine fault','Machine, fault, severity. Critical stops the machine and texts managers'),
+    ('5','Safety incident','Type and severity, recorded against the worker'),
+    ('6','Clock in or out','Attendance without a card reader'),
+    ('7','Stock check','Everything currently below its minimum')] %}
+  <div class="hs-check">
+    <dt><span class="hs-num">{{ n }}</span>{{ name }}</dt>
+    <dd>{{ what }}</dd>
   </div>
-</section>
+  {% endfor %}
+</dl>
 
-{# ── Modules ── #}
-<section class="border-b border-divider">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[54ch] mb-12">
-      <p class="kicker mb-4">Modules</p>
-      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-        Connected, so entering something once is enough.
-      </h2>
-    </div>
+<h2>The same four keys on every screen</h2>
+<ul>
+  <li><span class="hs-mono">0</span> goes back one step.</li>
+  <li><span class="hs-mono">00</span> goes to the main menu.</li>
+  <li><span class="hs-mono">98</span> shows the next page of a long list.</li>
+  <li><span class="hs-mono">99</span> stops and closes the session.</li>
+</ul>
+<p>
+  These are the keys Kenyan services already use, so nobody has to learn ours. They work on every
+  screen. On a screen that asks for a number, 0 still means back, so you cannot type 0 as a
+  quantity, which is not a useful thing to report anyway.
+</p>
+<p>
+  Workers can also just text the shortcode. <span class="hs-mono">TASKS</span>,
+  <span class="hs-mono">STOCK</span>, <span class="hs-mono">IN</span>,
+  <span class="hs-mono">OUT</span> and <span class="hs-mono">DOWN</span> all work without opening
+  a menu at all.
+</p>
 
-    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-      {% for ico, title, body in [
-        ('box','Inventory','Materials with a minimum level and a reorder quantity. Every movement is written to a ledger with the balance after it, whether it came from the office or a handset.'),
-        ('cube','Products and BOM','What you build and what one unit consumes. The bill of materials is what lets the plant work out shortages before a run starts, and consume stock when it finishes.'),
-        ('clipboard','Orders','Customer orders that explode into dated production runs. Customers get an SMS at each status change, if they want one.'),
-        ('cog','Production','Runs with stages the floor ticks off from their phone. A Gantt view shows two weeks at a glance and marks anything that has slipped.'),
-        ('truck','Procurement','Purchase orders against suppliers, with partial receipts. Reliability is earned from what actually arrived and when, not typed in by hand.'),
-        ('wrench','Maintenance','Machines, service intervals and faults. A critical fault reported from the floor stops the machine and texts the managers immediately.'),
-        ('badge-check','Quality','Checklists against a batch. A failure raises an alert and blocks the comfortable assumption that everything shipped fine.'),
-        ('helmet','People','Workers, attendance and safety incidents. Clocking in happens on the handset, so it does not need a card reader that nobody maintains.'),
-        ('chart','Reports','Throughput, consumption, downtime, on-time delivery and QC rate — plus a CSV export of every table for your accountant.')] %}
-      <div class="card card-pad" data-reveal-on-scroll>
-        <span class="inline-grid place-items-center w-[40px] h-[40px] rounded-[12px] bg-fog border border-divider text-slate-500 mb-4">{{ icon(ico) }}</span>
-        <h3 class="text-[16px] font-semibold m-0 mb-2">{{ title }}</h3>
-        <p class="text-[13px] text-slate-500 leading-relaxed m-0">{{ body }}</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-{# ── USSD ── #}
-<section class="border-b border-divider bg-surface">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    {# auto, not a fixed 300px track: the column is now whatever the handset is,
-       so its size is set in one place and the copy keeps the rest. #}
-    <div class="grid lg:grid-cols-[1fr_auto] gap-12 xl:gap-16 items-start">
-      <div>
-        <p class="kicker mb-4">The floor line</p>
-        <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-          Seven options. No app, no bundle, no training.
-        </h2>
-        <p class="lede mt-5 mb-9">
-          The menu is short on purpose. Every branch finishes inside thirty seconds, because a
-          reporting system people find tedious is a reporting system that stops being used by
-          Thursday.
-        </p>
-
-        <div class="card overflow-hidden">
-          <ol class="list-none m-0 p-0">
-            {% for num, title, what in [
-              ('1','My tasks','The runs assigned to them, with progress and due date'),
-              ('2','Report production','Pick a run, enter units done — updates the run and the schedule'),
-              ('3','Report stock','Issued, received, counted or wasted, straight into the ledger'),
-              ('4','Machine fault','Machine, fault, severity. Critical stops the machine and texts managers'),
-              ('5','Safety incident','Type and severity, recorded against the worker'),
-              ('6','Clock in or out','Attendance without a card reader'),
-              ('7','Stock check','Everything currently below its minimum')] %}
-            <li class="px-5 py-3.5 border-b border-divider/70 last:border-b-0 flex items-start gap-4">
-              <span class="w-[26px] h-[26px] rounded-[8px] bg-signal-50 text-signal-700 font-mono text-[12px] font-bold grid place-items-center shrink-0">{{ num }}</span>
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold text-ink m-0">{{ title }}</p>
-                <p class="text-[12.5px] text-slate-500 mt-0.5 m-0 leading-snug">{{ what }}</p>
-              </div>
-            </li>
-            {% endfor %}
-          </ol>
-        </div>
-
-        <div class="card card-pad mt-6">
-          <p class="kicker mb-3">The same four keys on every screen</p>
-          <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-2.5 m-0">
-            <div class="flex items-baseline gap-3">
-              <dt class="font-mono text-[13px] font-semibold text-signal-600 w-[26px]">0</dt>
-              <dd class="text-[13px] text-slate-600 m-0">Go back one step</dd>
-            </div>
-            <div class="flex items-baseline gap-3">
-              <dt class="font-mono text-[13px] font-semibold text-signal-600 w-[26px]">00</dt>
-              <dd class="text-[13px] text-slate-600 m-0">Go to the main menu</dd>
-            </div>
-            <div class="flex items-baseline gap-3">
-              <dt class="font-mono text-[13px] font-semibold text-signal-600 w-[26px]">98</dt>
-              <dd class="text-[13px] text-slate-600 m-0">See the next page of a long list</dd>
-            </div>
-            <div class="flex items-baseline gap-3">
-              <dt class="font-mono text-[13px] font-semibold text-signal-600 w-[26px]">99</dt>
-              <dd class="text-[13px] text-slate-600 m-0">Stop and close the session</dd>
-            </div>
-          </dl>
-          <p class="text-[12.5px] text-slate-500 mt-4 mb-0 leading-relaxed">
-            These are the keys Kenyan services already use, so nobody has to learn ours. They work
-            on every screen. On a screen that asks for a number, 0 still means back — so you cannot
-            type 0 as a quantity, which is not a useful thing to report anyway.
-          </p>
-        </div>
-
-        <p class="text-[13px] text-slate-500 mt-6 leading-relaxed max-w-[62ch]">
-          Workers can also just text the shortcode. <span class="font-mono text-[12px] text-ink">TASKS</span>,
-          <span class="font-mono text-[12px] text-ink">STOCK</span>, <span class="font-mono text-[12px] text-ink">IN</span>,
-          <span class="font-mono text-[12px] text-ink">OUT</span> and <span class="font-mono text-[12px] text-ink">DOWN</span>
-          all work without opening a menu at all.
-        </p>
-      </div>
-
-      {# The handset is the argument on this page, so it gets the fluid hero size
-         rather than the 290px preset. It sits in its own grid track and the cap
-         is on this wrapper, so growing it widens nothing and takes no measure
-         from the copy beside it. #}
-      <div class="mx-auto lg:mx-0">
-        {% call handset(size='wide', code=ussd_code) %}
-          <pre class="term">REPORT PRODUCTION
-1. RUN-0003 Swing gate 3
-2. RUN-0001 Steel cabine
-3. RUN-0002 Storage box
-4. RUN-0005 Wheelbarrow
-0 Back 00 Menu 99 Exit</pre>
-        {% endcall %}
-        <p class="hs-cap">Telco layer by Africa's Talking</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20 text-center">
-    <h2 class="font-display text-[26px] sm:text-[32px] font-bold tracking-[-0.03em] m-0">See it running</h2>
-    <p class="lede mt-4 max-w-[44ch] mx-auto">
-      Set up your plant, register a worker's number, and have them dial in. The Pulse starts
-      reading the moment there are records to read.
-    </p>
-    <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
-      <a href="{{ cta_url }}" class="btn btn-primary">{{ icon('arrow-right','ico ico-sm') }} {{ cta_label_long }}</a>
-      <a href="{{ url_for('jua_kali') }}" class="btn btn-secondary">Why a feature phone</a>
-    </div>
-  </div>
-</section>
+<h2>Seeing it running</h2>
+<p>
+  Set up your plant, register a worker's number, and have them dial
+  <span class="hs-mono">{{ ussd_code }}</span>. The Pulse starts reading the moment there are
+  records to read. <a href="{{ cta_url }}">{{ cta_label_long }}</a>, or look at
+  <a href="{{ url_for('pricing') }}">pricing</a> first.
+</p>
 {% endblock %}

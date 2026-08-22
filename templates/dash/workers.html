@@ -76,7 +76,7 @@
         <div class="field">
           <label for="f-message">Message</label>
           <textarea id="f-message" name="message" class="textarea" rows="4" required
-                    placeholder="No power today, report at 10am. — sent as one SMS to each worker"></textarea>
+                    placeholder="No power today, report at 10am., sent as one SMS to each worker"></textarea>
           <p class="hint m-0">Keep it under 160 characters to stay on one message.</p>
         </div>
         <button type="submit" class="btn btn-primary btn-block mt-2">{{ icon('send','ico ico-sm') }} Send broadcast</button>
@@ -88,7 +88,7 @@
       <h2 class="card-title mb-3">The floor line</h2>
       <p class="font-mono text-[17px] font-semibold text-signal-600 m-0 tracking-tight">{{ ussd_code }}</p>
       <p class="text-[12.5px] text-slate-500 mt-2.5 mb-0 leading-relaxed">
-        Workers dial this from any handset — no smartphone, no data. They are recognised by the
+        Workers dial this from any handset, no smartphone, no data. They are recognised by the
         number registered against them here.
       </p>
       <a href="{{ url_for('dash_ussd_simulator') }}" class="btn btn-secondary btn-sm btn-block mt-4">

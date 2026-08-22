@@ -82,7 +82,7 @@
             <tr>
               <td><a href="{{ url_for('run_detail', run_id=r.id) }}" class="font-mono text-[12px] font-semibold text-ink hover:text-signal-600">{{ r.reference }}</a></td>
               <td class="text-[12.5px] max-w-[170px] truncate">{{ r.product.name if r.product else '—' }}</td>
-              <td>{% if r.order %}<a href="{{ url_for('order_detail', order_id=r.order_id) }}" class="font-mono text-[11.5px] text-slate-500 hover:text-signal-600">{{ r.order.number }}</a>{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+              <td>{% if r.order %}<a href="{{ url_for('order_detail', order_id=r.order_id) }}" class="font-mono text-[11.5px] text-slate-500 hover:text-signal-600">{{ r.order.number }}</a>{% else %}<span class="text-slate-400"></span>{% endif %}</td>
               <td class="r num text-[12.5px]">{{ r.produced|qty }}/{{ r.quantity|qty }}</td>
               <td class="w-[130px]">
                 <div class="flex items-center gap-2">

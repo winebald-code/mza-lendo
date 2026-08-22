@@ -49,7 +49,7 @@
             {% if o.customer %}
               <a href="{{ url_for('customer_detail', customer_id=o.customer.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 block truncate">{{ o.customer.name }}</a>
               {% if o.customer.company %}<span class="block text-[11px] text-slate-400 truncate">{{ o.customer.company }}</span>{% endif %}
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}<span class="text-slate-400"></span>{% endif %}
           </td>
           <td class="text-[12.5px] text-slate-500">{{ o.items|length }} line{{ '' if o.items|length == 1 else 's' }}</td>
           <td class="r num text-[12.5px] font-medium">{{ o.total|money }}</td>
@@ -57,7 +57,7 @@
             {% if o.is_late %}<span class="text-bad font-semibold">{{ (o.days_left * -1) }}d late</span>
             {% elif o.days_left is not none %}
               <span class="{% if o.days_left <= 2 %}text-warn font-semibold{% else %}text-slate-500{% endif %}">{{ o.due_date|d('%d %b') }}</span>
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}<span class="text-slate-400"></span>{% endif %}
           </td>
           <td>
             {% set ptone = {'rush':'bad','high':'warn','normal':'neutral','low':'neutral'} %}

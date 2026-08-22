@@ -37,7 +37,7 @@
           <td class="r">
             {% if p.margin_pct is not none %}
               <span class="num text-[12.5px] font-semibold {% if p.margin_pct < 15 %}text-bad{% elif p.margin_pct < 30 %}text-warn{% else %}text-ok{% endif %}">{{ p.margin_pct }}%</span>
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}<span class="text-slate-400"></span>{% endif %}
           </td>
           <td class="r num text-[12.5px] text-slate-500">{{ p.build_days }}d</td>
           <td>

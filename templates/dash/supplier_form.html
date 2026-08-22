@@ -32,7 +32,7 @@
         <label for="f-materials_supplied">What they supply</label>
         <input id="f-materials_supplied" name="materials_supplied" class="input"
                value="{{ item.materials_supplied if item else '' }}" placeholder="Mild steel sheet, angle iron, welding rods">
-        <p class="hint m-0">Free text — helps when picking a supplier for a purchase order</p>
+        <p class="hint m-0">Free text, helps when picking a supplier for a purchase order</p>
       </div>
       <div class="field mt-1">
         <label for="f-notes">Notes</label>
@@ -46,7 +46,7 @@
       <h2 class="card-title mb-4">Status</h2>
       <label class="check">
         <input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}>
-        <span>Active — available when raising purchase orders</span>
+        <span>Active, available when raising purchase orders</span>
       </label>
       {% if item %}
       <dl class="mt-5 pt-5 border-t border-divider grid gap-3 m-0">

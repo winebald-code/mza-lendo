@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- BACAAN — Manufacturing Operations & Supply Intelligence Platform
+ BACAAN, Manufacturing Operations & Supply Intelligence Platform
 ===============================================================================
  A mobile-first manufacturing operating system for African SMEs and Jua Kali
  producers. Owners manage the plant from a web dashboard; workers and suppliers
@@ -57,7 +57,7 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-try:  # optional — only needed for local .env development
+try:  # optional, only needed for local .env development
     from dotenv import load_dotenv
     load_dotenv()
 except Exception:  # pragma: no cover
@@ -65,7 +65,7 @@ except Exception:  # pragma: no cover
 
 
 # =============================================================================
-#  SECTION 1 — CONFIGURATION
+#  SECTION 1, CONFIGURATION
 # =============================================================================
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -81,7 +81,7 @@ def _env_str(key: str, default: str = "") -> str:
     """Environment string with surrounding quotes stripped.
 
     Railway's raw editor (and most .env files) need a value quoted when it
-    contains a # — AT_USSD_CODE="*384*7477#" — because an unquoted # starts a
+    contains a #, AT_USSD_CODE="*384*7477#", because an unquoted # starts a
     comment. Some parsers strip the quotes, some store them literally. A sender
     id that reaches Africa's Talking as "BACAAN" including the quotes is
     rejected as unregistered, and the error gives no hint why.
@@ -103,7 +103,7 @@ def _env_float(key: str, default: float) -> float:
     """Numeric environment value that tolerates quoting and rubbish.
 
     A quoted "3" reaching float() raises ValueError during import, which kills
-    every worker before it can log anything useful — the container just dies.
+    every worker before it can log anything useful, the container just dies.
     A bad value falls back to the default and says so rather than taking the
     whole application down.
     """
@@ -123,7 +123,7 @@ def _database_uri() -> str:
     if url:
         # Pin the driver explicitly to the one requirements-postgres.txt
         # installs. Railway injects postgresql://, older platforms inject the
-        # legacy postgres:// — and an unqualified URL leaves SQLAlchemy to pick
+        # legacy postgres://, and an unqualified URL leaves SQLAlchemy to pick
         # a default, which is how a deployment ends up asking for a driver that
         # is not in the image.
         for prefix in ("postgresql://", "postgres://"):
@@ -160,7 +160,7 @@ class Config:
     # --- platform behaviour --------------------------------------------------
     # Defaults to off so that `python3 app.py` works over plain http on a
     # developer's machine. Turning it on also marks the session cookie Secure,
-    # which a browser will refuse to store over http — meaning nobody could log
+    # which a browser will refuse to store over http, meaning nobody could log
     # in locally. Every deployment path (.env.example, README, railway.json)
     # sets FORCE_HTTPS=1 explicitly, and bootstrap() warns when it is off.
     FORCE_HTTPS = _env_bool("FORCE_HTTPS", False)
@@ -195,7 +195,7 @@ class Config:
 
 
 # =============================================================================
-#  SECTION 2 — APPLICATION & EXTENSIONS
+#  SECTION 2, APPLICATION & EXTENSIONS
 # =============================================================================
 
 app = Flask(__name__, instance_path=DATA_DIR)
@@ -228,7 +228,7 @@ log = logging.getLogger("bacaan")
 
 
 # =============================================================================
-#  SECTION 3 — SECURITY HEADERS  (targets an A+ on securityheaders.com)
+#  SECTION 3, SECURITY HEADERS  (targets an A+ on securityheaders.com)
 # =============================================================================
 
 PERMISSIONS_POLICY = ", ".join([
@@ -248,7 +248,7 @@ def _webhook_guard():
 
     Africa's Talking appends whatever query string is registered with the
     channel, so ?token=... arrives on every hop. Compared in constant time.
-    When no token is configured the callbacks stay open — fine on a laptop,
+    When no token is configured the callbacks stay open, fine on a laptop,
     not on a public URL, which is why startup warns about it.
     """
     # The in-dashboard handset simulator reaches the same view through an
@@ -356,7 +356,7 @@ def _security_after_request(resp: Response) -> Response:
 
 
 # =============================================================================
-#  SECTION 4 — DOMAIN CONSTANTS
+#  SECTION 4, DOMAIN CONSTANTS
 # =============================================================================
 
 ROLES = {
@@ -405,7 +405,7 @@ INCIDENT_TYPES = {
 
 
 # =============================================================================
-#  SECTION 5 — DATA MODEL
+#  SECTION 5, DATA MODEL
 # =============================================================================
 
 def _now() -> datetime:
@@ -420,7 +420,7 @@ def _now() -> datetime:
 
 # Kenya observes EAT (UTC+3) year round and has never used daylight saving, so
 # a fixed offset is exact here and avoids depending on the tzdata package being
-# present — which it often is not on Windows or in a slim container.
+# present, which it often is not on Windows or in a slim container.
 TZ_OFFSET_HOURS = _env_float("TZ_OFFSET_HOURS", 3.0)
 TZ_LABEL = _env_str("TZ_LABEL", "EAT")
 LOCAL_OFFSET = timedelta(hours=TZ_OFFSET_HOURS)
@@ -473,7 +473,7 @@ class Factory(db.Model, TimestampMixin):
     plan = db.Column(db.String(24), default="starter")   # starter|business|enterprise
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
-    # Telco configuration (per tenant — marketplace instances differ)
+    # Telco configuration (per tenant, marketplace instances differ)
     ussd_code = db.Column(db.String(32), default="")
     at_username = db.Column(db.String(80), default="")
     at_api_key = db.Column(db.String(200), default="")
@@ -522,7 +522,7 @@ class User(db.Model, UserMixin, TimestampMixin):
 
     # -- flask-login ---------------------------------------------------------
     @property
-    def is_active(self):                       # noqa: D401 — flask-login contract
+    def is_active(self):                       # noqa: D401, flask-login contract
         return bool(self.is_active_flag)
 
     @property
@@ -1105,7 +1105,7 @@ class AuditLog(db.Model):
 
 
 # =============================================================================
-#  SECTION 6 — HELPERS
+#  SECTION 6, HELPERS
 # =============================================================================
 
 @login_manager.user_loader
@@ -1147,7 +1147,7 @@ def norm_phone(raw: str, default_cc: str = "254") -> str:
 
 def money(value, currency="KES") -> str:
     try:
-        return f"{currency} {float(value or 0):,.2f}"
+        return f"{currency} {float(value or 0):.2f}"
     except (TypeError, ValueError):
         return f"{currency} 0.00"
 
@@ -1226,7 +1226,7 @@ def audit(action: str, entity: str = "", entity_id=None, detail: str = ""):
             kind, severity, title, link = spec
             who = actor if actor != "system" else "the floor"
             notify_event(row.factory_id, kind, severity, title,
-                         f"{detail[:180]}" + (f" — by {who}" if who else ""),
+                         f"{detail[:180]}" + (f", by {who}" if who else ""),
                          link, entity_id)
     except Exception as exc:                                   # pragma: no cover
         db.session.rollback()
@@ -1290,8 +1290,8 @@ def current_factory_id():
         return None
     if current_user.is_super:
         chosen = session.get("factory_ctx")
-        # Verify it still exists. A plant deleted while selected — or an id
-        # left over from a database that has since been reseeded — otherwise
+        # Verify it still exists. A plant deleted while selected, or an id
+        # left over from a database that has since been reseeded, otherwise
         # resolves to nothing, and every plant-scoped screen behaves as though
         # the installation had no plants at all.
         if chosen and db.session.get(Factory, chosen):
@@ -1310,7 +1310,7 @@ def current_factory():
 
 
 def scoped(model):
-    """Every query in the dashboard runs through here — no cross-tenant leaks."""
+    """Every query in the dashboard runs through here, no cross-tenant leaks."""
     return model.query.filter(model.factory_id == current_factory_id())
 
 
@@ -1340,7 +1340,7 @@ def _require_plant():
     if current_factory() is not None:
         return None
     if current_user.is_super:
-        flash("Create a plant first — every dashboard screen belongs to one.", "info")
+        flash("Create a plant first, every dashboard screen belongs to one.", "info")
         return redirect(url_for("admin_factories"))
     flash("Your account is not attached to a plant. Ask your administrator to "
           "assign you to one.", "warn")
@@ -1407,7 +1407,7 @@ def qs_without(*keys):
 
 
 # =============================================================================
-#  SECTION 7 — AFRICA'S TALKING GATEWAY
+#  SECTION 7, AFRICA'S TALKING GATEWAY
 # =============================================================================
 
 class AfricasTalking:
@@ -1435,7 +1435,7 @@ class AfricasTalking:
         # Endpoint selection. AT_LIVE wins over AT_ENVIRONMENT, because the
         # alternative is someone setting AT_LIVE=1 with real credentials and
         # having every message quietly delivered to the sandbox instead.
-        # A username of literally "sandbox" always means sandbox — that is how
+        # A username of literally "sandbox" always means sandbox, that is how
         # Africa's Talking identifies the sandbox application.
         env = app.config["AT_ENVIRONMENT"]
         if self.username == "sandbox":
@@ -1549,7 +1549,7 @@ def factory_managers_phones(factory_id):
 
 
 # =============================================================================
-#  SECTION 8 — MANUFACTURING PULSE ENGINE
+#  SECTION 8, MANUFACTURING PULSE ENGINE
 # =============================================================================
 
 PULSE_WEIGHTS = {"production": 0.26, "inventory": 0.22, "orders": 0.22,
@@ -1771,8 +1771,7 @@ def raise_alert(factory_id, kind, severity, title, body="", recommendation="",
 
 # Which audited actions are worth telling an owner about, and how to say it.
 # Wiring notifications through audit() rather than sprinkling calls across
-# forty routes means a new operation is covered the moment it is audited —
-# there is no second list to keep in step.
+# forty routes means a new operation is covered the moment it is audited, # there is no second list to keep in step.
 NOTIFY_ACTIONS = {
     # Materials and stock
     "material_saved":      ("inventory",   "info",   "Material added or updated",   "dash_materials"),
@@ -1860,7 +1859,7 @@ def notify_event(factory_id, kind, severity, title, body="", link="",
 
 
 def check_material_level(material: Material, factory: Factory, silent=False):
-    """Called after every stock movement — the low-stock SMS trigger."""
+    """Called after every stock movement, the low-stock SMS trigger."""
     if material.stock_state in ("low", "out") and not silent:
         state = "is out of stock" if material.stock_state == "out" else "is below the minimum level"
         raise_alert(
@@ -1902,7 +1901,7 @@ def move_stock(material: Material, kind: str, qty: float, factory: Factory,
 
 
 # =============================================================================
-#  SECTION 9 — TEMPLATE CONTEXT & FILTERS
+#  SECTION 9, TEMPLATE CONTEXT & FILTERS
 # =============================================================================
 
 def _pairs(values, labelise: bool = True):
@@ -1928,7 +1927,7 @@ def asset_url(filename: str) -> str:
     """static/… with a content fingerprint appended.
 
     Without this, a browser that cached app.js keeps running it after a deploy
-    while another that fetched fresh runs the new one — the two disagree and
+    while another that fetched fresh runs the new one, the two disagree and
     only one of them shows the bug. A changed file gets a new URL instead.
     """
     if filename not in _ASSET_FINGERPRINTS:
@@ -2001,7 +2000,7 @@ def _f_money(value, currency=None):
 @app.template_filter("money_kpi")
 def _f_money_kpi(value, currency=None):
     """Money for a headline tile: drops a trailing .00 so a KPI reads
-    'KES 926,500' rather than wrapping. Lossless — anything with real cents
+    'KES 926,500' rather than wrapping. Lossless, anything with real cents
     keeps them, and tables still use the full |money filter."""
     fac = current_factory() if current_user.is_authenticated else None
     cur = currency or (fac.currency if fac else "KES")
@@ -2010,15 +2009,15 @@ def _f_money_kpi(value, currency=None):
     except (TypeError, ValueError):
         v = 0.0
     if abs(v - round(v)) < 0.005:
-        return f"{cur} {round(v):,.0f}"
-    return f"{cur} {v:,.2f}"
+        return f"{cur} {round(v):.0f}"
+    return f"{cur} {v:.2f}"
 
 
 @app.template_filter("qty")
 def _f_qty(value):
     try:
         v = float(value or 0)
-        return f"{v:,.0f}" if v == int(v) else f"{v:,.2f}"
+        return f"{v:.0f}" if v == int(v) else f"{v:.2f}"
     except (TypeError, ValueError):
         return "0"
 
@@ -2068,7 +2067,7 @@ def _f_initials(value):
 
 
 # =============================================================================
-#  SECTION 10 — PUBLIC SITE
+#  SECTION 10, PUBLIC SITE
 # =============================================================================
 
 @app.route("/")
@@ -2188,7 +2187,7 @@ def favicon():
 
 
 # =============================================================================
-#  SECTION 11 — AUTHENTICATION
+#  SECTION 11, AUTHENTICATION
 # =============================================================================
 
 @app.route("/login", methods=["GET", "POST"])
@@ -2261,7 +2260,7 @@ def signup():
     if current_user.is_authenticated:
         return redirect(url_for("dash_overview"))
     if not app.config["ALLOW_PUBLIC_SIGNUP"]:
-        # Not a 403. Nothing is wrong with this visitor's role — the feature is
+        # Not a 403. Nothing is wrong with this visitor's role, the feature is
         # switched off for the whole installation, and telling them their
         # "role does not open this door" is both confusing and untrue when
         # they are not signed in at all.
@@ -2344,8 +2343,8 @@ def logout():
 
     # Order matters here, and it used to be the wrong way round.
     #
-    # logout_user() cannot delete the remember cookie itself — there is no
-    # response object yet — so it leaves session["_remember"] = "clear" behind
+    # logout_user() cannot delete the remember cookie itself, there is no
+    # response object yet, so it leaves session["_remember"] = "clear" behind
     # for Flask-Login's after_request hook to act on. Calling session.clear()
     # afterwards wiped that instruction before the hook could read it, the
     # 14-day remember_token survived sign-out, and the very next request
@@ -2428,7 +2427,7 @@ def profile():
 
 
 # =============================================================================
-#  SECTION 12 — DASHBOARD OVERVIEW
+#  SECTION 12, DASHBOARD OVERVIEW
 # =============================================================================
 
 @app.route("/dashboard")
@@ -2531,7 +2530,7 @@ def switch_factory(factory_id):
 
 
 # =============================================================================
-#  SECTION 13 — ALERTS
+#  SECTION 13, ALERTS
 # =============================================================================
 
 @app.route("/dashboard/alerts")
@@ -2583,7 +2582,7 @@ def alert_delete(alert_id):
 
 
 # =============================================================================
-#  SECTION 14 — MATERIALS & STOCK
+#  SECTION 14, MATERIALS & STOCK
 # =============================================================================
 
 @app.route("/dashboard/materials")
@@ -2745,7 +2744,7 @@ def dash_stock_ledger():
 
 
 # =============================================================================
-#  SECTION 15 — SUPPLIERS & PROCUREMENT
+#  SECTION 15, SUPPLIERS & PROCUREMENT
 # =============================================================================
 
 @app.route("/dashboard/suppliers")
@@ -3012,7 +3011,7 @@ def procurement_auto():
 
 
 # =============================================================================
-#  SECTION 16 — PRODUCTS & BILL OF MATERIALS
+#  SECTION 16, PRODUCTS & BILL OF MATERIALS
 # =============================================================================
 
 @app.route("/dashboard/products")
@@ -3110,7 +3109,7 @@ def product_delete(product_id):
 
 
 # =============================================================================
-#  SECTION 17 — CUSTOMERS & ORDERS
+#  SECTION 17, CUSTOMERS & ORDERS
 # =============================================================================
 
 @app.route("/dashboard/customers")
@@ -3375,7 +3374,7 @@ def order_delete(order_id):
 
 
 # =============================================================================
-#  SECTION 18 — PRODUCTION
+#  SECTION 18, PRODUCTION
 # =============================================================================
 
 @app.route("/dashboard/production")
@@ -3563,7 +3562,7 @@ def dash_schedule():
 
 
 # =============================================================================
-#  SECTION 19 — MACHINES & MAINTENANCE
+#  SECTION 19, MACHINES & MAINTENANCE
 # =============================================================================
 
 @app.route("/dashboard/machines")
@@ -3779,7 +3778,7 @@ def ticket_delete(ticket_id):
 
 
 # =============================================================================
-#  SECTION 20 — QUALITY CONTROL
+#  SECTION 20, QUALITY CONTROL
 # =============================================================================
 
 DEFAULT_QC_CHECKS = [
@@ -3891,7 +3890,7 @@ def qc_delete(inspection_id):
 
 
 # =============================================================================
-#  SECTION 21 — WORKFORCE, SAFETY & ATTENDANCE
+#  SECTION 21, WORKFORCE, SAFETY & ATTENDANCE
 # =============================================================================
 
 @app.route("/dashboard/workers")
@@ -4042,7 +4041,7 @@ def workers_broadcast():
               f"Set AT_API_KEY and SMS_ENABLED=1 to send for real.", "warn")
     elif not res.get("ok"):
         flash(f"The gateway refused the message: {res.get('reason', 'unknown')}. "
-              f"Nothing was delivered — see Messages for the detail.", "error")
+              f"Nothing was delivered, see Messages for the detail.", "error")
     elif rejected:
         why = ", ".join(r for r in res.get("reasons", []) if r) or "no reason given"
         flash(f"{sent} accepted, {rejected} rejected ({why}). On the Africa's Talking "
@@ -4190,7 +4189,7 @@ def safety_delete(incident_id):
 
 
 # =============================================================================
-#  SECTION 22 — MESSAGING & TELCO LOGS
+#  SECTION 22, MESSAGING & TELCO LOGS
 # =============================================================================
 
 @app.route("/dashboard/messages")
@@ -4259,7 +4258,7 @@ def dash_ussd_simulator():
 
 
 # =============================================================================
-#  SECTION 23 — REPORTS & EXPORTS
+#  SECTION 23, REPORTS & EXPORTS
 # =============================================================================
 
 @app.route("/dashboard/reports")
@@ -4375,7 +4374,7 @@ def export_csv(dataset):
 
 
 # =============================================================================
-#  SECTION 24 — USER MANAGEMENT
+#  SECTION 24, USER MANAGEMENT
 # =============================================================================
 
 @app.route("/dashboard/users")
@@ -4467,7 +4466,7 @@ def user_form(user_id=None):
             audit("user_saved", "user", obj.id, f"{obj.username} role={obj.role}")
 
             if generated:
-                flash(f"{obj.username} created. Temporary password: {generated} — "
+                flash(f"{obj.username} created. Temporary password: {generated}, "
                       f"share it once, it must be changed at first sign in.", "ok")
             else:
                 flash(f"{obj.username} saved.", "ok")
@@ -4499,7 +4498,7 @@ def user_reset_password(user_id):
     item.locked_until = None
     db.session.commit()
     audit("user_password_reset", "user", item.id, item.username)
-    flash(f"Temporary password for {item.username}: {pw} — it must be changed at "
+    flash(f"Temporary password for {item.username}: {pw}, it must be changed at "
           f"the next sign in.", "warn")
     return redirect(url_for("dash_users"))
 
@@ -4582,7 +4581,7 @@ def dash_audit():
 
 
 # =============================================================================
-#  SECTION 25 — SETTINGS & PLATFORM ADMINISTRATION
+#  SECTION 25, SETTINGS & PLATFORM ADMINISTRATION
 # =============================================================================
 
 @app.route("/dashboard/settings", methods=["GET", "POST"])
@@ -4640,7 +4639,7 @@ def settings_test_sms():
     res = notify(fac, [to], f"Bacaan: test message from {fac.name}. "
                             f"Your gateway is wired correctly.", "test")
     if res.get("simulated"):
-        flash("Gateway is in simulation mode — the message was logged, not sent. "
+        flash("Gateway is in simulation mode, the message was logged, not sent. "
               "Add your Africa's Talking key and switch SMS on to go live.", "warn")
     elif res.get("ok"):
         flash(f"Test message sent to {to}.", "ok")
@@ -4781,7 +4780,7 @@ def admin_system():
 
 
 # =============================================================================
-#  SECTION 26 — USSD  (Africa's Talking callback)
+#  SECTION 26, USSD  (Africa's Talking callback)
 # =============================================================================
 #
 #  Africa's Talking POSTs sessionId, serviceCode, phoneNumber and text on every
@@ -4803,8 +4802,7 @@ def admin_system():
 
 # Four, not five. The screen budget is 182 characters and the navigation
 # footer takes about 30 of them; at five items the longest lists overflowed and
-# ussd_fit dropped the last line to make room. That is worse than it sounds —
-# the engine still pages by five, so the dropped item appeared on no page at
+# ussd_fit dropped the last line to make room. That is worse than it sounds, # the engine still pages by five, so the dropped item appeared on no page at
 # all and could never be selected. The page size must fit without trimming.
 USSD_PER_PAGE = 4
 
@@ -4873,7 +4871,7 @@ def ussd_short(text: str, limit: int) -> str:
 
     Keep the last word. "Mild steel sheet 2mm" and "Mild steel sheet 1mm" both
     shorten to "Mild steel", and a worker choosing by number cannot tell them
-    apart. The size — or the grade, or the colour — is the distinguishing part,
+    apart. The size, or the grade, or the colour, is the distinguishing part,
     so it is kept and the middle is dropped instead: "Mild steel..2mm".
     """
     text = (text or "").strip()
@@ -4882,7 +4880,7 @@ def ussd_short(text: str, limit: int) -> str:
 
     words = text.split()
     tail = words[-1] if len(words) > 1 else ""
-    # The distinguishing token is usually last — a size, a grade or a colour.
+    # The distinguishing token is usually last, a size, a grade or a colour.
     # Keep it, but only when enough of the head survives to still name the
     # thing; "Metal..door" is worse than "Metal cabinet 4".
     if tail and len(tail) <= 7:
@@ -4909,8 +4907,8 @@ def ussd_lines(*lines) -> str:
 
 
 def ussd_clean(text: str) -> str:
-    """Telcos cannot render many symbols — keep the payload plain."""
-    text = re.sub(r"[^\w\s.,:%/()+\-#*\n]", " ", text or "")
+    """Telcos cannot render many symbols, keep the payload plain."""
+    text = re.sub(r"[^\w\s.:%/()+\-#*\n]", " ", text or "")
     return re.sub(r"[ \t]+", " ", text).strip()
 
 
@@ -4982,7 +4980,7 @@ def ussd_track(session_id, phone, service_code, network_code, text, worker,
 # A single USSD screen carries roughly 182 GSM characters. Anything longer is
 # truncated by the telco, which cuts a menu line in half and leaves the worker
 # looking at an option they cannot read. Call sites trim individual labels, but
-# a title, a greeting and a plant name are all free text — so the guarantee is
+# a title, a greeting and a plant name are all free text, so the guarantee is
 # enforced here, at the one point every screen leaves through.
 USSD_MAX_CHARS = 182
 
@@ -5406,7 +5404,7 @@ def ussd_callback():
 def ussd_simulate():
     """Run a USSD hop from the dashboard simulator.
 
-    Deliberately the same engine as the public callback — a simulator that ran
+    Deliberately the same engine as the public callback, a simulator that ran
     different code would prove nothing. It differs only in how it
     authenticates: a signed-in session and a CSRF token, rather than the shared
     webhook secret, which has no business being handed to a browser.
@@ -5438,7 +5436,7 @@ def ussd_events():
 
 
 # =============================================================================
-#  SECTION 27 — SMS CALLBACKS
+#  SECTION 27, SMS CALLBACKS
 # =============================================================================
 
 SMS_HELP = ("Bacaan: TASKS your jobs. STOCK what is low. IN clock in. "
@@ -5635,7 +5633,7 @@ def sms_incoming():
 
 
 # =============================================================================
-#  SECTION 28 — JSON API (dashboard widgets and integrations)
+#  SECTION 28, JSON API (dashboard widgets and integrations)
 # =============================================================================
 
 @app.route("/api/pulse")
@@ -5665,7 +5663,7 @@ def api_alerts():
     total = Alert.query.filter_by(factory_id=fid, is_read=False).count()
     rows = (Alert.query.filter_by(factory_id=fid, is_read=False)
             .order_by(desc(Alert.created_at)).limit(20).all())
-    # count is every unread one, not just the page — the badge must not stop
+    # count is every unread one, not just the page, the badge must not stop
     # counting at twenty, and the poller compares it to decide whether to chime.
     return jsonify({"count": total, "items": [{
         "id": a.id, "kind": a.kind, "severity": a.severity, "title": a.title,
@@ -5736,7 +5734,7 @@ def api_material(material_id):
 
 
 # =============================================================================
-#  SECTION 29 — ERROR HANDLERS
+#  SECTION 29, ERROR HANDLERS
 # =============================================================================
 
 def _wants_json():
@@ -5821,7 +5819,7 @@ def err_unhandled(e):                                          # pragma: no cove
 
 
 # =============================================================================
-#  SECTION 30 — SEEDING
+#  SECTION 30, SEEDING
 # =============================================================================
 
 def seed_demo_plant():
@@ -6185,7 +6183,7 @@ def purge_factory(fac, protect_emails=()):
     """Delete a plant and every record inside it.
 
     Shared by the demo teardown and the delete button, so the two can never
-    drift apart — a plant removed by hand leaves exactly as little behind as
+    drift apart, a plant removed by hand leaves exactly as little behind as
     one removed by flipping SEED_DEMO_DATA.
     """
     protect = {e.strip().lower() for e in protect_emails if e}
@@ -6307,16 +6305,16 @@ def bootstrap(force_demo=None):
         missing = [k for k, v in (("AT_USERNAME", Config.AT_USERNAME),
                                   ("AT_API_KEY", Config.AT_API_KEY)) if not v]
         if missing:
-            log.error("AT_LIVE=1 but %s not set — every send will be recorded "
+            log.error("AT_LIVE=1 but %s not set, every send will be recorded "
                       "as failed. Set them or unset AT_LIVE.", " and ".join(missing))
         elif Config.AT_USERNAME == "sandbox":
             log.warning("AT_LIVE=1 with the sandbox username: messages reach the "
                         "Africa's Talking simulator, not a handset.")
         if not Config.AT_WEBHOOK_TOKEN:
-            log.warning("AT_LIVE=1 with no AT_WEBHOOK_TOKEN — your callbacks accept "
+            log.warning("AT_LIVE=1 with no AT_WEBHOOK_TOKEN, your callbacks accept "
                         "any caller. Anyone who finds the URL can open USSD sessions.")
     if not Config.FORCE_HTTPS:
-        log.warning("FORCE_HTTPS is off — fine locally, but set FORCE_HTTPS=1 "
+        log.warning("FORCE_HTTPS is off, fine locally, but set FORCE_HTTPS=1 "
                     "in any deployment so HSTS and Secure cookies are enabled.")
     if not os.environ.get("SECRET_KEY"):
         log.warning("SECRET_KEY is unset, so a random one was generated for this "
@@ -6335,7 +6333,7 @@ MIGRATION_ORDER = [
 
 
 # =============================================================================
-#  SECTION 31 — CLI
+#  SECTION 31, CLI
 # =============================================================================
 
 @app.cli.command("init-db")
@@ -6387,7 +6385,7 @@ def cli_db_check():
             db.session.execute(db.text("SELECT 1"))
             print("  reach    ok")
         except Exception as exc:
-            print(f"  reach    FAILED — {exc}")
+            print(f"  reach    FAILED, {exc}")
             return
         total = 0
         for model in MIGRATION_ORDER:
@@ -6405,7 +6403,7 @@ def cli_db_copy(reset):
 
     Run with DATABASE_URL pointing at the *destination*. The source is the
     local SQLite file. Ids are preserved so foreign keys stay intact, which
-    means Postgres sequences must be realigned afterwards — otherwise the next
+    means Postgres sequences must be realigned afterwards, otherwise the next
     insert collides with a migrated id. That step is done here.
     """
     dest_uri = app.config["SQLALCHEMY_DATABASE_URI"]
@@ -6464,15 +6462,15 @@ def cli_at_check():
         fac = Factory.query.filter_by(is_active=True).first()
         at = AfricasTalking(fac)
         mode = ("LIVE (strict)" if Config.AT_LIVE else
-                "live" if at.live else "SIMULATION — messages are logged, not sent")
+                "live" if at.live else "SIMULATION, messages are logged, not sent")
         sandbox = "sandbox" in at.endpoint
         print(f"  mode         {mode}")
         print(f"  endpoint     {at.endpoint}")
         print(f"  username     {at.username or '(unset)'}")
         print(f"  api key      {'set (' + at.api_key[:6] + '…)' if at.api_key else '(unset)'}")
-        print(f"  sender id    {at.sender_id or '(none — default sender)'}")
+        print(f"  sender id    {at.sender_id or '(none, default sender)'}")
         print(f"  ussd code    {Config.AT_USSD_CODE}")
-        print(f"  webhook tok  {'set' if Config.AT_WEBHOOK_TOKEN else '(unset — callbacks are OPEN)'}")
+        print(f"  webhook tok  {'set' if Config.AT_WEBHOOK_TOKEN else '(unset, callbacks are OPEN)'}")
         if sandbox:
             print("\n  NOTE: this is the sandbox endpoint. USSD answers only in the")
             print("        Africa's Talking web simulator, never on a real handset,")
@@ -6506,7 +6504,7 @@ def cli_pulse():
     """Print the current Manufacturing Pulse for every plant."""
     for fac in Factory.query.all():
         p = compute_pulse(fac.id)
-        print(f"\n{fac.name}  —  overall {p['overall']}%")
+        print(f"\n{fac.name}, overall {p['overall']}%")
         for key, val in p["scores"].items():
             print(f"   {key:<12} {val:>3}%")
         for f in p["findings"][:5]:
@@ -6514,7 +6512,7 @@ def cli_pulse():
 
 
 # =============================================================================
-#  SECTION 32 — ENTRYPOINT
+#  SECTION 32, ENTRYPOINT
 # =============================================================================
 
 def _bootstrap_once():
@@ -6524,7 +6522,7 @@ def _bootstrap_once():
     all reach create_all() and the seed at the same moment. One wins; the
     others fail on a half-created table and exit with code 3, the master gives
     up with "Worker failed to boot", and the platform health check reports the
-    service as unavailable — with nothing in the logs that names the cause.
+    service as unavailable, with nothing in the logs that names the cause.
 
     An exclusive file lock makes the workers take turns. The second one through
     finds the tables already there and the seed functions no-ops.

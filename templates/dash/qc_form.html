@@ -100,7 +100,7 @@
   <aside class="grid gap-6 xl:sticky xl:top-[78px]">
     <section class="card card-pad">
       <h2 class="card-title mb-4">Result</h2>
-      {{ select('status', 'Outcome', [('pending','Pending — not decided yet'),('pass','Pass'),('fail','Fail')],
+      {{ select('status', 'Outcome', [('pending','Pending, not decided yet'),('pass','Pass'),('fail','Fail')],
                 item.status if item else 'pending', errors, 'A fail raises an alert and sends SMS') }}
     </section>
 

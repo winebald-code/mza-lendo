@@ -1,6 +1,6 @@
 {% extends "public/_screen.html" %}
 
-{% block title %}Security — {{ APP_NAME }}{% endblock %}
+{% block title %}Security, {{ APP_NAME }}{% endblock %}
 {% block description %}How Bacaan protects plant data: response headers, password handling, tenant isolation, account lockout and a full audit trail.{% endblock %}
 
 {% set screen_title = 'Security' %}
@@ -8,7 +8,7 @@
 {% block screen %}
 <p>
   A plant's stock levels, margins and customer list are exactly the things a competitor would like
-  to see. What follows is what the application actually does, not a statement of intent — and you
+  to see. What follows is what the application actually does, not a statement of intent, and you
   can verify the first section yourself against this page.
 </p>
 
@@ -18,14 +18,14 @@
   page through an external header scanner.
 </p>
 <ul>
-  <li><span class="hs-mono">Content-Security-Policy</span> — scripts and styles load only from this origin, each carrying a nonce generated fresh for the request. No inline script without that nonce runs, which shuts down most injection attempts.</li>
-  <li><span class="hs-mono">Strict-Transport-Security</span> — two year max-age, subdomains included, preload set. After the first visit the browser refuses plain HTTP.</li>
-  <li><span class="hs-mono">X-Content-Type-Options</span> — nosniff. The browser respects the declared type rather than guessing.</li>
-  <li><span class="hs-mono">X-Frame-Options</span> — DENY. The dashboard cannot be framed, which rules out clickjacking.</li>
-  <li><span class="hs-mono">Referrer-Policy</span> — strict-origin-when-cross-origin, so internal paths never leak to third parties.</li>
-  <li><span class="hs-mono">Permissions-Policy</span> — camera, microphone, geolocation and payment switched off. The application needs none of them.</li>
-  <li><span class="hs-mono">Cross-Origin-Opener-Policy</span> — same-origin, isolating the browsing context.</li>
-  <li><span class="hs-mono">Cache-Control</span> — no-store on every authenticated page, so plant data is not left in a shared machine's cache.</li>
+  <li><span class="hs-mono">Content-Security-Policy</span>, scripts and styles load only from this origin, each carrying a nonce generated fresh for the request. No inline script without that nonce runs, which shuts down most injection attempts.</li>
+  <li><span class="hs-mono">Strict-Transport-Security</span>, two year max-age, subdomains included, preload set. After the first visit the browser refuses plain HTTP.</li>
+  <li><span class="hs-mono">X-Content-Type-Options</span>, nosniff. The browser respects the declared type rather than guessing.</li>
+  <li><span class="hs-mono">X-Frame-Options</span>, DENY. The dashboard cannot be framed, which rules out clickjacking.</li>
+  <li><span class="hs-mono">Referrer-Policy</span>, strict-origin-when-cross-origin, so internal paths never leak to third parties.</li>
+  <li><span class="hs-mono">Permissions-Policy</span>, camera, microphone, geolocation and payment switched off. The application needs none of them.</li>
+  <li><span class="hs-mono">Cross-Origin-Opener-Policy</span>, same-origin, isolating the browsing context.</li>
+  <li><span class="hs-mono">Cache-Control</span>, no-store on every authenticated page, so plant data is not left in a shared machine's cache.</li>
 </ul>
 
 <h2>Accounts</h2>
@@ -52,7 +52,7 @@
 <h2>Requests and callbacks</h2>
 <p>
   Every state-changing form carries a CSRF token tied to the session. The USSD and SMS callbacks
-  are exempt by necessity — a telco cannot carry your token — and are instead rate limited and
+  are exempt by necessity, a telco cannot carry your token, and are instead rate limited and
   validated. Rate limiting is applied per address across the application, tighter on sign-in and on
   the telco callbacks.
 </p>

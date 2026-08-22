@@ -132,7 +132,7 @@
             {% if item.supplier %}
               <a href="{{ url_for('supplier_detail', supplier_id=item.supplier.id) }}" class="link-u">{{ item.supplier.name }}</a>
               <span class="block font-mono text-[10px] text-slate-400">{{ item.supplier.lead_time_days }}d lead time</span>
-            {% else %}—{% endif %}
+            {% else %}, {% endif %}
           </dd>
         </div>
         <div class="flex items-start justify-between gap-3">

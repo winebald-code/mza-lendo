@@ -55,7 +55,7 @@
             <span class="block font-mono text-[10px] text-slate-400 mt-0.5">{{ t.source }}</span>
           </td>
           <td>
-            {% if t.machine %}<a href="{{ url_for('machine_detail', machine_id=t.machine_id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ t.machine.name }}</a>{% else %}—{% endif %}
+            {% if t.machine %}<a href="{{ url_for('machine_detail', machine_id=t.machine_id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600">{{ t.machine.name }}</a>{% else %}, {% endif %}
           </td>
           <td class="text-[12.5px] text-slate-500 max-w-[170px] truncate">{{ t.fault_type }}</td>
           <td>

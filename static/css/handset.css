@@ -1134,6 +1134,35 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 .hs-dot-degraded { background: rgb(var(--c-warn)); }
 .hs-dot-down { background: rgb(var(--c-bad)); }
 
+/* A leading number or time on a check row: the menu index on Platform, the
+   clock on the Jua Kali timeline. Fixed width so the labels beside them line
+   up down the column. */
+.hs-num {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-weight: 600;
+  color: rgb(var(--c-signal-600));
+  min-width: 4.2em;
+  flex-shrink: 0;
+}
+
+.hs-check dt:has(.hs-num) { gap: 0; }
+
+/* The price sits on the plan heading rather than under it, so the two read as
+   one line at a glance. */
+.hs-price {
+  display: block;
+  margin-top: 0.9cqw;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-size: max(11px, 3.1cqw);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(var(--c-signal-600));
+}
+
+/* Two lines under one time on the Jua Kali timeline. */
+.hs-check dd + dd { margin-top: 1.6cqw; }
+.hs-check dd strong { color: rgb(var(--c-ink)); }
+
 .hs-legal-body li { margin-top: 1.4cqw; }
 
 .hs-legal-body a {

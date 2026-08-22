@@ -13,7 +13,7 @@
 <section class="card overflow-hidden">
   <div class="card-head">
     <div>
-      <h2 class="card-title m-0">{{ days[0]|d('%d %b') }} — {{ days[-1]|d('%d %b %Y') }}</h2>
+      <h2 class="card-title m-0">{{ days[0]|d('%d %b') }}, {{ days[-1]|d('%d %b %Y') }}</h2>
       <p class="text-[11.5px] text-slate-400 mt-0.5 m-0">{{ lanes|length }} run{{ '' if lanes|length == 1 else 's' }} in this window</p>
     </div>
     <div class="flex items-center gap-3">
@@ -55,7 +55,7 @@
                class="h-[26px] rounded-[7px] px-2.5 flex items-center gap-2 text-white overflow-hidden transition-shadow hover:shadow-s2 shadow-s1
                       {% if r.status == 'done' %}bg-ok{% elif r.is_at_risk or r.status == 'blocked' %}bg-bad{% elif r.status == 'running' %}bg-signal-500 !text-ink{% else %}bg-slate-600{% endif %}"
                data-css-gc="{{ lane.offset + 1 }} / span {{ lane.span }}"
-               title="{{ r.reference }} — {{ r.product.name if r.product else '' }} — {{ r.progress }}%">
+               title="{{ r.reference }}, {{ r.product.name if r.product else '' }}, {{ r.progress }}%">
               <span class="font-mono text-[10px] font-semibold shrink-0">{{ r.progress }}%</span>
               <span class="text-[11px] truncate">{{ r.worker.name if r.worker else 'Unassigned' }}</span>
             </a>

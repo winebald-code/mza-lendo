@@ -1,13 +1,13 @@
 {% extends "public/_screen.html" %}
 
-{% block title %}Service status — {{ APP_NAME }}{% endblock %}
+{% block title %}Service status, {{ APP_NAME }}{% endblock %}
 {% block description %}Live status of the Bacaan USSD line, SMS delivery, dashboard and database.{% endblock %}
 
 {% set screen_title = 'Service status' %}
 {% set screen_updated = checked_at.strftime('%d %B %Y, %H:%M') ~ ' UTC' %}
 
 {% block screen %}
-{# Every row below is a live read taken when this page was requested — see
+{# Every row below is a live read taken when this page was requested, see
    status_page() in app.py. Nothing here is hardcoded, so the page can go red. #}
 
 <p class="hs-status-line hs-status-{{ overall }}">
@@ -34,7 +34,7 @@
 <h2>What each one means</h2>
 <p>
   <strong>USSD line</strong> is the shortcode workers dial. If it is down the floor cannot report,
-  and entries made during the outage are simply not made — nothing queues on a feature phone.
+  and entries made during the outage are simply not made, nothing queues on a feature phone.
 </p>
 <p>
   <strong>Outbound SMS</strong> is alerts leaving the system. If it is limited, the plant record is
@@ -52,7 +52,7 @@
 <h2>If something is wrong</h2>
 <p>
   The USSD line depends on the mobile network as well as on us, so a fault can sit on either side.
-  Before reporting one, have a worker dial the shortcode from a second network if you can — it
+  Before reporting one, have a worker dial the shortcode from a second network if you can, it
   tells us immediately which half to look at.
 </p>
 <p>

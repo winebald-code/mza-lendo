@@ -37,7 +37,7 @@
           <td class="max-w-[200px]">
             {% if po.supplier %}
               <a href="{{ url_for('supplier_detail', supplier_id=po.supplier.id) }}" class="text-[12.5px] font-medium text-ink hover:text-signal-600 block truncate">{{ po.supplier.name }}</a>
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}<span class="text-slate-400"></span>{% endif %}
           </td>
           <td class="font-mono text-[11.5px] text-slate-500">{{ po.created_at|dt('%d %b %Y') }}</td>
           <td class="font-mono text-[11.5px] {% if overdue %}text-bad font-semibold{% else %}text-slate-500{% endif %}">

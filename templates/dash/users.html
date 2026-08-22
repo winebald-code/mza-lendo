@@ -1,7 +1,7 @@
 {% extends "dash/_layout.html" %}
 {% set page_title = 'Users' %}
 {% set kicker = 'Administration' %}
-{% set page_sub = 'Dashboard accounts. Workers who only use the handset do not need one — add them under Workers instead.' %}
+{% set page_sub = 'Dashboard accounts. Workers who only use the handset do not need one, add them under Workers instead.' %}
 
 {% block page_actions %}
   <a href="{{ url_for('dash_audit') }}" class="btn btn-secondary btn-sm">{{ icon('list','ico ico-sm') }} Audit trail</a>
@@ -92,7 +92,7 @@
         {% for r, what in [
           ('Super administrator','Everything, across every plant on the installation. Can create and disable plants.'),
           ('Owner','Everything inside their own plant, including users, settings and billing details.'),
-          ('Manager','All day-to-day records — orders, stock, production, procurement, quality. No user management.'),
+          ('Manager','All day-to-day records, orders, stock, production, procurement, quality. No user management.'),
           ('Supervisor','Floor operations: runs, stages, faults, quality, attendance and safety.'),
           ('Viewer','Read only. Useful for accountants, auditors and clients.')] %}
         <tr>
