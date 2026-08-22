@@ -557,6 +557,7 @@
       sendBtn.disabled = !open;
       endBtn.disabled = !open;
       if (dialBtn) dialBtn.disabled = next !== 'dial';
+      if (dialField) dialField.disabled = next !== 'dial';
       phoneField.disabled = next !== 'dial';
       if (hint) {
         hint.textContent =
@@ -567,8 +568,62 @@
       if (open) input.focus();
     }
 
-    function dialled() { return codeEl ? codeEl.textContent.trim() : ''; }
-    function setDialled(v) { if (codeEl) codeEl.textContent = v; }
+    /* The dialled line is an <input> now, so read and write its value and
+       respect the caret. A person can click into the middle of a code and fix
+       one character instead of backspacing everything after it. */
+    const dialField = codeEl && codeEl.tagName === 'INPUT' ? codeEl : null;
+
+    function dialled() {
+      if (dialField) return dialField.value.trim();
+      return codeEl ? codeEl.textContent.trim() : '';
+    }
+
+    function setDialled(v) {
+      if (dialField) dialField.value = v;
+      else if (codeEl) codeEl.textContent = v;
+    }
+
+    /* Insert at the caret, replacing a selection if there is one, and leave the
+       caret after what was typed — what any text field does. */
+    function insertAtCaret(ch) {
+      if (!dialField) { setDialled(dialled() + ch); return; }
+      const v = dialField.value;
+      const a = dialField.selectionStart == null ? v.length : dialField.selectionStart;
+      const b = dialField.selectionEnd == null ? v.length : dialField.selectionEnd;
+      dialField.value = v.slice(0, a) + ch + v.slice(b);
+      const at = a + ch.length;
+      dialField.setSelectionRange(at, at);
+      dialField.focus();
+    }
+
+    function deleteAtCaret() {
+      if (!dialField) { setDialled(dialled().slice(0, -1)); return; }
+      const v = dialField.value;
+      const a = dialField.selectionStart == null ? v.length : dialField.selectionStart;
+      const b = dialField.selectionEnd == null ? v.length : dialField.selectionEnd;
+      if (a !== b) {
+        dialField.value = v.slice(0, a) + v.slice(b);
+        dialField.setSelectionRange(a, a);
+      } else if (a > 0) {
+        dialField.value = v.slice(0, a - 1) + v.slice(a);
+        dialField.setSelectionRange(a - 1, a - 1);
+      }
+      dialField.focus();
+    }
+
+    if (dialField) {
+      // A dialler takes digits, star and hash. Anything else pasted is dropped
+      // rather than sent to the callback to fail there.
+      dialField.addEventListener('input', function () {
+        const at = dialField.selectionStart;
+        const clean = dialField.value.replace(/[^0-9*#+]/g, '');
+        if (clean !== dialField.value) {
+          dialField.value = clean;
+          const to = Math.max(0, Math.min(clean.length, at - 1));
+          dialField.setSelectionRange(to, to);
+        }
+      });
+    }
 
     function paint(text, kind) {
       screen.textContent = text;
@@ -593,19 +648,26 @@
 
     /* ── Keys. One path for the on-screen pad and the real keyboard. ────── */
     function press(ch) {
-      if (mode === 'dial') setDialled(dialled() + ch);
+      if (mode === 'dial') insertAtCaret(ch);
       else if (mode === 'session') { input.value += ch; input.focus(); }
     }
 
     function rub() {
-      if (mode === 'dial') setDialled(dialled().slice(0, -1));
+      if (mode === 'dial') deleteAtCaret();
       else if (mode === 'session') { input.value = input.value.slice(0, -1); input.focus(); }
     }
 
     $$('[data-sim-key]', root).forEach(function (k) {
+      // Hold the caret. Without this the button takes focus on mousedown, the
+      // field loses its selection, and the digit lands at the end instead of
+      // where the person put the cursor.
+      k.addEventListener('mousedown', function (e) { e.preventDefault(); });
       k.addEventListener('click', function () { press(k.getAttribute('data-sim-key')); });
     });
-    if (backBtn) backBtn.addEventListener('click', rub);
+    if (backBtn) {
+      backBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      backBtn.addEventListener('click', rub);
+    }
 
     // A real keyboard drives the same handset — unless the caret is in a field,
     // where the browser's own handling is what the person expects.
@@ -655,6 +717,12 @@
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); }
     });
+
+    if (dialField) {
+      dialField.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); call(); }
+      });
+    }
 
     endBtn.addEventListener('click', function () {
       sessionId = null; history = [];

@@ -246,6 +246,31 @@
   color: var(--hs-fg);
 }
 
+/* As an input it inherits none of the screen's type, so everything the old
+   paragraph got for free is stated here. */
+input.hs-dialed {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hs-hair);
+  color: var(--hs-fg);
+  font-family: inherit;
+  font-weight: inherit;
+  caret-color: var(--hs-act);
+  outline: none;
+}
+
+input.hs-dialed::placeholder { color: var(--hs-off); }
+input.hs-dialed:disabled { opacity: 0.55; }
+
+/* The site's selection colour is a light peach tuned for white pages. On the
+   dark dialler it painted a bright block behind the code. Inside the handset
+   the selection follows the screen instead. */
+.hs-screen ::selection { background: var(--hs-act); color: var(--hs-glass); }
+.hs-screen ::-moz-selection { background: var(--hs-act); color: var(--hs-glass); }
+.hs--sms .hs-screen ::selection,
+.hs--deck .hs-screen ::selection { background: rgba(255, 106, 0, 0.22); color: var(--hs-ink); }
+
 .hs-dialed {
   margin: auto 0 0;
   min-height: 7.4cqw;

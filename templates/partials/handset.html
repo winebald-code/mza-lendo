@@ -44,7 +44,14 @@
 
     {# ── The dialler. Inert on a marketing page, live on the simulator. ── #}
     <div class="hs-dialer"{% if not live %} aria-hidden="true"{% endif %}>
-      {% if live %}<p class="hs-dialed" data-sim-dialed data-sim-code="{{ code }}"></p>{% else %}<p class="hs-dialed">{{ code }}</p>{% endif %}
+      {# An input, not a paragraph, when the handset is live. A paragraph can be
+         selected but not edited: there was no way to put the caret in the middle
+         of a mistyped code and fix it, only to backspace the whole tail. This is
+         a real field, so it takes a click, a caret and a selection. #}
+      {% if live %}<input class="hs-dialed" data-sim-dialed data-sim-code="{{ code }}" type="text"
+             inputmode="tel" spellcheck="false" autocomplete="off"
+             aria-label="Dialled code" placeholder="Dial a code">
+      {% else %}<p class="hs-dialed">{{ code }}</p>{% endif %}
 
       <div class="hs-pad">
         {% for digit, letters in keys %}
