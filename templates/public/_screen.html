@@ -11,11 +11,6 @@
    Pages extending this fill screen_title, screen_updated and the content block.
    ═══════════════════════════════════════════════════════════════════════════ #}
 
-{# The stage is pinned, and sticky only travels inside its containing block.
-   Taking <main> out of the layout makes that block the whole document, so the
-   handset can hold its place while the footer scrolls up past it. #}
-{% block main_class %} deck-flow{% endblock %}
-
 {% block content %}
 {% from "partials/handset.html" import screen_deck with context %}
 
