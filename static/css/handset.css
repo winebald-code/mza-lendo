@@ -1257,6 +1257,26 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   .hs--sm, .hs--md, .hs--lg { --hs-w: 76vw; }
 }
 
+/* ── NO ZOOM ON FOCUS ───────────────────────────────────────────────────────
+   iOS Safari zooms the page into any field whose text is smaller than 16px, and
+   it does not zoom back out when the field is left. That is the whole of the
+   "screen jumps when I type and stays zoomed after I tap away" behaviour: the
+   fields on the glass are sized in cqw and land around 12px on a handset, so
+   every tap into one zoomed the page and left it there.
+
+   Sixteen pixels on coarse pointers is the fix. The alternative — user-scalable=no
+   in the viewport meta — also stops the zoom, by taking pinch-to-zoom away from
+   everyone, which is a real accessibility loss for the sake of a layout bug.
+
+   Scoped to coarse pointers so a narrow desktop window keeps the proportional
+   scale; only touch devices, which are the only ones that do this, are changed. */
+@media (pointer: coarse) {
+  .input, .select, .textarea,
+  .hs-form .input, .hs-form .select, .hs-form .textarea,
+  .hs-form-fields .input, .hs-form-fields .select, .hs-form-fields .textarea,
+  .hs-field, input.hs-dialed { font-size: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hs-key b, .hs-fab, .hs-act, .hs-field { transition: none; }
 }
