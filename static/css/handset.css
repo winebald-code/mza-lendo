@@ -1016,12 +1016,37 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    Terms and privacy get the same handset the rest of the site uses, sized to
    the window instead of to a column. The glass scrolls; the page does not, so
    the device stays whole while the document moves inside it. */
+/* <main> steps out of the layout on these pages so the stage's containing block
+   is the document rather than a box exactly its own height. Sticky needs room to
+   travel; without this it had none and behaved as if it were static. */
+.deck-flow { display: contents; }
+
+/* Pinned. Scrolling anywhere outside the handset used to drag it off the top of
+   the screen — the device left while the page carried on — which is the opposite
+   of what a phone sitting on a page should do. It holds its place now, and the
+   footer scrolls up past it. 69px is the header and its border. */
 .legal-stage {
   --legal-pad: clamp(16px, 3vh, 40px);
+  position: sticky;
+  top: 69px;
   display: grid;
   place-items: center;
   padding: var(--legal-pad) clamp(12px, 2vw, 32px);
-  min-height: calc(100svh - 69px);
+  height: calc(100vh - 69px);
+  height: calc(100svh - 69px);
+  /* Opaque, or the footer scrolling up behind it shows straight through the
+     handset — which is what happened the first time I pinned this. */
+  background: rgb(var(--c-fog));
+}
+
+/* The footer rides over the pinned stage rather than under it. Without the
+   stacking order the stage holds its place for the whole document and the
+   footer never surfaces; with it, the handset stays put and the footer slides
+   up across it, which reads as a reveal rather than a stuck page.
+   main is display:contents, so it and the footer are siblings here. */
+.deck-flow ~ footer {
+  position: relative;
+  z-index: 1;
 }
 
 /* Sized off the viewport, not off the stage. A container-relative height was
