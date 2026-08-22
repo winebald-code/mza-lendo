@@ -148,13 +148,13 @@
    top ends up behind the sticky header with no scroll position that shows the
    whole device. Every handset on the site is sized against the window. */
 .hs--wide {
-  --hs-w: min(clamp(300px, 33vw, 440px), calc((100vh - 150px) * 444 / 916));
-  --hs-w: min(clamp(300px, 33vw, 440px), calc((100svh - 150px) * 444 / 916));
+  --hs-w: min(clamp(300px, 33vw, 440px), calc((var(--app-vh, 100vh) - 150px) * 444 / 916));
+  --hs-w: min(clamp(300px, 33vw, 440px), calc((var(--app-vh, 100svh) - 150px) * 444 / 916));
 }
 
 .hs--hero {
-  --hs-w: clamp(260px, min(30vw, calc((100vh - 194px) * 444 / 916)), 420px);
-  --hs-w: clamp(260px, min(30vw, calc((100svh - 194px) * 444 / 916)), 420px);
+  --hs-w: clamp(260px, min(30vw, calc((var(--app-vh, 100vh) - 194px) * 444 / 916)), 420px);
+  --hs-w: clamp(260px, min(30vw, calc((var(--app-vh, 100svh) - 194px) * 444 / 916)), 420px);
 }
 
 /* The shell sits under the glass so the screen stays interactive. */
@@ -640,8 +640,8 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
    could stand taller than the small viewport and the page would scroll by the
    difference, which is exactly what "the phone must stay put" rules out. */
 .hs-stage {
-  height: 100vh;
-  height: 100svh;
+  height: var(--app-vh, 100vh);
+  height: var(--app-vh, 100svh);
   overflow: hidden;
   background: #fff;
 }
@@ -651,7 +651,7 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 /* Floating theme control — these pages have no header to hold it. */
 .hs-theme {
   position: fixed;
-  top: clamp(10px, 1.8vh, 22px);
+  top: clamp(10px, calc(var(--app-vh, 100vh) * 0.018), 22px);
   right: clamp(10px, 1.4vw, 26px);
   z-index: 20;
 }
@@ -663,7 +663,7 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
 
 .hs-pair {
   --hs-gx: clamp(12px, 1.6vw, 34px);
-  --hs-gy: clamp(12px, 2.2vh, 34px);
+  --hs-gy: clamp(12px, calc(var(--app-vh, 100vh) * 0.022), 34px);
   --hs-gap: clamp(14px, 2.4vw, 56px);
 
   container-type: size;
@@ -672,7 +672,7 @@ button.hs-act:focus-visible { outline: 2px solid var(--hs-act); outline-offset: 
      a phone re-sized the whole handset the moment a field took focus and again
      when it lost it — the device visibly jumped while you were typing into it.
      svh is a settled value: it does not move. */
-  height: 100svh;
+  height: var(--app-vh, 100svh);
   display: grid;
   grid-template-columns: 1fr 1fr;
   place-items: center;
@@ -1021,7 +1021,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    with the page, and the footer follows it. No background either — an opaque
    stage left a pale band under the device on a phone. */
 .legal-stage {
-  --legal-pad: clamp(16px, 3vh, 40px);
+  --legal-pad: clamp(16px, calc(var(--app-vh, 100vh) * 0.03), 40px);
   /* The same ground as the footer below it. The page ground is fog and the
      footer is surface, so without this the two meet in a hard seam a few
      centimetres under the device, which reads as a pale band stuck to the
@@ -1030,8 +1030,8 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
   display: grid;
   place-items: center;
   padding: var(--legal-pad) clamp(12px, 2vw, 32px);
-  min-height: calc(100vh - 69px);
-  min-height: calc(100svh - 69px);
+  min-height: calc(var(--app-vh, 100vh) - 69px);
+  min-height: calc(var(--app-vh, 100svh) - 69px);
 }
 
 /* Sized off the viewport, not off the stage. A container-relative height was
@@ -1040,8 +1040,8 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    give it, so the frame collapsed and the page rendered empty. The same svh
    arithmetic the hero uses is deterministic and has no such edge. */
 .hs--legal {
-  --hs-w: min(92vw, 560px, calc((100vh - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
-  --hs-w: min(92vw, 560px, calc((100svh - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
+  --hs-w: min(92vw, 560px, calc((var(--app-vh, 100vh) - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
+  --hs-w: min(92vw, 560px, calc((var(--app-vh, 100svh) - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
 }
 
 .hs-legal {
@@ -1291,7 +1291,7 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 @media (max-width: 640px) {
   /* The control's own offset plus its 38px box plus a gap. A flat guess left a
      one-pixel corner touching at 360 and 320. */
-  .hs-pair { padding-top: calc(clamp(10px, 1.8vh, 22px) + 46px); }
+  .hs-pair { padding-top: calc(clamp(10px, calc(var(--app-vh, 100vh) * 0.018), 22px) + 46px); }
 }
 
 /* On a narrow viewport a fixed-width frame takes the width it needs rather than

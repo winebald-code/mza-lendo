@@ -18,4 +18,41 @@
       document.documentElement.dataset.theme = 'light';
     }
   })();
+
+  /* --app-vh, the height every handset is sized from.
+
+     Viewport units are not usable for this. On the browsers that resize the
+     layout viewport when the on-screen keyboard opens, vh, svh and dvh all
+     shrink with it, so the device shrank the moment a field took focus and grew
+     back when it lost it, which is exactly what a phone on a page must not do.
+     interactive-widget=resizes-visual asks the browser not to do that, but it is
+     a request and not every engine honours it.
+
+     So the height is measured once and only replaced when the width changes,
+     which means a rotation or a real window resize. A keyboard never changes the
+     width, so it can never move the phone. */
+  (function () {
+    var root = document.documentElement;
+    var lockedWidth = window.innerWidth;
+
+    function lockHeight() {
+      root.style.setProperty('--app-vh', window.innerHeight + 'px');
+    }
+    lockHeight();
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth !== lockedWidth) {
+        lockedWidth = window.innerWidth;
+        lockHeight();
+      }
+    });
+
+    // Rotation reports the new width a beat after the event on some browsers.
+    window.addEventListener('orientationchange', function () {
+      setTimeout(function () {
+        lockedWidth = window.innerWidth;
+        lockHeight();
+      }, 300);
+    });
+  })();
 </script>
