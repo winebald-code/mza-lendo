@@ -270,48 +270,6 @@ Habari Peter
   </div>
 </section>
 
-{# ══════════════ PRICING ══════════════
-   The three tiers on the homepage, so the first question anyone asks is
-   answered before they have to go looking. Feature lists stay on the pricing
-   page; this is the shape of the offer and the price, nothing more. #}
-<section class="border-b border-divider bg-surface">
-  <div class="max-w-shell mx-auto px-5 sm:px-8 py-16 lg:py-20">
-    <div class="max-w-[54ch] mb-10">
-      <p class="kicker mb-4">Pricing</p>
-      <h2 class="font-display text-[28px] sm:text-[34px] font-bold leading-[1.12] tracking-[-0.03em] m-0">
-        Priced for a workshop, not for a procurement department.
-      </h2>
-      <p class="lede mt-5">
-        One price per plant, every module included. We do not charge per worker, because charging
-        per worker would make you think twice about registering the ones who most need to report.
-      </p>
-    </div>
-
-    <div class="grid md:grid-cols-3 gap-5">
-      {% for name, price, per, blurb, featured in [
-        ('Starter', 'KES 650', '/ month', 'A single workshop finding its feet. Up to 10 workers and 3 dashboard users.', false),
-        ('Business', 'KES 1,950', '/ month', 'Several lines with their own supervisors, procurement and quality checks. Unlimited workers.', true),
-        ('Enterprise', "Let's talk", '', 'Groups running several plants, or an instance inside your own infrastructure.', false)] %}
-      <div class="card card-pad relative {% if featured %}border-ink{% endif %}" data-reveal-on-scroll>
-        {% if featured %}
-        <span class="tag tag-ink absolute -top-2.5 left-5">Most workshops</span>
-        {% endif %}
-        <p class="font-display text-[17px] font-bold tracking-[-0.02em] m-0">{{ name }}</p>
-        <p class="font-display text-[30px] font-bold tracking-[-0.03em] mt-3 m-0">
-          {{ price }}<span class="text-[13px] font-medium text-slate-500 ml-1">{{ per }}</span>
-        </p>
-        <p class="text-[13px] text-slate-500 leading-relaxed mt-3 mb-0">{{ blurb }}</p>
-      </div>
-      {% endfor %}
-    </div>
-
-    <p class="text-[13px] text-slate-500 mt-8 mb-0">
-      <a href="{{ url_for('pricing') }}" class="text-ink hover:text-signal-600 font-medium underline decoration-divider underline-offset-2">See what is in each plan</a>
-      and the questions people ask first.
-    </p>
-  </div>
-</section>
-
 {# ══════════════ RUNNING NOW ══════════════ #}
 {# bg-surface, not bg-slate-900: slate-900 is literal in both themes, so this
    band stayed black on the light site. The tokens flip, so it is white on

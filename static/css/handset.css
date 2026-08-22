@@ -47,7 +47,6 @@
    form, the labels, the hints and the alerts paint exactly as they do on the
    light theme, and nothing in the markup has to know which theme is running.
    This is the whole reason the palette is variables rather than classes. */
-@media (min-width: 1024px) {
 [data-theme="dark"] .hs-screen {
   --c-fog: var(--lt-fog);
   --c-surface: var(--lt-surface);
@@ -63,7 +62,6 @@
   --c-warn: var(--lt-warn);
   --c-bad: var(--lt-bad);
   color-scheme: light;
-}
 }
 
 [data-theme="dark"] .hs {
@@ -143,10 +141,18 @@
    the section's own bottom border, plus three to spare. The floor wins on a
    very short window, where fitting the fold would mean a phone too small to
    read the menu on — legibility beats the fold at that point. */
-/* The platform page, where the handset carries the whole argument. Width-driven
-   only: unlike the homepage hero this one has no fold to fit inside, so tying it
-   to viewport height would shrink it on a short window for no reason. */
-.hs--wide { --hs-w: clamp(300px, 33vw, 440px); }
+/* The platform page, where the handset carries the whole argument.
+
+   Height-aware, and it was not before. I had reasoned that this page has no fold
+   to fit inside so width alone would do, which missed the obvious: a 916/444
+   frame at 440px wide is 908px tall, taller than the window it has to be seen
+   in. The top of the device sat behind the sticky header and there was no scroll
+   position that showed the whole phone. Every other handset on the site is sized
+   against the window; this one now is too. */
+.hs--wide {
+  --hs-w: min(clamp(300px, 33vw, 440px), calc((100vh - 150px) * 444 / 916));
+  --hs-w: min(clamp(300px, 33vw, 440px), calc((100svh - 150px) * 444 / 916));
+}
 
 .hs--hero {
   --hs-w: clamp(260px, min(30vw, calc((100vh - 194px) * 444 / 916)), 420px);
@@ -992,10 +998,8 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
    give it, so the frame collapsed and the page rendered empty. The same svh
    arithmetic the hero uses is deterministic and has no such edge. */
 .hs--legal {
-  --hs-w: min(clamp(300px, 46vw, 560px),
-              calc((100vh - 69px - 2 * var(--legal-pad)) * 444 / 916));
-  --hs-w: min(clamp(300px, 46vw, 560px),
-              calc((100svh - 69px - 2 * var(--legal-pad)) * 444 / 916));
+  --hs-w: min(92vw, 560px, calc((100vh - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
+  --hs-w: min(92vw, 560px, calc((100svh - 69px - 2 * var(--legal-pad) - 8px) * 444 / 916));
 }
 
 .hs-legal {
@@ -1199,58 +1203,26 @@ a.hs-mark:focus-visible { border-radius: 2cqw; }
 .hs-legal-body a:hover { color: #db5a00; }
 
 /* ── One phone per page below the split ─────────────────────────────────────
-   Two phones side by side stop working long before a tablet. Under 1024px the
-   argument screen steps aside and the form fills the window: same screen, same
-   type scale, no frame — because a phone drawn on a phone is a joke that only
-   lands once. */
+   Two phones side by side stop working long before a tablet, so under 1024px
+   the argument screen steps aside and the form takes the column.
+
+   The frame stays. It used to be stripped here and the screen made the page,
+   which meant the product looked like one thing on a laptop and another on a
+   handset — and it took the theme with it, since a screen that is the page
+   cannot also be a lit white device on a dark ground. The device is the device
+   at every width now; only the count changes. */
 @media (max-width: 1023px) {
-  .hs-pair {
-    grid-template-columns: 1fr;
-    place-items: stretch;
-    gap: 0;
-    padding: 0;
-  }
-
+  .hs-pair { grid-template-columns: 1fr; }
   .hs-say-phone { display: none; }
-
-  .hs--deck {
-    --hs-w: 100cqw;
-    width: 100%;
-    height: 100%;
-    aspect-ratio: auto;
-  }
-
-  .hs--deck .hs-shell { display: none; }
-
-  .hs--deck .hs-screen {
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    /* Not --hs-card: that is the white of a device's glass, and there is no
-       device here. The screen is the page and takes the page's ground. */
-    background: rgb(var(--c-surface));
-  }
-
-  [data-theme="dark"] .hs--deck .hs-screen { background: #000; }
-
-  /* The chrome is a mockup device's, not this device's. */
-  .hs--deck .hs-status,
-  .hs--deck .hs-sms-nav { display: none; }
-
-  .hs-form {
-    padding: 7vw 6vw 10vw;
-    font-size: 14px;
-  }
-
-  .hs-form h1 { font-size: 28px; margin-top: 0; }
-  .hs-form h1 + p { font-size: 13.5px; }
+  /* One column, so the phone gets the whole width rather than half of it. */
+  .hs--deck { --hs-slot: 100cqw; }
 }
-/* On a narrow viewport the frame takes the width it needs rather than the
-   width the desktop layout asked for. */
+
+/* On a narrow viewport a fixed-width frame takes the width it needs rather than
+   the width the desktop layout asked for. The decks size themselves against the
+   window already, so this is for the preset sizes only. */
 @media (max-width: 480px) {
-  .hs { --hs-w: 76vw; }
+  .hs--sm, .hs--md, .hs--lg { --hs-w: 76vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
