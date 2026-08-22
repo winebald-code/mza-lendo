@@ -95,7 +95,11 @@
 
 <div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
 
-  <div class="grid gap-6 min-w-0">
+  {# content-start, as the right column already has. Without it this grid
+     stretches its rows to match the taller Alerts column beside it, and since
+     the cards hold fixed-height content the extra height became dead space
+     inside them — the 150px chart sat in a 500px card. #}
+  <div class="grid gap-6 content-start min-w-0">
     {# ── Production throughput ── #}
     <section class="card min-w-0">
       <div class="card-head">
@@ -106,7 +110,10 @@
         <a href="{{ url_for('dash_reports') }}" class="btn btn-ghost btn-xs">Reports {{ icon('arrow-right','ico ico-sm') }}</a>
       </div>
       <div class="p-5">
-        <div data-bars='{{ series|tojson }}' class="h-[150px] min-w-0"></div>
+        {# The renderer measures this box and redraws on resize, so the height is a
+           real dial: 150px crowded fourteen bars under the legend, and a longer
+           range would only make it worse. #}
+        <div data-bars='{{ series|tojson }}' class="h-[210px] min-w-0"></div>
       </div>
     </section>
 

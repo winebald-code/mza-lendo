@@ -9,11 +9,36 @@
   if (window.__bcnCharts) { window.__bcnCharts.draw(); return; }
 
   const NS = 'http://www.w3.org/2000/svg';
-  const INK = '#07090B';
-  const SIGNAL = '#FF6A00';
-  const SIGNAL_D = '#DB5A00';
-  const DIVIDER = '#D7DCE2';
-  const MUTED = '#8B939E';
+
+  /* The palette is read from the document rather than frozen here, because the
+     charts are drawn as SVG attributes — fill="#07090B" — and an attribute
+     cannot inherit a theme the way a CSS property can. On the dark ground the
+     ink series was near-black bars on a near-black card, with value labels to
+     match: the primary series was invisible.
+
+     Re-read on every draw, and draw() already runs on theme change via the
+     resize path, so switching themes repaints the charts with the new ink. */
+  const readPalette = () => {
+    const cs = getComputedStyle(document.documentElement);
+    const v = (name, fallback) => {
+      const raw = (cs.getPropertyValue(name) || '').trim();
+      return raw ? 'rgb(' + raw + ')' : fallback;
+    };
+    return {
+      INK: v('--c-ink', '#07090B'),
+      DIVIDER: v('--c-divider', '#D7DCE2'),
+      MUTED: v('--c-slate-400', '#8B939E'),
+      SIGNAL: '#FF6A00',
+      SIGNAL_D: v('--c-signal-600', '#DB5A00'),
+    };
+  };
+
+  let PAL = readPalette();
+  let INK = PAL.INK;
+  let SIGNAL = PAL.SIGNAL;
+  let SIGNAL_D = PAL.SIGNAL_D;
+  let DIVIDER = PAL.DIVIDER;
+  let MUTED = PAL.MUTED;
   const MONO = 'IBM Plex Mono, monospace';
   const DISPLAY = 'Space Grotesk, sans-serif';
   const SEL = '[data-bars],[data-line],[data-ranks],[data-donut]';
@@ -402,8 +427,13 @@
 
     const data = host.getAttribute('data-bars') || host.getAttribute('data-line') ||
                  host.getAttribute('data-ranks') || host.getAttribute('data-donut') || '';
+    /* The theme belongs in the signature. Colours are baked into SVG attributes
+       at draw time, so a flip changes the output even though the size, labels
+       and data are identical — without it this cache short-circuits and the
+       chart keeps the previous theme's ink until the window is resized. */
     const sig = W + 'x' + H + '|' + attr(host, 'data-x-label', '') + '|' +
-                attr(host, 'data-y-label', '') + '|' + data;
+                attr(host, 'data-y-label', '') + '|' + data + '|' +
+                (document.documentElement.dataset.theme || '');
     if (host.__sig === sig && host.firstChild) return;
     host.__sig = sig;
 
@@ -416,6 +446,12 @@
   }
 
   function draw() {
+    /* Re-read first: a theme flip changes the variables, not the markup, and
+       every colour below is baked into an SVG attribute at draw time. */
+    PAL = readPalette();
+    INK = PAL.INK; SIGNAL = PAL.SIGNAL; SIGNAL_D = PAL.SIGNAL_D;
+    DIVIDER = PAL.DIVIDER; MUTED = PAL.MUTED;
+
     const hosts = document.querySelectorAll(SEL);
     for (let i = 0; i < hosts.length; i++) render(hosts[i]);
   }
@@ -428,6 +464,12 @@
 
   new MutationObserver(schedule)
     .observe(document.documentElement, { childList: true, subtree: true });
+
+  /* The theme control flips data-theme on <html>. That is an attribute change,
+     which the observer above does not watch, so the charts kept the old ink
+     until something else happened to trigger a redraw. */
+  new MutationObserver(schedule)
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   window.addEventListener('resize', schedule);
   window.addEventListener('pageshow', schedule);

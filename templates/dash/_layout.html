@@ -34,27 +34,27 @@
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:btn focus:btn-dark">Skip to content</a>
 
 {# ── Navigation rail ───────────────────────────────────────────────────── #}
-<div id="rail-scrim" hidden class="fixed inset-0 z-40 bg-ink/50 lg:hidden" data-rail-close></div>
+<div id="rail-scrim" hidden class="fixed inset-0 z-40 bg-black/50 lg:hidden" data-rail-close></div>
 
-<aside id="rail" class="fixed inset-y-0 left-0 z-50 w-[var(--rail-w)] bg-slate-800 shadow-rail
+<aside id="rail" class="fixed inset-y-0 left-0 z-50 w-[var(--rail-w)] bg-surface border-r border-divider shadow-rail
        flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
        aria-label="Sections">
-  <div class="flex items-center gap-2.5 h-[62px] px-4 border-b border-white/[0.07] shrink-0">
+  <div class="flex items-center gap-2.5 h-[62px] px-4 border-b border-divider shrink-0">
     <a href="{{ url_for('dash_overview') }}" class="flex items-center gap-2.5 no-tap">
       {% include "partials/logo.html" %}
-      <span class="font-display font-bold text-[15px] tracking-[-0.02em] text-white">Bacaan</span>
+      <span class="font-display font-bold text-[15px] tracking-[-0.02em] text-ink">Bacaan</span>
     </a>
-    <button type="button" class="btn btn-icon btn-on-dark ml-auto lg:hidden" data-rail-close aria-label="Close menu">
+    <button type="button" class="btn btn-icon btn-ghost ml-auto lg:hidden" data-rail-close aria-label="Close menu">
       {{ icon('x') }}
     </button>
   </div>
 
   {% if factory %}
-  <div class="px-4 py-3 border-b border-white/[0.07] shrink-0">
+  <div class="px-4 py-3 border-b border-divider shrink-0">
     {% if current_user.is_super %}
       <form method="get" action="{{ url_for('dash_overview') }}" data-factory-switch>
         <label class="label text-slate-500 block mb-1.5">Viewing plant</label>
-        <select class="input h-[36px] min-h-0 py-0 text-[12.5px] bg-slate-700 border-slate-600 text-white rounded-[10px]"
+        <select class="input h-[36px] min-h-0 py-0 text-[12.5px] bg-fog border-divider text-ink rounded-[10px]"
                 data-switch-select aria-label="Switch plant">
           {% for f in factories_all|default([]) %}
             <option value="{{ url_for('switch_factory', factory_id=f.id) }}" {% if f.id == factory.id %}selected{% endif %}>{{ f.name }}</option>
@@ -63,7 +63,7 @@
       </form>
     {% else %}
       <p class="label text-slate-500 mb-1">Plant</p>
-      <p class="text-[13.5px] font-semibold text-white leading-tight m-0 truncate">{{ factory.name }}</p>
+      <p class="text-[13.5px] font-semibold text-ink leading-tight m-0 truncate">{{ factory.name }}</p>
       <p class="font-mono text-[10.5px] text-slate-500 mt-0.5 m-0">{{ factory.county }} · {{ factory.plan|title }}</p>
     {% endif %}
   </div>
@@ -121,7 +121,7 @@
     <a href="{{ url_for('admin_system') }}" class="rail-link {% if ep=='admin_system' %}is-active{% endif %}">{{ icon('server') }} System</a>
     {% endif %}
 
-    <div class="mt-6 mx-1 p-3.5 rounded-[14px] bg-slate-900 border border-white/[0.07]">
+    <div class="mt-6 mx-1 p-3.5 rounded-[14px] bg-fog border border-divider">
       <p class="label text-slate-500 mb-1.5">Floor line</p>
       <p class="font-mono text-[15px] font-semibold text-signal-500 m-0 tracking-tight">{{ ussd_code }}</p>
       <p class="text-[11.5px] text-slate-500 mt-1.5 mb-0 leading-snug">Workers dial this to report from any handset.</p>

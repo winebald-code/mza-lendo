@@ -249,8 +249,8 @@
   .btn-secondary:active { @apply bg-divider text-ink border-ink; }
 
   .btn-ghost { @apply bg-transparent text-slate-600 border-transparent px-3; }
-  .btn-ghost:hover { @apply bg-black/[0.05] text-ink border-transparent; }
-  .btn-ghost:active { @apply bg-black/[0.09] text-ink; }
+  .btn-ghost:hover { @apply bg-ink/[0.06] text-ink border-transparent; }
+  .btn-ghost:active { @apply bg-ink/[0.11] text-ink; }
 
   .btn-danger { @apply bg-transparent text-bad border-bad/40; }
   .btn-danger:hover { @apply bg-bad text-white border-bad; }
@@ -372,12 +372,17 @@
   .alert-info { @apply bg-signal-500/[0.07] border-signal-500 text-signal-700; }
 
   /* Navigation rail -------------------------------------------- */
+  /* ── THE RAIL ────────────────────────────────────────────────────────────
+     White in light, dark in dark. It used to be bg-slate-800 with white type
+     and white washes — correct on one ground and unreadable on the other. The
+     washes are now ink at low alpha, which inverts with the theme, so a single
+     rule is a dark wash on the white rail and a light wash on the dark one. */
   .rail-link {
     @apply flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] font-medium
-           text-slate-400 transition-colors relative;
+           text-slate-600 transition-colors relative;
   }
-  .rail-link:hover { @apply text-white bg-white/[0.05]; }
-  .rail-link.is-active { @apply text-ink bg-signal-500; }
+  .rail-link:hover { @apply text-ink bg-ink/[0.06]; }
+  .rail-link.is-active { @apply text-slate-900 bg-signal-500; }
   .rail-link.is-active .ico { @apply text-ink; }
   .rail-group { @apply px-3 pt-5 pb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-kicker text-slate-500; }
 
@@ -423,7 +428,8 @@
     background-image: repeating-linear-gradient(
       135deg, rgba(255,106,0,0.14) 0 6px, transparent 6px 12px);
   }
-  .rail-scroll { scrollbar-color: #3A4250 transparent; }
+  .rail-scroll { scrollbar-color: #C7CDD4 transparent; }
+  [data-theme="dark"] .rail-scroll { scrollbar-color: #3A4250 transparent; }
   .rail-scroll::-webkit-scrollbar-thumb { background: #3A4250; }
   .no-tap { -webkit-tap-highlight-color: transparent; }
 }
