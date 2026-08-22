@@ -2422,7 +2422,7 @@ def signup():
 def logout():
     audit("logout", "user", current_user.id)
 
-    # Order matters here, and it used to be the wrong way round.
+    # Order matters here.
     #
     # logout_user() cannot delete the remember cookie itself, there is no
     # response object yet, so it leaves session["_remember"] = "clear" behind

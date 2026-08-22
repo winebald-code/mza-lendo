@@ -6,15 +6,21 @@
 {% set screen_title = 'Get in touch' %}
 
 {% block screen %}
-{# The form and nothing else. Everything that used to sit beside it — what to
-   include, where we are, how security reports are handled — is on the pages
-   that own those subjects, and repeating it here only pushed the fields down. #}
+{# The form and nothing else. What to include, where we are and how security
+   reports are handled all live on the pages that own those subjects; repeating
+   them here only pushes the fields down the screen. #}
 <p>
   One inbox, answered by the people who build the thing. We reply within one working day,
   Nairobi time.
 </p>
 
-<form method="post" action="{{ url_for('contact') }}" class="hs-form-fields" novalidate>
+{# The form still posts normally, so it works with JavaScript off and every
+   message is recorded server-side. With JavaScript on, app.js intercepts the
+   submit, records it in the background and hands the message to the mail client
+   already addressed and filled in, so the person only has to press send. That
+   is what actually delivers it — there is no mail transport in this app. #}
+<form method="post" action="{{ url_for('contact') }}" class="hs-form-fields"
+      data-contact-form data-mailto="info@winebald.tech" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="field">
@@ -57,5 +63,10 @@
   </div>
 
   <button type="submit" class="btn btn-primary btn-block">Send message</button>
+
+  <p class="hint m-0 mt-3" data-contact-note hidden>
+    Your mail app should be opening with the message ready. If nothing happened,
+    write to <span class="hs-mono">info@winebald.tech</span>.
+  </p>
 </form>
 {% endblock %}
